@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+case "${SSH_ORIGINAL_COMMAND:-}" in
+  dev)
+    exec bash /opt/hubpages-src-dev/deploy/update-dev.sh
+    ;;
+  prod)
+    exec bash /opt/hubpages-src-prod/deploy/update-prod.sh
+    ;;
+  status)
+    docker compose -p hubpages_dev -f /opt/hubpages-src-dev/deploy/compose.dev.yml ps
+    docker compose -p hubpages_prod -f /opt/hubpages-src-prod/deploy/compose.prod.yml ps
+    ;;
+  *)
+    echo "Comando não autorizado." >&2
+    exit 64
+    ;;
+esac

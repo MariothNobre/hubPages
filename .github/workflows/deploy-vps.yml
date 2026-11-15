@@ -1,0 +1,50 @@
+name: Publicar HubPages na VPS
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hubpages-deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    if: github.ref_name == 'develop' || github.ref_name == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - name: Preparar acesso SSH restrito
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519
+          chmod 644 ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
+
+      - name: Publicar ambiente isolado
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            ambiente="prod"
+          else
+            ambiente="dev"
+          fi
+          ssh -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            -p 22 root@179.199.148.219 "$ambiente"

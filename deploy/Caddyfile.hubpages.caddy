@@ -1,0 +1,28 @@
+# BEGIN HUBPAGES MANAGED BLOCK
+hubpages.com.br, www.hubpages.com.br {
+  encode zstd gzip
+  reverse_proxy hubpages-prod:8080
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
+  }
+}
+
+dev.hubpages.com.br {
+  encode zstd gzip
+  reverse_proxy hubpages-dev:8080
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    X-Robots-Tag "noindex, nofollow, noarchive"
+    -Server
+  }
+}
+# END HUBPAGES MANAGED BLOCK

@@ -1,0 +1,7 @@
+.git
+.github
+.hostinger
+dist
+node_modules
+work
+*.log
