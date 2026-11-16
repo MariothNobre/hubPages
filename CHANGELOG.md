@@ -26,4 +26,5 @@ semântico.
 - Limites de recursos, health checks, filesystem somente leitura e gateway de deploy restrito.
 - Procedimento seguro para integrar os domínios ao Caddy somente depois do DNS.
 - Plano de evolução para uma plataforma dinâmica de criação de páginas de vendas.
-
+- Compartimentos Docker DEV e produção implantados e validados na VPS.
+- Acesso de deploy restrito instalado; chave administrativa temporária revogada.
