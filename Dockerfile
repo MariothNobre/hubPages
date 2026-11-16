@@ -14,14 +14,17 @@ ENV VITE_PUBLIC_URL=$VITE_PUBLIC_URL
 COPY . .
 RUN pnpm build
 
-FROM caddy:2.10.2-alpine AS runner
-WORKDIR /srv
-RUN cp /usr/bin/caddy /usr/local/bin/caddy-unprivileged \
-  && chmod 0755 /usr/local/bin/caddy-unprivileged
-COPY --from=builder --chown=10001:10001 /app/dist ./
-COPY --chown=10001:10001 deploy/Caddyfile.container /etc/caddy/Caddyfile
+FROM node:22.22-bookworm-slim AS runner
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV STATIC_DIR=/app/public
+ENV DATA_FILE=/data/content.json
+WORKDIR /app
+COPY --from=builder --chown=10001:10001 /app/dist ./public
+COPY --chown=10001:10001 server ./server
+RUN mkdir -p /data && chown 10001:10001 /data
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --retries=5 --start-period=5s \
-  CMD wget -q -O /dev/null http://127.0.0.1:8080/health.json || exit 1
-CMD ["caddy-unprivileged", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+  CMD node -e "fetch('http://127.0.0.1:8080/health.json').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+CMD ["node", "server/index.mjs"]

@@ -13,6 +13,9 @@ evolução para um sistema no qual novas páginas de vendas sejam criadas e publ
 - Rotas por slug.
 - Checkout e métricas configurados por produto.
 - Promoção DEV → produção por pull request.
+- Painel administrativo inicial para campos comerciais controlados.
+- Primeiro acesso por código de ativação de uso único.
+- Persistência isolada por ambiente para o conteúdo editável.
 
 ### Fase 2 — Catálogo estruturado
 
@@ -20,11 +23,11 @@ evolução para um sistema no qual novas páginas de vendas sejam criadas e publ
 - Conteúdo em arquivos tipados ou CMS, sem duplicar layout.
 - Preview no DEV antes de publicar.
 
-### Fase 3 — Editor dinâmico
+### Fase 3 — Editor dinâmico avançado
 
 - API TypeScript separada do frontend.
 - PostgreSQL exclusivo da HubPages em rede interna própria.
-- Autenticação administrativa e trilha de auditoria.
+- Múltiplos usuários, papéis administrativos e trilha de auditoria.
 - Versionamento de páginas, rascunho, aprovação e publicação.
 
 ### Fase 4 — Plataforma

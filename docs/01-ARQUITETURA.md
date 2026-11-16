@@ -8,9 +8,10 @@ principal, mantendo marca, infraestrutura e análise centralizadas.
 ## Stack
 
 - React + TypeScript.
-- Vite para desenvolvimento e geração estática.
+- Vite para desenvolvimento e build do frontend.
 - React Router para rotas legíveis.
-- Apache/Hostinger com `.htaccess` para fallback de SPA.
+- Serviço Node.js isolado para arquivos estáticos, API administrativa e health check.
+- Persistência leve em arquivo JSON com gravação atômica e volume Docker exclusivo por ambiente.
 - GitHub como fonte oficial, histórico e CI.
 - Docker na VPS Hostinger como destino dos ambientes.
 
@@ -33,4 +34,5 @@ identidade visual consistente e manutenção centralizada.
 4. Toda publicação deve ser rastreável por commit e pull request.
 5. Checkout e métricas usarão variáveis de ambiente quando forem integrados.
 6. A HubPages não compartilha volumes, bancos, secrets ou redes internas com o Sistera.
+7. Campos editáveis pelo painel passam por schema e não aceitam HTML ou scripts arbitrários.
 

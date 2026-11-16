@@ -7,8 +7,14 @@ umask 077
 REPO=/opt/hubpages-src-dev
 COMPOSE_FILE="$REPO/deploy/compose.dev.yml"
 SISTERA_HEALTH=https://app.sistera.com.br/api/health
+SECRETS_FILE=/opt/hubpages-secrets/dev.env
 
 cd "$REPO"
+[[ -r "$SECRETS_FILE" ]] || { echo "Segredos DEV não configurados em $SECRETS_FILE." >&2; exit 1; }
+set -a
+# shellcheck disable=SC1090
+source "$SECRETS_FILE"
+set +a
 [[ "$(git branch --show-current)" == develop ]] || { echo "A cópia DEV não está na branch develop." >&2; exit 1; }
 git diff --quiet && git diff --cached --quiet || { echo "Há alterações locais; atualização interrompida." >&2; exit 1; }
 git pull --ff-only origin develop

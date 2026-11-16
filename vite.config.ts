@@ -7,5 +7,11 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  server: {
+    proxy: {
+      '/api': 'http://127.0.0.1:8080',
+      '/health.json': 'http://127.0.0.1:8080',
+    },
+  },
 })
 

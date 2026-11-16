@@ -18,11 +18,12 @@ A HubPages não reutiliza imagens, containers, volumes, bancos, diretórios de r
 | Branch | `develop` | `main` |
 | Imagem | `hubpages-dev:<commit>` | `hubpages-prod:<commit>` |
 | Alias no proxy | `hubpages-dev` | `hubpages-prod` |
+| Volume de conteúdo | `hubpages_dev_content` | `hubpages_prod_content` |
 | Limite | 0,25 CPU / 128 MB | 0,25 CPU / 128 MB |
 
-Os containers executam com usuário sem privilégios, filesystem somente leitura, capabilities removidas,
-`no-new-privileges`, limite de processos e logs rotacionados. Como o frontend atual é estático, nenhum volume de
-dados é montado.
+Os containers executam com usuário sem privilégios, filesystem do aplicativo somente leitura, capabilities
+removidas, `no-new-privileges`, limite de processos e logs rotacionados. Apenas `/data` recebe um volume gravável
+exclusivo para o conteúdo aprovado no painel administrativo.
 
 ## Rede
 

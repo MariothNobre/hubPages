@@ -22,6 +22,7 @@ feature/* → pull request → develop → homologação em DEV → pull request
 
 ## Variáveis
 
-Os arquivos `.env.*.example` documentam nomes e valores públicos. Segredos reais devem ficar nos ambientes da
-Hostinger ou nas configurações protegidas do GitHub, nunca no repositório.
+Os segredos administrativos ficam somente em `/opt/hubpages-secrets/dev.env` e
+`/opt/hubpages-secrets/prod.env`, com permissões restritas na VPS. GitHub recebe apenas a chave SSH limitada ao
+gateway de deploy; senha, código de ativação e segredo de sessão nunca são versionados.
 

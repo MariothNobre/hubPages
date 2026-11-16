@@ -7,6 +7,15 @@ semântico.
 
 ## [Não publicado]
 
+### Adicionado
+
+- Direção visual provisória para a central HubPages e a página **Infância Além das Telas**.
+- Conteúdo tipado separado dos componentes React.
+- Área administrativa em `/admin` para textos e links comerciais autorizados.
+- Primeiro acesso com e-mail cadastrado, código de ativação de uso único e criação de senha.
+- API Node.js com sessão segura, limite de tentativas, validação de origem e conteúdo.
+- Volumes persistentes e secrets separados entre DEV e produção.
+
 ### Planejado
 
 - Design definitivo da central HubPages.

@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "start": "node server/index.mjs",
+    "hash:secret": "node scripts/hash-admin-password.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint ."
