@@ -16,9 +16,12 @@ RUN pnpm build
 
 FROM caddy:2.10.2-alpine AS runner
 WORKDIR /srv
+RUN cp /usr/bin/caddy /usr/local/bin/caddy-unprivileged \
+  && chmod 0755 /usr/local/bin/caddy-unprivileged
 COPY --from=builder --chown=10001:10001 /app/dist ./
+COPY --chown=10001:10001 deploy/Caddyfile.container /etc/caddy/Caddyfile
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --retries=5 --start-period=5s \
   CMD wget -q -O /dev/null http://127.0.0.1:8080/health.json || exit 1
-CMD ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]
+CMD ["caddy-unprivileged", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
