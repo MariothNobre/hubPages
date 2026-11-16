@@ -56,6 +56,11 @@ export function InfanciaAlemDasTelas() {
   }, [])
 
   useEffect(() => {
+    document.documentElement.classList.add('sales-page-root')
+    return () => document.documentElement.classList.remove('sales-page-root')
+  }, [])
+
+  useEffect(() => {
     if (!previewOpen) return
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setPreviewOpen(false)
@@ -165,7 +170,7 @@ export function InfanciaAlemDasTelas() {
           <div className="sales-v2-offer__copy"><p className="sales-v2-kicker">Oferta especial de lançamento</p><h2>Uma biblioteca prática para a sua família.</h2><ul><li>Manual principal com 300 páginas</li><li>Método Reconexão de 30 Dias</li><li>Cinco ebooks complementares</li><li>954 páginas na coleção completa</li><li>Ferramentas, modelos, registros e atividades</li></ul><div className="sales-v2-price"><span>Valor da coleção: <s>R$ 197,00</s></span><strong><small>R$</small> 29,90</strong><em>pagamento único</em></div>{buyButton('sales-v2-button sales-v2-button--offer')}<p className="sales-v2-microcopy">Coleção digital · manual principal + 5 bônus</p></div>
         </section>
 
-        <section className="sales-v2-author"><div className="sales-v2-author__monogram" aria-hidden="true">MN</div><div><p className="sales-v2-kicker">Sobre o autor</p><h2>Marioth Nobre</h2><p className="sales-v2-author__lead">Pai de três filhos e autor da coleção Infância Além das Telas.</p><p>Marioth reúne sua experiência como consultor especializado em processos e negócios à vivência cotidiana da paternidade. A coleção nasce desse encontro: organização prática, observação da rotina e o propósito de ajudar outras famílias a equilibrar tecnologia e convivência.</p><small>Editora HubPages · Edição nº 01 · 2026</small></div></section>
+        <section className="sales-v2-author" id="autor"><figure className="sales-v2-author__photo"><img src="/assets/author/marioth-nobre.webp" alt="Marioth Nobre, autor da coleção Infância Além das Telas" /><figcaption>Marioth Nobre · Autor</figcaption></figure><div><p className="sales-v2-kicker">Sobre o autor</p><h2>Marioth Nobre</h2><p className="sales-v2-author__lead">Pai de três filhos e autor da coleção Infância Além das Telas.</p><p>Marioth reúne sua experiência como consultor especializado em processos e negócios à vivência cotidiana da paternidade. A coleção nasce desse encontro: organização prática, observação da rotina e o propósito de ajudar outras famílias a equilibrar tecnologia e convivência.</p><small>Editora HubPages · Edição nº 01 · 2026</small></div></section>
 
         <section className="sales-v2-faq"><div className="sales-v2-center-heading"><p className="sales-v2-kicker">Dúvidas frequentes</p><h2>Antes de começar.</h2></div><div className="sales-v2-faq__list">{questions.map(([question, answer], index) => <details key={question} open={index === 0}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div><div className="sales-v2-section-cta sales-v2-section-cta--light"><p>Pronto para começar?</p>{buyButton('sales-v2-button sales-v2-button--dark')}</div></section>
 

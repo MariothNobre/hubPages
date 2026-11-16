@@ -13,6 +13,16 @@ sem copiar logotipos, textos, imagens, códigos ou identidade visual.
 - **Identidade da coleção:** verde-petróleo, verde-sálvia, creme, amarelo-mel e terracota, com formas orgânicas,
   ilustrações das capas oficiais e linguagem visual acolhedora para famílias.
 
+## Logo HubPages aprovada
+
+A assinatura tipográfica **HubPages** foi aprovada como identidade oficial do projeto:
+
+- `Hub` em tom escuro;
+- `Pages` em verde-petróleo e peso mais forte;
+- ponto coral como elemento de assinatura;
+- versão monocromática clara permitida apenas sobre fundos escuros;
+- proporções, união visual entre as palavras e ponto final devem ser preservados em todas as páginas.
+
 ## Página de vendas implementada
 
 - página única, sem navegação para outros sites ou páginas internas;

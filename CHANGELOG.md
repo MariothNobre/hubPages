@@ -11,6 +11,7 @@ semântico.
 
 - Página de vendas completa da coleção **Infância Além das Telas**, com oferta de R$ 197,00 por R$ 29,90.
 - Capas oficiais do manual e dos cinco bônus, otimizadas em WebP.
+- Foto oficial de Marioth Nobre na seção de apresentação do autor.
 - Degustação interativa com páginas reais do ebook, sem sair da página de vendas.
 - CTAs recorrentes, FAQ expansível e barra fixa de compra para celular.
 - Validação para aceitar somente checkout externo da Hotmart nos botões de compra.
