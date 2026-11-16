@@ -64,6 +64,9 @@ HUBPAGES_SESSION_SECRET=<segredo aleatório exclusivo do ambiente>
 
 DEV e produção devem usar códigos e segredos diferentes.
 
+Na ausência desses arquivos, o site público continua disponível, mas ativação, login e edição permanecem
+desabilitados. Esse modo permite publicar o conteúdo sem criar credenciais padrão ou expor segredos no GitHub.
+
 ## Persistência
 
 - DEV: volume `hubpages_dev_content`.

@@ -22,9 +22,9 @@ services:
       - hubpages_prod_content:/data
     environment:
       APP_ORIGINS: https://hubpages.com.br,https://www.hubpages.com.br
-      HUBPAGES_ADMIN_EMAIL: ${HUBPAGES_ADMIN_EMAIL:?configure em /opt/hubpages-secrets/prod.env}
-      HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${HUBPAGES_BOOTSTRAP_TOKEN_HASH:?configure em /opt/hubpages-secrets/prod.env}
-      HUBPAGES_SESSION_SECRET: ${HUBPAGES_SESSION_SECRET:?configure em /opt/hubpages-secrets/prod.env}
+      HUBPAGES_ADMIN_EMAIL: ${HUBPAGES_ADMIN_EMAIL:-}
+      HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${HUBPAGES_BOOTSTRAP_TOKEN_HASH:-}
+      HUBPAGES_SESSION_SECRET: ${HUBPAGES_SESSION_SECRET:-}
     cpus: 0.25
     mem_limit: 128m
     mem_reservation: 32m

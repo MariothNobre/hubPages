@@ -10,11 +10,14 @@ SISTERA_HEALTH=https://app.sistera.com.br/api/health
 SECRETS_FILE=/opt/hubpages-secrets/prod.env
 
 cd "$REPO"
-[[ -r "$SECRETS_FILE" ]] || { echo "Segredos de produção não configurados em $SECRETS_FILE." >&2; exit 1; }
-set -a
-# shellcheck disable=SC1090
-source "$SECRETS_FILE"
-set +a
+if [[ -r "$SECRETS_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$SECRETS_FILE"
+  set +a
+else
+  echo "Aviso: painel administrativo de produção desativado até configurar $SECRETS_FILE." >&2
+fi
 [[ "$(git branch --show-current)" == main ]] || { echo "A cópia de produção não está na branch main." >&2; exit 1; }
 git diff --quiet && git diff --cached --quiet || { echo "Há alterações locais; atualização interrompida." >&2; exit 1; }
 git pull --ff-only origin main
