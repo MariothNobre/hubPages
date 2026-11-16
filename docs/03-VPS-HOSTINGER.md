@@ -32,7 +32,7 @@ servidor Caddy sem privilégios.
 
 ## Ordem segura de implantação
 
-1. Criar o repositório privado e publicar `main` e `develop`.
+1. Criar o repositório e publicar `main` e `develop`.
 2. Configurar uma chave SSH exclusiva e restrita ao gateway `hubpages-deploy-gateway`.
 3. Executar `deploy/install-vps.sh` para criar os checkouts e containers.
 4. Confirmar os health checks internos e o health check público do Sistera.
@@ -46,3 +46,15 @@ servidor Caddy sem privilégios.
 
 Os websites vazios criados inicialmente no plano de hospedagem compartilhada não serão usados para o deploy.
 Eles não devem ser removidos até a conclusão da virada para a VPS; a remoção é uma ação separada e destrutiva.
+
+## Estado implantado em 16/11/2026
+
+- Checkout de produção criado em `/opt/hubpages-src-prod`, branch `main`.
+- Checkout de homologação criado em `/opt/hubpages-src-dev`, branch `develop`.
+- Projetos `hubpages_prod` e `hubpages_dev` ativos e saudáveis.
+- Imagens iniciais construídas a partir do commit `8a348ed7fd87`.
+- Chave administrativa de bootstrap revogada após a instalação.
+- Chave de deploy permanente restrita ao gateway e aos comandos `dev`, `prod` e `status`.
+- Comandos arbitrários testados e rejeitados pelo gateway.
+- Health check do Sistera validado antes e depois da implantação.
+- DNS e Caddy ainda não alterados, conforme a ordem segura de virada.
