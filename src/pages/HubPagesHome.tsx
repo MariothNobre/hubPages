@@ -28,7 +28,6 @@ export function HubPagesHome() {
                 {content.hero.secondaryAction}
               </a>
             </div>
-            <p className="draft-note">Texto provisório · aguardando conteúdo oficial</p>
           </div>
 
           <div className="editorial-object" aria-hidden="true">
@@ -60,7 +59,7 @@ export function HubPagesHome() {
 
         <section className="first-release" id="ebooks">
           <div className="release-visual" aria-hidden="true">
-            <span>EM BREVE</span>
+            <span>DISPONÍVEL</span>
             <strong>01</strong>
           </div>
           <div className="release-content">

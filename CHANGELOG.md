@@ -9,6 +9,11 @@ semântico.
 
 ### Adicionado
 
+- Página de vendas completa da coleção **Infância Além das Telas**, com oferta de R$ 197,00 por R$ 29,90.
+- Capas oficiais do manual e dos cinco bônus, otimizadas em WebP.
+- Degustação interativa com páginas reais do ebook, sem sair da página de vendas.
+- CTAs recorrentes, FAQ expansível e barra fixa de compra para celular.
+- Validação para aceitar somente checkout externo da Hotmart nos botões de compra.
 - Direção visual provisória para a central HubPages e a página **Infância Além das Telas**.
 - Conteúdo tipado separado dos componentes React.
 - Área administrativa em `/admin` para textos e links comerciais autorizados.
@@ -18,9 +23,7 @@ semântico.
 
 ### Planejado
 
-- Design definitivo da central HubPages.
-- Red Line, oferta e CTAs da página **Infância Além das Telas**.
-- Integração do checkout e da entrega do ebook.
+- Integração do link oficial do checkout e da entrega do ebook na Hotmart.
 
 ## [0.1.0] - 2026-11-15
 

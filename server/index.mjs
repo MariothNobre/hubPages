@@ -128,6 +128,7 @@ function validateSalesContent(value) {
     let ctaUrl
     try { ctaUrl = new URL(value.ctaHref) } catch { throw new Error('O link do botão deve ser uma URL HTTPS válida.') }
     if (ctaUrl.protocol !== 'https:') throw new Error('O link do botão deve usar HTTPS.')
+    if (ctaUrl.hostname !== 'hotmart.com' && !ctaUrl.hostname.endsWith('.hotmart.com')) throw new Error('O link do botão deve direcionar para a Hotmart.')
   }
   if (!Array.isArray(value.sections) || value.sections.length > 12) throw new Error('A estrutura de seções é inválida.')
   return { ...value, ...Object.fromEntries(fields.map((field) => [field, value[field].trim()])) }

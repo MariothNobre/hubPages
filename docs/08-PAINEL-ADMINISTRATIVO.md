@@ -10,7 +10,7 @@ O painel fica disponível em `/admin` e permite editar os campos comerciais libe
 - título principal;
 - texto de abertura;
 - texto do botão;
-- link HTTPS do botão de venda.
+- link HTTPS do checkout Hotmart.
 
 O painel não permite editar código, scripts, HTML arbitrário, configuração da VPS ou dados do Sistera.
 
@@ -40,7 +40,7 @@ O código de ativação em texto puro nunca deve ser salvo no GitHub, em arquivo
 - validação de origem nas operações de escrita;
 - limite de tentativas de autenticação por endereço de rede;
 - limite de tamanho e validação dos campos editáveis;
-- somente links `https://` ou âncoras internas são aceitos;
+- somente links `https://` da Hotmart ou âncoras internas são aceitos;
 - gravação atômica do conteúdo em volume Docker separado;
 - volumes, credenciais e conteúdo separados entre DEV e produção;
 - cabeçalhos CSP, anti-frame e `nosniff`.

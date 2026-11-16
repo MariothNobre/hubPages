@@ -199,9 +199,9 @@ export function AdminPage() {
               <label>
                 Link do botão de vendas
                 <input
-                  type="url"
-                  value={content.ctaHref.startsWith('#') ? '' : content.ctaHref}
-                  placeholder="https://checkout.exemplo.com/..."
+                  type="text"
+                  value={content.ctaHref}
+                  placeholder="https://pay.hotmart.com/..."
                   onChange={(event) => updateField('ctaHref', event.target.value)}
                   required
                 />

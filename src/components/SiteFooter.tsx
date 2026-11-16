@@ -10,7 +10,7 @@ export function SiteFooter() {
         </div>
         <div className="footer-note">
           <span>HubPages</span>
-          <p>Estrutura institucional em desenvolvimento.</p>
+          <p>Ebooks para transformar conhecimento em ação.</p>
         </div>
       </div>
     </footer>

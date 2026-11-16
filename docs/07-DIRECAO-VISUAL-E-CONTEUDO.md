@@ -8,10 +8,21 @@ sem copiar logotipos, textos, imagens, códigos ou identidade visual.
 - **Site institucional:** navegação clara, hero de alto contraste, tipografia ampla, narrativa por etapas e apresentação
   editorial dos ebooks, inspirados na organização observada em `zapper.chat`.
 - **Página de vendas:** Red Line, promessa central, produto em destaque, progressão problema–solução–oferta,
-  CTAs recorrentes, garantia, perguntas frequentes e fechamento, inspirados na estrutura observada em
+  CTAs recorrentes, degustação interativa, perguntas frequentes e fechamento, inspirados na estrutura observada em
   `fichaforte360.com.br`.
-- **Identidade provisória:** verde profundo, verde luminoso e tons de papel na HubPages; a página de cada ebook pode
-  receber uma paleta própria sem perder os elementos de marca.
+- **Identidade da coleção:** verde-petróleo, verde-sálvia, creme, amarelo-mel e terracota, com formas orgânicas,
+  ilustrações das capas oficiais e linguagem visual acolhedora para famílias.
+
+## Página de vendas implementada
+
+- página única, sem navegação para outros sites ou páginas internas;
+- únicos links de saída: botões de compra configurados para checkout Hotmart;
+- degustação em modal com cinco páginas reais do manual;
+- manual principal de 300 páginas e cinco bônus, totalizando 954 páginas;
+- oferta comercial informada pelo responsável: de R$ 197,00 por R$ 29,90;
+- CTAs distribuídos pela narrativa e em cada apresentação de bônus;
+- barra fixa de compra em dispositivos móveis;
+- capas WebP geradas exclusivamente a partir dos PDFs oficiais recebidos.
 
 ## Conteúdo necessário para a HubPages
 

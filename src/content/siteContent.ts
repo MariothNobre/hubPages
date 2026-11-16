@@ -41,8 +41,6 @@ export interface SalesPageContent {
   }>
 }
 
-// Texto provisório de estrutura. O conteúdo oficial fornecido pelo cliente
-// substituirá estes campos antes da publicação da nova experiência.
 export const hubPagesDraft: SiteContent = {
   navigation: [
     { label: 'A HubPages', href: '#sobre' },
@@ -54,7 +52,7 @@ export const hubPagesDraft: SiteContent = {
     title: 'Ideias que encontram',
     highlight: 'quem precisa delas.',
     description:
-      'A HubPages está nascendo como uma central de ebooks: um espaço para descobrir conteúdos, aprofundar temas e transformar conhecimento em ação.',
+      'A HubPages é uma central de ebooks criada para aproximar conteúdos relevantes das pessoas que procuram transformar conhecimento em ação.',
     primaryAction: 'Conhecer o primeiro lançamento',
     secondaryAction: 'Entender a HubPages',
   },
@@ -79,20 +77,20 @@ export const hubPagesDraft: SiteContent = {
     eyebrow: 'Primeiro lançamento',
     title: 'Infância Além das Telas',
     description:
-      'A primeira página de vendas da HubPages está sendo preparada. O conteúdo oficial, a capa e a oferta serão incorporados nesta estrutura.',
-    action: 'Ver página em preparação',
+      'Conheça a coleção digital criada para ajudar famílias a equilibrar o uso de telas e recuperar espaço para brincadeiras, conversas e conexão.',
+    action: 'Conhecer a coleção',
   },
 }
 
 export const infanciaDraft: SalesPageContent = {
-  redLine: 'Conteúdo oficial em preparação',
-  eyebrow: 'Primeiro lançamento HubPages',
-  title: 'Infância Além das Telas',
+  redLine: 'Oferta especial: coleção completa de R$ 197,00 por R$ 29,90',
+  eyebrow: 'Método prático para famílias com crianças de 3 a 10 anos',
+  title: 'Seu filho merece uma infância cheia de memórias, não apenas de telas.',
   description:
-    'A estrutura comercial está pronta para receber a Red Line, a promessa, os benefícios, a apresentação do ebook, a oferta e o checkout.',
-  ctaLabel: 'Ver estrutura preparada',
-  ctaHref: '#estrutura',
-  status: 'Template editorial de vendas',
+    'Descubra uma jornada prática de 30 dias para estabelecer limites com mais clareza, encontrar alternativas ao celular e criar novos momentos de conexão em família.',
+  ctaLabel: 'Quero a coleção completa',
+  ctaHref: '#oferta',
+  status: 'Página oficial de vendas',
   sections: [
     {
       number: '01',
