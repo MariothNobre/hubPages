@@ -370,15 +370,19 @@ html.sales-page-root { scroll-behavior: auto; }
 .sales-v2-footer p { font-size: .72rem; }
 .sales-v2-mobile-cta { display: none; }
 
-.tracking-settings { display: grid; gap: 18px; margin: 10px 0 4px; padding: 22px; border: 1px solid rgba(24,63,58,.2); border-radius: 18px; background: rgba(240,247,241,.62); }
-.tracking-settings legend { padding: 0 8px; font-weight: 900; }
+.tracking-settings { width: 100%; max-width: 680px; justify-self: center; display: grid; gap: 16px; margin: 10px auto 4px; padding: clamp(20px,3vw,28px); border: 1px solid rgba(157,243,176,.32); border-radius: 16px; color: #eaf4ee; background: #102d20; box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 18px 42px rgba(0,0,0,.16); }
+.tracking-settings legend { padding: 0 10px; color: #f4fbf6; background: #0d251a; font-size: .92rem; font-weight: 900; letter-spacing: .01em; }
+.tracking-settings > label:not(.tracking-toggle) { color: #dce9e1; }
+.tracking-settings input[type="text"],.tracking-settings input[type="password"] { height: 46px; border-color: rgba(181,220,194,.3); color: #f7fbf8; background: #071810; }
+.tracking-settings input::placeholder { color: #789086; opacity: 1; }
 .tracking-toggle { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 12px; }
-.tracking-toggle input { width: 20px !important; height: 20px; margin-top: 2px; accent-color: #1c725e; }
+.tracking-toggle input { width: 20px !important; height: 20px; flex: 0 0 20px; margin-top: 2px; accent-color: #78d99a; }
 .tracking-toggle span { display: grid; gap: 4px; }
-.tracking-toggle small,.tracking-help { color: #60746d; font-size: .78rem; line-height: 1.5; }
+.tracking-toggle strong { color: #f0f8f3; }
+.tracking-toggle small,.tracking-help { color: #a7bdb1 !important; font-size: .76rem; line-height: 1.5; }
 .tracking-help { margin: -6px 0 0; }
-.tracking-divider { height: 1px; background: rgba(24,63,58,.14); }
-.tracking-toggle--danger strong { color: #9a342d; }
+.tracking-divider { height: 1px; margin: 2px 0; background: rgba(157,243,176,.16); }
+.tracking-toggle--danger strong { color: #ff9d91; }
 
 .sales-v2-preview { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; }
 .sales-v2-preview__backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(7,29,27,.84); backdrop-filter: blur(8px); cursor: pointer; }
