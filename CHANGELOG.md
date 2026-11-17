@@ -9,6 +9,8 @@ semântico.
 
 ### Adicionado
 
+- Configuração segura do Meta Pixel e da API de Conversões no painel da página **Infância Além das Telas**, com token protegido no servidor, deduplicação por `event_id`, modo de teste e consentimento prévio do visitante.
+
 - Página de vendas completa da coleção **Infância Além das Telas**, com oferta de R$ 197,00 por R$ 29,90.
 - Capas oficiais do manual e dos cinco bônus, otimizadas em WebP.
 - Foto oficial de Marioth Nobre na seção de apresentação do autor.

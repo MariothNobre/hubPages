@@ -34,6 +34,8 @@ export interface SalesPageContent {
   ctaLabel: string
   ctaHref: string
   status: string
+  metaPixelId: string
+  metaPixelEnabled: boolean
   sections: Array<{
     number: string
     title: string
@@ -91,6 +93,8 @@ export const infanciaDraft: SalesPageContent = {
   ctaLabel: 'Quero a coleção completa',
   ctaHref: '#oferta',
   status: 'Página oficial de vendas',
+  metaPixelId: '',
+  metaPixelEnabled: false,
   sections: [
     {
       number: '01',

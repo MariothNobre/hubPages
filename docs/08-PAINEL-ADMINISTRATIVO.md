@@ -11,8 +11,23 @@ O painel fica disponível em `/admin` e permite editar os campos comerciais libe
 - texto de abertura;
 - texto do botão;
 - link HTTPS do checkout Hotmart.
+- ID numérico e ativação do Meta Pixel, exclusivamente para a página de vendas.
 
 O painel não permite editar código, scripts, HTML arbitrário, configuração da VPS ou dados do Sistera.
+
+## Meta Pixel e consentimento
+
+O editor aceita somente o identificador numérico do Pixel. O recurso fica desativado por padrão e não permite
+colar scripts. Quando ativado, o código oficial da Meta é carregado exclusivamente em
+`/infancia_alem_das_telas`, e somente depois que o visitante aceita o rastreamento de marketing. A recusa é
+armazenada no navegador e impede o carregamento do Pixel. O visitante pode reabrir as preferências na própria
+página.
+
+Opcionalmente, o administrador pode informar um token da API de Conversões e um código de evento de teste. O
+token é armazenado no volume privado do servidor, não integra a resposta pública e nunca é devolvido ao
+navegador ou ao painel. Quando configurado, o evento `PageView` é enviado pelo navegador e pelo servidor com o
+mesmo `event_id`, permitindo a deduplicação pela Meta. O envio pelo servidor inclui apenas os dados técnicos
+necessários para o evento web e só ocorre após o consentimento do visitante.
 
 ## Administrador inicial
 

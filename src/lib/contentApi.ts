@@ -24,6 +24,17 @@ export async function getSalesPageContent(): Promise<SalesPageContent> {
   return jsonRequest<SalesPageContent>(`/api/pages/${PAGE_SLUG}`)
 }
 
+export interface MetaTrackingAdminConfig {
+  metaConversionsApiToken: string
+  metaConversionsApiConfigured: boolean
+  metaTestEventCode: string
+  clearMetaConversionsApiToken: boolean
+}
+
+export async function getAdminSalesPageContent(): Promise<SalesPageContent & Pick<MetaTrackingAdminConfig, 'metaConversionsApiConfigured' | 'metaTestEventCode'>> {
+  return jsonRequest(`/api/admin/pages/${PAGE_SLUG}`)
+}
+
 export async function getAdminSession(): Promise<{ authenticated: boolean }> {
   return jsonRequest<{ authenticated: boolean }>('/api/admin/session')
 }
@@ -50,9 +61,9 @@ export async function logoutAdmin(): Promise<void> {
   await jsonRequest('/api/admin/session', { method: 'DELETE' })
 }
 
-export async function saveSalesPageContent(content: SalesPageContent): Promise<SalesPageContent> {
-  return jsonRequest<SalesPageContent>(`/api/admin/pages/${PAGE_SLUG}`, {
+export async function saveSalesPageContent(content: SalesPageContent, tracking: MetaTrackingAdminConfig): Promise<SalesPageContent & Pick<MetaTrackingAdminConfig, 'metaConversionsApiConfigured' | 'metaTestEventCode'>> {
+  return jsonRequest(`/api/admin/pages/${PAGE_SLUG}`, {
     method: 'PUT',
-    body: JSON.stringify(content),
+    body: JSON.stringify({ ...content, ...tracking }),
   })
 }
