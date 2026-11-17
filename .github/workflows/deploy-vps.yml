@@ -33,6 +33,10 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
 
+      - name: Registrar fingerprint público da VPS
+        shell: bash
+        run: ssh-keygen -lf ~/.ssh/known_hosts -E sha256
+
       - name: Publicar ambiente isolado
         shell: bash
         run: |
@@ -48,3 +52,31 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 \
             -p 22 root@179.199.148.219 "$ambiente"
+
+      - name: Provisionar painel administrativo
+        shell: bash
+        env:
+          HUBPAGES_ADMIN_EMAIL: ${{ secrets.HUBPAGES_ADMIN_EMAIL }}
+          HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${{ secrets.HUBPAGES_BOOTSTRAP_TOKEN_HASH }}
+          HUBPAGES_SESSION_SECRET: ${{ secrets.HUBPAGES_SESSION_SECRET }}
+        run: |
+          set -Eeuo pipefail
+          if [[ -z "$HUBPAGES_ADMIN_EMAIL" || -z "$HUBPAGES_BOOTSTRAP_TOKEN_HASH" || -z "$HUBPAGES_SESSION_SECRET" ]]; then
+            echo "Segredos administrativos ausentes; provisionamento não executado."
+            exit 0
+          fi
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            ambiente="provision-prod"
+          else
+            ambiente="provision-dev"
+          fi
+          printf '%s\n%s\n%s\n' \
+            "$HUBPAGES_ADMIN_EMAIL" \
+            "$HUBPAGES_BOOTSTRAP_TOKEN_HASH" \
+            "$HUBPAGES_SESSION_SECRET" | \
+            ssh -i ~/.ssh/id_ed25519 \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              -o ConnectTimeout=15 \
+              -p 22 root@179.199.148.219 "$ambiente"

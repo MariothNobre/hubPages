@@ -40,6 +40,8 @@ pnpm build
 4. [Versionamento e publicação](docs/04-VERSIONAMENTO-E-PUBLICACAO.md)
 5. [Como adicionar um novo ebook](docs/05-NOVO-EBOOK.md)
 6. [Evolução para plataforma dinâmica](docs/06-EVOLUCAO-PLATAFORMA-DINAMICA.md)
+7. [Direção visual e checklist de conteúdo](docs/07-DIRECAO-VISUAL-E-CONTEUDO.md)
+8. [Painel administrativo e primeiro acesso](docs/08-PAINEL-ADMINISTRATIVO.md)
 
 Consulte o [CHANGELOG](CHANGELOG.md) para acompanhar versões e entregas.
 

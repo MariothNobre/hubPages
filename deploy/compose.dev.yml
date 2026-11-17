@@ -18,8 +18,13 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:size=16m,mode=1777
-      - /config:size=8m,uid=10001,gid=10001,mode=0700
-      - /data:size=8m,uid=10001,gid=10001,mode=0700
+    volumes:
+      - hubpages_dev_content:/data
+    environment:
+      APP_ORIGINS: https://dev.hubpages.com.br,https://www.dev.hubpages.com.br
+      HUBPAGES_ADMIN_EMAIL: ${HUBPAGES_ADMIN_EMAIL:-}
+      HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${HUBPAGES_BOOTSTRAP_TOKEN_HASH:-}
+      HUBPAGES_SESSION_SECRET: ${HUBPAGES_SESSION_SECRET:-}
     cpus: 0.25
     mem_limit: 128m
     mem_reservation: 32m
@@ -29,7 +34,7 @@ services:
         aliases:
           - hubpages-dev
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health.json"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health.json').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 15s
       timeout: 3s
       retries: 5
@@ -44,3 +49,7 @@ networks:
   hubpages_proxy:
     external: true
     name: sistera_vps_sistera_internal
+
+volumes:
+  hubpages_dev_content:
+    name: hubpages_dev_content
