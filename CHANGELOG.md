@@ -16,6 +16,7 @@ semântico.
 - CTAs recorrentes, FAQ expansível e barra fixa de compra para celular.
 - Validação para aceitar somente checkout externo da Hotmart nos botões de compra.
 - Modo público seguro que mantém o painel desativado quando os segredos da VPS ainda não foram provisionados.
+- Provisionamento automatizado do primeiro acesso por ambiente através do gateway SSH restrito.
 - Direção visual provisória para a central HubPages e a página **Infância Além das Telas**.
 - Conteúdo tipado separado dos componentes React.
 - Área administrativa em `/admin` para textos e links comerciais autorizados.

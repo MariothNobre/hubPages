@@ -67,6 +67,10 @@ DEV e produção devem usar códigos e segredos diferentes.
 Na ausência desses arquivos, o site público continua disponível, mas ativação, login e edição permanecem
 desabilitados. Esse modo permite publicar o conteúdo sem criar credenciais padrão ou expor segredos no GitHub.
 
+Na esteira oficial, os três valores são armazenados como segredos dos ambientes GitHub `development` e
+`production`. O gateway SSH aceita somente `provision-dev` ou `provision-prod`, valida formato e destinatário,
+grava o arquivo correspondente com permissão `0600` e reinicia apenas o container HubPages daquele ambiente.
+
 ## Persistência
 
 - DEV: volume `hubpages_dev_content`.

@@ -1,12 +1,59 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+provision_admin() {
+  local environment="$1"
+  local secrets_file update_script admin_email bootstrap_hash session_secret temporary_file
+
+  case "$environment" in
+    dev)
+      secrets_file=/opt/hubpages-secrets/dev.env
+      update_script=/opt/hubpages-src-dev/deploy/update-dev.sh
+      ;;
+    prod)
+      secrets_file=/opt/hubpages-secrets/prod.env
+      update_script=/opt/hubpages-src-prod/deploy/update-prod.sh
+      ;;
+    *)
+      echo "Ambiente inválido." >&2
+      exit 64
+      ;;
+  esac
+
+  IFS= read -r admin_email
+  IFS= read -r bootstrap_hash
+  IFS= read -r session_secret
+
+  [[ "$admin_email" == "mjsnobre@hotmail.com" ]] || { echo "E-mail administrativo inválido." >&2; exit 65; }
+  [[ "$bootstrap_hash" =~ ^scrypt\$[A-Za-z0-9_-]{20,}\$[A-Za-z0-9_-]{80,}$ ]] || { echo "Hash de ativação inválido." >&2; exit 65; }
+  [[ "$session_secret" =~ ^[A-Za-z0-9_-]{60,}$ ]] || { echo "Segredo de sessão inválido." >&2; exit 65; }
+
+  install -d -o root -g root -m 0700 /opt/hubpages-secrets
+  temporary_file="$(mktemp /opt/hubpages-secrets/.${environment}.env.XXXXXX)"
+  trap 'rm -f "$temporary_file"' EXIT
+  umask 077
+  printf 'HUBPAGES_ADMIN_EMAIL=%s\nHUBPAGES_BOOTSTRAP_TOKEN_HASH=%s\nHUBPAGES_SESSION_SECRET=%s\n' \
+    "$admin_email" "$bootstrap_hash" "$session_secret" > "$temporary_file"
+  chown root:root "$temporary_file"
+  chmod 0600 "$temporary_file"
+  mv -f "$temporary_file" "$secrets_file"
+  trap - EXIT
+
+  exec bash "$update_script"
+}
+
 case "${SSH_ORIGINAL_COMMAND:-}" in
   dev)
     exec bash /opt/hubpages-src-dev/deploy/update-dev.sh
     ;;
   prod)
     exec bash /opt/hubpages-src-prod/deploy/update-prod.sh
+    ;;
+  provision-dev)
+    provision_admin dev
+    ;;
+  provision-prod)
+    provision_admin prod
     ;;
   status)
     docker compose -p hubpages_dev -f /opt/hubpages-src-dev/deploy/compose.dev.yml ps

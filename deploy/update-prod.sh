@@ -22,6 +22,8 @@ fi
 git diff --quiet && git diff --cached --quiet || { echo "Há alterações locais; atualização interrompida." >&2; exit 1; }
 git pull --ff-only origin main
 
+install -o root -g root -m 0755 "$REPO/deploy/hubpages-deploy-gateway" /usr/local/sbin/hubpages-deploy-gateway
+
 curl --silent --show-error --fail --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
 
 tag="$(git rev-parse --short=12 HEAD)"
