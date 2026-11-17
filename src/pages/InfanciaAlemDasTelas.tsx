@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { infanciaDraft } from '../content/siteContent'
 import { getSalesPageContent } from '../lib/contentApi'
 
@@ -11,11 +11,18 @@ const bonuses = [
 ]
 
 const previewPages = [
-  { image: '/assets/books/sample-capa.webp', label: 'Capa oficial' },
-  { image: '/assets/books/sample-metodo.webp', label: 'O Método Reconexão' },
-  { image: '/assets/books/sample-primeiro-passo.webp', label: 'Primeiro espaço de conexão' },
-  { image: '/assets/books/sample-dia-01.webp', label: 'Como escolher o ritmo' },
-  { image: '/assets/books/sample-ferramentas.webp', label: 'Índice de ferramentas' },
+  { image: '/assets/samples/01-mundo-conectado.webp', source: 'Livro principal', label: 'A infância em um mundo conectado', teaser: 'Uma pergunta essencial: que lugar as telas ocupam na rotina da sua família?' },
+  { image: '/assets/samples/02-rotina-familia.webp', source: 'Livro principal', label: 'Conhecendo a rotina da família', teaser: 'Antes de mudar, observe: horários, hábitos e oportunidades começam a aparecer.' },
+  { image: '/assets/samples/03-nao-quer-desligar.webp', source: 'Livro principal', label: 'Quando a criança não quer desligar', teaser: 'Um caminho prático para atravessar a resistência sem transformar tudo em confronto.' },
+  { image: '/assets/samples/04-caixa-assuntos.webp', source: '100 Brincadeiras Fora das Telas', label: 'A Caixa dos Assuntos Surpresa', teaser: 'Uma brincadeira simples que abre conversas, imaginação e conexão.' },
+  { image: '/assets/samples/05-roda-descobertas.webp', source: '100 Brincadeiras Fora das Telas', label: 'A Roda das Pequenas Descobertas', teaser: 'Olhar de novo para o cotidiano pode revelar coisas que passavam despercebidas.' },
+  { image: '/assets/samples/06-super-herois-cuidado.webp', source: '100 Brincadeiras Fora das Telas', label: 'Super-Heróis do Cuidado', teaser: 'Transforme pequenos gestos de ajuda em missões que envolvem toda a família.' },
+  { image: '/assets/samples/07-oficina-fantoches.webp', source: '100 Brincadeiras Fora das Telas', label: 'Oficina de Fantoches', teaser: 'Papel, imaginação e personagens capazes de contar o que as palavras ainda não contam.' },
+  { image: '/assets/samples/08-mascaras-emocoes.webp', source: '100 Brincadeiras Fora das Telas', label: 'Máscaras das Emoções', teaser: 'Uma atividade visual para reconhecer, representar e conversar sobre sentimentos.' },
+  { image: '/assets/samples/09-circuito-equilibrio.webp', source: '100 Brincadeiras Fora das Telas', label: 'Circuito do Equilíbrio', teaser: 'Movimento, adaptação e participação: cada criança encontra seu próprio percurso.' },
+  { image: '/assets/samples/10-jogo-semaforo.webp', source: '100 Brincadeiras Fora das Telas', label: 'O Jogo do Semáforo', teaser: 'Corpo em movimento e sinais simples para brincar com atenção e autocontrole.' },
+  { image: '/assets/samples/11-reflexao-especial.webp', source: 'Calendário da Reconexão', label: 'Dia 10 — Uma Reflexão Especial', teaser: 'Uma pequena missão para criar espaço de conversa durante um momento possível.' },
+  { image: '/assets/samples/12-cartoes-emocoes.webp', source: 'Calendário da Reconexão', label: 'Cartões das Emoções', teaser: 'Um recurso ilustrado para a criança identificar e nomear como está se sentindo.' },
 ]
 
 const methodSteps = [
@@ -48,6 +55,7 @@ export function InfanciaAlemDasTelas() {
   const [content, setContent] = useState(infanciaDraft)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewIndex, setPreviewIndex] = useState(0)
+  const previewTouchStart = useRef<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -144,8 +152,8 @@ export function InfanciaAlemDasTelas() {
         </section>
 
         <section className="sales-v2-tasting">
-          <div className="sales-v2-tasting__copy"><p className="sales-v2-kicker">Degustação gratuita</p><h2>Abra o livro. Conheça o método por dentro.</h2><p>Veja páginas reais do manual, a estrutura de reconexão e algumas das ferramentas que você poderá aplicar em casa.</p><button className="sales-v2-preview-button sales-v2-preview-button--large" type="button" onClick={openPreview}>Abrir degustação interativa <span>▻</span></button></div>
-          <button className="sales-v2-tasting__book" type="button" onClick={openPreview} aria-label="Abrir degustação do livro"><img src="/assets/books/sample-primeiro-passo.webp" alt="Amostra de uma página do ebook" /><span>Toque para folhear</span></button>
+          <div className="sales-v2-tasting__copy"><p className="sales-v2-kicker">12 páginas reais para explorar</p><h2>Abra a coleção. Descubra ideias que já dão vontade de experimentar.</h2><p>Folheie uma seleção não sequencial do manual, das brincadeiras e do calendário. São páginas ilustradas, atividades práticas e ferramentas que mostram como a coleção transforma orientação em momentos possíveis.</p><button className="sales-v2-preview-button sales-v2-preview-button--large" type="button" onClick={openPreview}>Começar a degustação <span>▻</span></button><small>Use as setas, o teclado ou deslize no celular.</small></div>
+          <button className="sales-v2-tasting__book sales-v2-tasting__book--stack" type="button" onClick={openPreview} aria-label="Abrir degustação interativa com 12 páginas"><img src="/assets/samples/07-oficina-fantoches.webp" alt="Página ilustrada Oficina de Fantoches" /><img src="/assets/samples/11-reflexao-especial.webp" alt="Página ilustrada do Calendário da Reconexão" /><img src="/assets/samples/12-cartoes-emocoes.webp" alt="Cartões ilustrados das emoções" /><span>12 páginas · toque para folhear</span></button>
         </section>
 
         <section className="sales-v2-manual">
@@ -180,7 +188,7 @@ export function InfanciaAlemDasTelas() {
       <footer className="sales-v2-footer"><div className="sales-v2-logo sales-v2-logo--footer"><span>Hub</span><strong>Pages</strong><i /></div><p>Infância Além das Telas · Marioth Nobre · Edição nº 01 · 2026</p></footer>
       <div className="sales-v2-mobile-cta"><div><s>R$ 197,00</s><strong>R$ 29,90</strong></div><a href={content.ctaHref}>{content.ctaLabel}</a></div>
 
-      {previewOpen && <div className="sales-v2-preview" role="dialog" aria-modal="true" aria-label="Degustação do ebook"><button className="sales-v2-preview__backdrop" type="button" onClick={() => setPreviewOpen(false)} aria-label="Fechar degustação" /><div className="sales-v2-preview__panel"><div className="sales-v2-preview__header"><div><span>Degustação · página {previewIndex + 1} de {previewPages.length}</span><strong>{previewPages[previewIndex].label}</strong></div><button type="button" onClick={() => setPreviewOpen(false)} aria-label="Fechar">×</button></div><div className="sales-v2-preview__viewer"><button type="button" onClick={() => setPreviewIndex((previewIndex - 1 + previewPages.length) % previewPages.length)} aria-label="Página anterior">‹</button><img src={previewPages[previewIndex].image} alt={previewPages[previewIndex].label} /><button type="button" onClick={() => setPreviewIndex((previewIndex + 1) % previewPages.length)} aria-label="Próxima página">›</button></div><div className="sales-v2-preview__dots">{previewPages.map((page, index) => <button className={index === previewIndex ? 'is-active' : ''} type="button" key={page.image} onClick={() => setPreviewIndex(index)} aria-label={`Ver ${page.label}`} />)}</div><div className="sales-v2-preview__footer"><p>Gostou do que viu? A coleção completa reúne 954 páginas.</p>{buyButton('sales-v2-button sales-v2-button--preview')}</div></div></div>}
+      {previewOpen && <div className="sales-v2-preview" role="dialog" aria-modal="true" aria-label="Degustação interativa da coleção"><button className="sales-v2-preview__backdrop" type="button" onClick={() => setPreviewOpen(false)} aria-label="Fechar degustação" /><div className="sales-v2-preview__panel"><div className="sales-v2-preview__header"><div><span>{previewPages[previewIndex].source} · página {previewIndex + 1} de {previewPages.length}</span><strong>{previewPages[previewIndex].label}</strong></div><button type="button" onClick={() => setPreviewOpen(false)} aria-label="Fechar">×</button></div><div className="sales-v2-preview__progress" aria-hidden="true"><span style={{ width: `${((previewIndex + 1) / previewPages.length) * 100}%` }} /></div><div className="sales-v2-preview__viewer" onTouchStart={(event) => { previewTouchStart.current = event.touches[0]?.clientX ?? null }} onTouchEnd={(event) => { const start = previewTouchStart.current; const end = event.changedTouches[0]?.clientX; previewTouchStart.current = null; if (start == null || end == null || Math.abs(start - end) < 45) return; setPreviewIndex((current) => start > end ? (current + 1) % previewPages.length : (current - 1 + previewPages.length) % previewPages.length) }}><button type="button" onClick={() => setPreviewIndex((previewIndex - 1 + previewPages.length) % previewPages.length)} aria-label="Página anterior">‹</button><figure><img src={previewPages[previewIndex].image} alt={previewPages[previewIndex].label} /><figcaption>{previewPages[previewIndex].teaser}</figcaption></figure><button type="button" onClick={() => setPreviewIndex((previewIndex + 1) % previewPages.length)} aria-label="Próxima página">›</button></div><div className="sales-v2-preview__thumbs" aria-label="Escolher uma página da degustação">{previewPages.map((page, index) => <button className={index === previewIndex ? 'is-active' : ''} type="button" key={page.image} onClick={() => setPreviewIndex(index)} aria-label={`Ver ${page.label}`} aria-current={index === previewIndex ? 'true' : undefined}><img src={page.image} alt="" /><span>{index + 1}</span></button>)}</div><div className="sales-v2-preview__footer"><p><strong>Você viu só 12 páginas.</strong> A coleção completa reúne 954 páginas de orientação, atividades e ferramentas.</p>{buyButton('sales-v2-button sales-v2-button--preview')}</div></div></div>}
     </div>
   )
 }
