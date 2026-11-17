@@ -24,7 +24,7 @@ git pull --ff-only origin develop
 
 install -o root -g root -m 0755 "$REPO/deploy/hubpages-deploy-gateway" /usr/local/sbin/hubpages-deploy-gateway
 
-curl --silent --show-error --fail --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
+curl --silent --show-error --fail --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
 
 tag="$(git rev-parse --short=12 HEAD)"
 IMAGE_TAG="$tag" docker compose -p hubpages_dev -f "$COMPOSE_FILE" config --quiet
@@ -33,6 +33,6 @@ IMAGE_TAG="$tag" docker compose -p hubpages_dev -f "$COMPOSE_FILE" up -d --no-bu
 
 container="$(docker compose -p hubpages_dev -f "$COMPOSE_FILE" ps -q hubpages-dev)"
 [[ -n "$container" ]] || { echo "Contêiner DEV não encontrado." >&2; exit 1; }
-curl --silent --show-error --fail --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
+curl --silent --show-error --fail --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
 
 echo "HubPages DEV atualizado para $tag."
