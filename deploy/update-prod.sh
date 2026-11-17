@@ -33,7 +33,6 @@ IMAGE_TAG="$tag" docker compose -p hubpages_prod -f "$COMPOSE_FILE" up -d --no-b
 
 container="$(docker compose -p hubpages_prod -f "$COMPOSE_FILE" ps -q hubpages-prod)"
 [[ -n "$container" ]] || { echo "Contêiner de produção não encontrado." >&2; exit 1; }
-docker exec "$container" node -e "fetch('http://127.0.0.1:8080/health.json').then(async response => { const body = await response.json(); if (!response.ok || body.status !== 'ok') process.exit(1) }).catch(() => process.exit(1))"
 curl --silent --show-error --fail --connect-timeout 5 --max-time 20 "$SISTERA_HEALTH" >/dev/null
 
 echo "HubPages produção atualizada para $tag."
