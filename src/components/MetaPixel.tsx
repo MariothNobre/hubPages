@@ -1,8 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-
-const CONSENT_KEY = 'hubpages_meta_pixel_consent'
-
-type Consent = 'granted' | 'denied' | null
+import { useEffect, useRef } from 'react'
 type Fbq = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void
   queue: unknown[][]
@@ -16,11 +12,6 @@ declare global {
     fbq?: Fbq
     _fbq?: Fbq
   }
-}
-
-function readConsent(): Consent {
-  const stored = window.localStorage.getItem(CONSENT_KEY)
-  return stored === 'granted' || stored === 'denied' ? stored : null
 }
 
 function cookieValue(name: string) {
@@ -72,42 +63,14 @@ interface MetaPixelProps {
 
 export function MetaPixel({ enabled, pixelId }: MetaPixelProps) {
   const validConfiguration = enabled && /^\d{5,30}$/.test(pixelId)
-  const [consent, setConsent] = useState<Consent>(() => readConsent())
-  const [preferencesOpen, setPreferencesOpen] = useState(false)
   const tracked = useRef(false)
 
   useEffect(() => {
-    if (validConfiguration && consent === 'granted' && !tracked.current) {
+    if (validConfiguration && !tracked.current) {
       tracked.current = true
       initializePixel(pixelId, window.crypto.randomUUID())
     }
-  }, [consent, pixelId, validConfiguration])
+  }, [pixelId, validConfiguration])
 
-  if (!validConfiguration) return null
-
-  const decide = (decision: Exclude<Consent, null>) => {
-    window.localStorage.setItem(CONSENT_KEY, decision)
-    setConsent(decision)
-    setPreferencesOpen(false)
-  }
-
-  return (
-    <>
-      {(consent === null || preferencesOpen) && (
-        <aside className="pixel-consent" role="dialog" aria-label="Preferências de privacidade" aria-live="polite">
-          <div>
-            <strong>Você escolhe como sua visita é medida</strong>
-            <p>Com sua permissão, a HubPages usa o Meta Pixel nesta página para medir visitas e melhorar campanhas. Sem aceitar, nenhum rastreamento da Meta é carregado.</p>
-          </div>
-          <div className="pixel-consent__actions">
-            <button type="button" className="pixel-consent__reject" onClick={() => decide('denied')}>Continuar sem rastreamento</button>
-            <button type="button" className="pixel-consent__accept" onClick={() => decide('granted')}>Aceitar rastreamento</button>
-          </div>
-        </aside>
-      )}
-      {consent !== null && !preferencesOpen && (
-        <button className="pixel-preferences" type="button" onClick={() => setPreferencesOpen(true)}>Preferências de privacidade</button>
-      )}
-    </>
-  )
+  return null
 }

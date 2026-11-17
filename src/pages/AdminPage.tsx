@@ -250,7 +250,7 @@ export function AdminPage() {
                     required={content.metaPixelEnabled}
                   />
                 </label>
-                <p className="tracking-help">Informe somente o identificador numérico. O evento PageView será enviado após o visitante aceitar o rastreamento de marketing.</p>
+                <p className="tracking-help">Informe somente o identificador numérico. Quando ativado, o evento PageView será enviado automaticamente em cada visita à página de vendas.</p>
                 <div className="tracking-divider" />
                 <label>
                   Token da API de Conversões (opcional)
@@ -279,7 +279,7 @@ export function AdminPage() {
                     <span><strong>Remover token salvo</strong><small>Desativa o envio pelo servidor após salvar.</small></span>
                   </label>
                 )}
-                <p className="tracking-help">O token é sigiloso: fica armazenado somente no volume privado do servidor e nunca é enviado à página pública. Com ele, o PageView também é enviado pela API e deduplicado pelo mesmo event_id.</p>
+                <p className="tracking-help">O token é sigiloso: fica armazenado somente no volume privado do servidor e nunca é enviado à página pública. Com ele, o PageView também é enviado automaticamente pela API e deduplicado pelo mesmo event_id.</p>
               </fieldset>
               <div className="form-actions form-wide">
                 <a href="/infancia_alem_das_telas" target="_blank" rel="noreferrer">Visualizar página ↗</a>
