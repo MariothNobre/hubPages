@@ -6,7 +6,7 @@ import {
   getAdminSession,
   getAdminSetupStatus,
   activateAdmin,
-  getSalesPageContent,
+  getAdminSalesPageContent,
   loginAdmin,
   logoutAdmin,
   saveSalesPageContent,
@@ -24,6 +24,18 @@ export function AdminPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [apiToken, setApiToken] = useState('')
+  const [apiConfigured, setApiConfigured] = useState(false)
+  const [clearApiToken, setClearApiToken] = useState(false)
+  const [testEventCode, setTestEventCode] = useState('')
+
+  function applyAdminContent(saved: SalesPageContent & { metaConversionsApiConfigured?: boolean; metaTestEventCode?: string }) {
+    setContent({ ...infanciaDraft, ...saved })
+    setApiConfigured(saved.metaConversionsApiConfigured === true)
+    setTestEventCode(saved.metaTestEventCode ?? '')
+    setApiToken('')
+    setClearApiToken(false)
+  }
 
   useEffect(() => {
     getAdminSession()
@@ -34,8 +46,8 @@ export function AdminPage() {
           return
         }
 
-        const saved = await getSalesPageContent().catch(() => infanciaDraft)
-        setContent(saved)
+        const saved = await getAdminSalesPageContent().catch(() => infanciaDraft)
+        applyAdminContent(saved)
         setView('editor')
       })
       .catch(() => {
@@ -49,8 +61,8 @@ export function AdminPage() {
     setError('')
     try {
       await loginAdmin(email, password)
-      const saved = await getSalesPageContent().catch(() => infanciaDraft)
-      setContent(saved)
+      const saved = await getAdminSalesPageContent().catch(() => infanciaDraft)
+      applyAdminContent(saved)
       setPassword('')
       setView('editor')
     } catch (loginError) {
@@ -84,8 +96,13 @@ export function AdminPage() {
     setError('')
     setMessage('')
     try {
-      const saved = await saveSalesPageContent(content)
-      setContent(saved)
+      const saved = await saveSalesPageContent(content, {
+        metaConversionsApiToken: apiToken,
+        metaConversionsApiConfigured: apiConfigured,
+        metaTestEventCode: testEventCode,
+        clearMetaConversionsApiToken: clearApiToken,
+      })
+      applyAdminContent(saved)
       setMessage('Alterações salvas. A página pública já usa o conteúdo atualizado.')
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Não foi possível salvar.')
@@ -206,6 +223,64 @@ export function AdminPage() {
                   required
                 />
               </label>
+              <fieldset className="tracking-settings form-wide">
+                <legend>Rastreamento da página de vendas</legend>
+                <label className="tracking-toggle">
+                  <input
+                    type="checkbox"
+                    checked={content.metaPixelEnabled}
+                    onChange={(event) => updateField('metaPixelEnabled', event.target.checked)}
+                  />
+                  <span>
+                    <strong>Ativar Meta Pixel</strong>
+                    <small>Aplica-se somente à página “Infância Além das Telas”.</small>
+                  </span>
+                </label>
+                <label>
+                  ID do Meta Pixel
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    pattern="[0-9]*"
+                    maxLength={30}
+                    value={content.metaPixelId}
+                    placeholder="Ex.: 123456789012345"
+                    onChange={(event) => updateField('metaPixelId', event.target.value.replace(/\D/g, ''))}
+                    required={content.metaPixelEnabled}
+                  />
+                </label>
+                <p className="tracking-help">Informe somente o identificador numérico. O evento PageView será enviado após o visitante aceitar o rastreamento de marketing.</p>
+                <div className="tracking-divider" />
+                <label>
+                  Token da API de Conversões (opcional)
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={apiToken}
+                    placeholder={apiConfigured ? 'Token já configurado — deixe vazio para manter' : 'Cole o token de acesso da Meta'}
+                    onChange={(event) => { setApiToken(event.target.value); setClearApiToken(false) }}
+                  />
+                </label>
+                <label>
+                  Código de evento de teste (opcional)
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    maxLength={100}
+                    value={testEventCode}
+                    placeholder="Ex.: TEST12345"
+                    onChange={(event) => setTestEventCode(event.target.value)}
+                  />
+                </label>
+                {apiConfigured && (
+                  <label className="tracking-toggle tracking-toggle--danger">
+                    <input type="checkbox" checked={clearApiToken} onChange={(event) => setClearApiToken(event.target.checked)} />
+                    <span><strong>Remover token salvo</strong><small>Desativa o envio pelo servidor após salvar.</small></span>
+                  </label>
+                )}
+                <p className="tracking-help">O token é sigiloso: fica armazenado somente no volume privado do servidor e nunca é enviado à página pública. Com ele, o PageView também é enviado pela API e deduplicado pelo mesmo event_id.</p>
+              </fieldset>
               <div className="form-actions form-wide">
                 <a href="/infancia_alem_das_telas" target="_blank" rel="noreferrer">Visualizar página ↗</a>
                 <button type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar alterações'}</button>

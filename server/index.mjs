@@ -27,7 +27,7 @@ function securityHeaders(response) {
   response.setHeader('X-Content-Type-Options', 'nosniff')
   response.setHeader('X-Frame-Options', 'DENY')
   response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
+  response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https://www.facebook.com; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
 }
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
@@ -131,7 +131,66 @@ function validateSalesContent(value) {
     if (ctaUrl.hostname !== 'hotmart.com' && !ctaUrl.hostname.endsWith('.hotmart.com')) throw new Error('O link do botão deve direcionar para a Hotmart.')
   }
   if (!Array.isArray(value.sections) || value.sections.length > 12) throw new Error('A estrutura de seções é inválida.')
-  return { ...value, ...Object.fromEntries(fields.map((field) => [field, value[field].trim()])) }
+  const metaPixelEnabled = value.metaPixelEnabled === true
+  const metaPixelId = typeof value.metaPixelId === 'string' ? value.metaPixelId.trim() : ''
+  if (metaPixelId && !/^\d{5,30}$/.test(metaPixelId)) throw new Error('O ID do Meta Pixel deve conter somente números.')
+  if (metaPixelEnabled && !metaPixelId) throw new Error('Informe o ID do Meta Pixel antes de ativar o rastreamento.')
+  return { ...value, ...Object.fromEntries(fields.map((field) => [field, value[field].trim()])), metaPixelEnabled, metaPixelId }
+}
+
+function publicSalesContent(value) {
+  const { metaConversionsApiToken, metaTestEventCode, clearMetaConversionsApiToken, ...publicValue } = value ?? {}
+  return publicValue
+}
+
+function adminSalesContent(page, tracking) {
+  return {
+    ...publicSalesContent(page),
+    metaConversionsApiConfigured: Boolean(tracking?.accessToken),
+    metaTestEventCode: tracking?.testEventCode ?? '',
+  }
+}
+
+async function sendMetaPageView(request, response, body) {
+  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  if (!body || typeof body.eventId !== 'string' || !/^[a-f0-9-]{20,64}$/i.test(body.eventId)) return sendJson(response, 422, { message: 'Evento inválido.' })
+
+  let sourceUrl
+  try { sourceUrl = new URL(body.eventSourceUrl) }
+  catch { return sendJson(response, 422, { message: 'Origem do evento inválida.' }) }
+  if (!allowedOrigins.has(sourceUrl.origin) || sourceUrl.pathname !== '/infancia_alem_das_telas') return sendJson(response, 422, { message: 'Origem do evento inválida.' })
+
+  const store = await loadStore()
+  const page = store.pages?.infancia_alem_das_telas
+  const tracking = store.tracking?.infancia_alem_das_telas
+  if (!page?.metaPixelEnabled || !/^\d{5,30}$/.test(page.metaPixelId ?? '') || !tracking?.accessToken) return sendJson(response, 202, { accepted: false })
+
+  const userData = { client_user_agent: request.headers['user-agent'] ?? '' }
+  if (typeof body.fbp === 'string' && /^fb\.1\.\d+\.[A-Za-z0-9_-]+$/.test(body.fbp)) userData.fbp = body.fbp
+  if (typeof body.fbc === 'string' && /^fb\.1\.\d+\.[A-Za-z0-9_-]+$/.test(body.fbc)) userData.fbc = body.fbc
+  const payload = {
+    data: [{
+      event_name: 'PageView',
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: body.eventId,
+      event_source_url: sourceUrl.toString(),
+      action_source: 'website',
+      user_data: userData,
+    }],
+  }
+  if (tracking.testEventCode) payload.test_event_code = tracking.testEventCode
+
+  const metaResponse = await fetch(`https://graph.facebook.com/v25.0/${page.metaPixelId}/events`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${tracking.accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!metaResponse.ok) {
+    console.error(`Meta Conversions API rejeitou o evento (${metaResponse.status}).`)
+    return sendJson(response, 502, { message: 'A Meta não aceitou o evento.' })
+  }
+  return sendJson(response, 202, { accepted: true })
 }
 
 async function handleApi(request, response, url) {
@@ -141,6 +200,7 @@ async function handleApi(request, response, url) {
     const store = await loadStore()
     return sendJson(response, 200, { needsSetup: !store.admin?.passwordHash })
   }
+  if (request.method === 'POST' && url.pathname === '/api/meta/events') return sendMetaPageView(request, response, await readJsonBody(request))
 
   if (request.method === 'POST' && url.pathname === '/api/admin/activate') {
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
@@ -183,19 +243,36 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && publicPage) {
     const store = await loadStore()
     const page = store.pages?.[publicPage[1]]
-    return page ? sendJson(response, 200, page) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
+    return page ? sendJson(response, 200, publicSalesContent(page)) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
   }
 
   const adminPage = url.pathname.match(/^\/api\/admin\/pages\/([a-z0-9_]+)$/)
+  if (request.method === 'GET' && adminPage) {
+    if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
+    const store = await loadStore()
+    const page = store.pages?.[adminPage[1]]
+    return page ? sendJson(response, 200, adminSalesContent(page, store.tracking?.[adminPage[1]])) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
+  }
   if (request.method === 'PUT' && adminPage) {
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
-    const content = validateSalesContent(await readJsonBody(request))
+    const body = await readJsonBody(request)
+    const content = validateSalesContent(body)
+    const newToken = typeof body.metaConversionsApiToken === 'string' ? body.metaConversionsApiToken.trim() : ''
+    if (newToken.length > 512) return sendJson(response, 422, { message: 'O token da API de Conversões excede o limite permitido.' })
+    const testEventCode = typeof body.metaTestEventCode === 'string' ? body.metaTestEventCode.trim() : ''
+    if (testEventCode && !/^[A-Za-z0-9_-]{1,100}$/.test(testEventCode)) return sendJson(response, 422, { message: 'O código de evento de teste contém caracteres inválidos.' })
     const store = await loadStore()
     store.pages ??= {}
-    store.pages[adminPage[1]] = content
+    store.tracking ??= {}
+    store.pages[adminPage[1]] = publicSalesContent(content)
+    const previousToken = store.tracking[adminPage[1]]?.accessToken ?? ''
+    store.tracking[adminPage[1]] = {
+      accessToken: body.clearMetaConversionsApiToken === true ? '' : (newToken || previousToken),
+      testEventCode,
+    }
     await saveStore(store)
-    return sendJson(response, 200, content)
+    return sendJson(response, 200, adminSalesContent(content, store.tracking[adminPage[1]]))
   }
   return sendJson(response, 404, { message: 'Rota não encontrada.' })
 }
