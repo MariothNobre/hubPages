@@ -33,6 +33,10 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
 
+      - name: Registrar fingerprint público da VPS
+        shell: bash
+        run: ssh-keygen -lf ~/.ssh/known_hosts -E sha256
+
       - name: Publicar ambiente isolado
         shell: bash
         run: |

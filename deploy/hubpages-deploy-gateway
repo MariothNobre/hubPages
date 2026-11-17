@@ -32,7 +32,7 @@ provision_admin() {
   temporary_file="$(mktemp /opt/hubpages-secrets/.${environment}.env.XXXXXX)"
   trap 'rm -f "$temporary_file"' EXIT
   umask 077
-  printf 'HUBPAGES_ADMIN_EMAIL=%s\nHUBPAGES_BOOTSTRAP_TOKEN_HASH=%s\nHUBPAGES_SESSION_SECRET=%s\n' \
+  printf 'HUBPAGES_ADMIN_EMAIL=%q\nHUBPAGES_BOOTSTRAP_TOKEN_HASH=%q\nHUBPAGES_SESSION_SECRET=%q\n' \
     "$admin_email" "$bootstrap_hash" "$session_secret" > "$temporary_file"
   chown root:root "$temporary_file"
   chmod 0600 "$temporary_file"
