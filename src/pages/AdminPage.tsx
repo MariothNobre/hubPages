@@ -1,20 +1,24 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Brand } from '../components/Brand'
-import { infanciaDraft, type SalesPageContent } from '../content/siteContent'
+import { infanciaDraft, infanciaEsDraft, type SalesPageContent } from '../content/siteContent'
 import {
   getAdminSession,
   getAdminSetupStatus,
   activateAdmin,
   getAdminSalesPageContent,
+  getAdminAnalytics,
   loginAdmin,
   logoutAdmin,
   saveSalesPageContent,
+  type PageAnalytics,
+  type SalesPageSlug,
 } from '../lib/contentApi'
 
 type ViewState = 'checking' | 'activate' | 'login' | 'editor'
 
 export function AdminPage() {
+  const [pageSlug, setPageSlug] = useState<SalesPageSlug>('infancia_alem_das_telas')
   const [view, setView] = useState<ViewState>('checking')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,14 +32,38 @@ export function AdminPage() {
   const [apiConfigured, setApiConfigured] = useState(false)
   const [clearApiToken, setClearApiToken] = useState(false)
   const [testEventCode, setTestEventCode] = useState('')
+  const [analytics, setAnalytics] = useState<PageAnalytics[]>([])
 
-  function applyAdminContent(saved: SalesPageContent & { metaConversionsApiConfigured?: boolean; metaTestEventCode?: string }) {
-    setContent({ ...infanciaDraft, ...saved })
+  const pageName = pageSlug === 'infancia_alem_das_telas_es' ? 'Infancia Más Allá de las Pantallas' : 'Infância Além das Telas'
+  const pagePath = `/${pageSlug}`
+
+  const applyAdminContent = useCallback((saved: SalesPageContent & { metaConversionsApiConfigured?: boolean; metaTestEventCode?: string }, slug: SalesPageSlug) => {
+    const draft = slug === 'infancia_alem_das_telas_es' ? infanciaEsDraft : infanciaDraft
+    setContent({ ...draft, ...saved })
     setApiConfigured(saved.metaConversionsApiConfigured === true)
     setTestEventCode(saved.metaTestEventCode ?? '')
     setApiToken('')
     setClearApiToken(false)
-  }
+  }, [])
+
+  const loadPage = useCallback(async (slug: SalesPageSlug) => {
+    const draft = slug === 'infancia_alem_das_telas_es' ? infanciaEsDraft : infanciaDraft
+    try {
+      const saved = await getAdminSalesPageContent(slug)
+      applyAdminContent(saved, slug)
+    } catch {
+      if (slug === 'infancia_alem_das_telas_es') {
+        const portuguese = await getAdminSalesPageContent('infancia_alem_das_telas').catch(() => null)
+        applyAdminContent({
+          ...draft,
+          metaPixelId: portuguese?.metaPixelId ?? '',
+          metaPixelEnabled: portuguese?.metaPixelEnabled ?? false,
+          metaConversionsApiConfigured: portuguese?.metaConversionsApiConfigured ?? false,
+          metaTestEventCode: portuguese?.metaTestEventCode ?? '',
+        }, slug)
+      } else applyAdminContent(draft, slug)
+    }
+  }, [applyAdminContent])
 
   useEffect(() => {
     getAdminSession()
@@ -46,23 +74,21 @@ export function AdminPage() {
           return
         }
 
-        const saved = await getAdminSalesPageContent().catch(() => infanciaDraft)
-        applyAdminContent(saved)
+        await loadPage('infancia_alem_das_telas')
         setView('editor')
       })
       .catch(() => {
         setError('O painel ainda não está conectado ao servidor de administração.')
         setView('login')
       })
-  }, [])
+  }, [loadPage])
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     try {
       await loginAdmin(email, password)
-      const saved = await getAdminSalesPageContent().catch(() => infanciaDraft)
-      applyAdminContent(saved)
+      await loadPage(pageSlug)
       setPassword('')
       setView('editor')
     } catch (loginError) {
@@ -96,19 +122,35 @@ export function AdminPage() {
     setError('')
     setMessage('')
     try {
-      const saved = await saveSalesPageContent(content, {
+      const saved = await saveSalesPageContent(pageSlug, content, {
         metaConversionsApiToken: apiToken,
         metaConversionsApiConfigured: apiConfigured,
         metaTestEventCode: testEventCode,
         clearMetaConversionsApiToken: clearApiToken,
       })
-      applyAdminContent(saved)
+      applyAdminContent(saved, pageSlug)
       setMessage('Alterações salvas. A página pública já usa o conteúdo atualizado.')
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Não foi possível salvar.')
     } finally {
       setSaving(false)
     }
+  }
+
+  useEffect(() => {
+    if (view !== 'editor') return
+    let active = true
+    const refresh = () => getAdminAnalytics().then((result) => { if (active) setAnalytics(result.pages) }).catch(() => undefined)
+    refresh()
+    const timer = window.setInterval(refresh, 10000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [view])
+
+  async function handlePageChange(slug: SalesPageSlug) {
+    setPageSlug(slug)
+    setMessage('')
+    setError('')
+    await loadPage(slug)
   }
 
   async function handleLogout() {
@@ -181,11 +223,20 @@ export function AdminPage() {
             <div className="editor-heading">
               <div>
                 <p className="section-kicker">Página de vendas</p>
-                <h1>Infância Além das Telas</h1>
+                <h1>{pageName}</h1>
                 <p>Edite somente os campos comerciais liberados para gestão.</p>
               </div>
               <button className="logout-button" type="button" onClick={handleLogout}>Sair</button>
             </div>
+
+            <div className="page-selector" role="group" aria-label="Escolher página para editar">
+              <button className={pageSlug === 'infancia_alem_das_telas' ? 'is-active' : ''} type="button" onClick={() => handlePageChange('infancia_alem_das_telas')}>Português</button>
+              <button className={pageSlug === 'infancia_alem_das_telas_es' ? 'is-active' : ''} type="button" onClick={() => handlePageChange('infancia_alem_das_telas_es')}>Español</button>
+            </div>
+
+            <section className="analytics-grid" aria-label="Métricas das páginas">
+              {analytics.map((metric) => <article className={metric.slug === pageSlug ? 'is-current' : ''} key={metric.slug}><span>{metric.slug.endsWith('_es') ? 'ES' : 'PT-BR'}</span><h2>{metric.visits.toLocaleString('pt-BR')}</h2><p>acessos acumulados</p><strong><i />{metric.online} online agora</strong></article>)}
+            </section>
 
             <form className="content-form" onSubmit={handleSave}>
               <label>
@@ -233,7 +284,7 @@ export function AdminPage() {
                   />
                   <span>
                     <strong>Ativar Meta Pixel</strong>
-                    <small>Aplica-se somente à página “Infância Além das Telas”.</small>
+                    <small>Aplica-se somente à página “{pageName}”.</small>
                   </span>
                 </label>
                 <label>
@@ -282,7 +333,7 @@ export function AdminPage() {
                 <p className="tracking-help">O token é sigiloso: fica armazenado somente no volume privado do servidor e nunca é enviado à página pública. Com ele, o PageView também é enviado automaticamente pela API e deduplicado pelo mesmo event_id.</p>
               </fieldset>
               <div className="form-actions form-wide">
-                <a href="/infancia_alem_das_telas" target="_blank" rel="noreferrer">Visualizar página ↗</a>
+                <a href={pagePath} target="_blank" rel="noreferrer">Visualizar página</a>
                 <button type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar alterações'}</button>
               </div>
             </form>

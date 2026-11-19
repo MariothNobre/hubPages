@@ -113,3 +113,21 @@ export const infanciaDraft: SalesPageContent = {
     },
   ],
 }
+
+export const infanciaEsDraft: SalesPageContent = {
+  redLine: 'Oferta especial: colección completa de R$ 197,00 por R$ 29,90',
+  eyebrow: 'Método práctico para familias con niños de 3 a 10 años',
+  title: 'Tu hijo merece una infancia llena de recuerdos, no solo de pantallas.',
+  description:
+    'Descubre un recorrido práctico de 30 días para establecer límites con mayor claridad, encontrar alternativas al celular y crear nuevos momentos de conexión familiar.',
+  ctaLabel: 'Quiero la colección completa',
+  ctaHref: '#oferta',
+  status: 'Página oficial de ventas en español',
+  metaPixelId: '',
+  metaPixelEnabled: false,
+  sections: [
+    { number: '01', title: 'Problema y contexto', description: 'Conecta la realidad de las familias con el tema central del ebook.' },
+    { number: '02', title: 'Transformación propuesta', description: 'Presenta el método, el contenido y los beneficios de la colección.' },
+    { number: '03', title: 'Oferta y decisión', description: 'Precio, garantía, checkout, preguntas frecuentes y llamada final.' },
+  ],
+}
