@@ -22,6 +22,7 @@ ENV DATA_FILE=/data/content.json
 WORKDIR /app
 COPY --from=builder --chown=10001:10001 /app/dist ./public
 COPY --chown=10001:10001 server ./server
+COPY --from=dependencies --chown=10001:10001 /app/node_modules ./node_modules
 RUN mkdir -p /data && chown 10001:10001 /data
 USER 10001:10001
 EXPOSE 8080

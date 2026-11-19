@@ -1,0 +1,35 @@
+# DEV only: merge with compose.dev.yml using the hubpages_dev project.
+# Database is internal only: no host port, no Sistera network or volume.
+services:
+  hubpages-dev:
+    environment:
+      DATABASE_URL: postgres://hubpages:${HUBPAGES_DB_PASSWORD:?Configure an exclusive HubPages password}@hubpages-db:5432/hubpages
+    networks:
+      - hubpages_database
+      - hubpages_proxy
+    depends_on:
+      hubpages-db:
+        condition: service_healthy
+  hubpages-db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hubpages
+      POSTGRES_DB: hubpages
+      POSTGRES_PASSWORD: ${HUBPAGES_DB_PASSWORD:?Configure an exclusive HubPages password}
+    volumes:
+      - hubpages_postgres:/var/lib/postgresql/data
+    networks:
+      - hubpages_database
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hubpages -d hubpages"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+networks:
+  hubpages_database:
+    internal: true
+volumes:
+  hubpages_postgres:

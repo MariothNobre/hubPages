@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Brand } from '../components/Brand'
+import { AdminProfile } from '../components/AdminProfile'
 import { infanciaDraft, infanciaEsDraft, type SalesPageContent } from '../content/siteContent'
 import {
   getAdminSession,
@@ -35,7 +36,7 @@ export function AdminPage() {
   const [analytics, setAnalytics] = useState<PageAnalytics[]>([])
 
   const pageName = pageSlug === 'infancia_alem_das_telas_es' ? 'Infancia Más Allá de las Pantallas' : 'Infância Além das Telas'
-  const pagePath = `/${pageSlug}`
+  const pagePath = content.publicUrl || `/${pageSlug}`
 
   const applyAdminContent = useCallback((saved: SalesPageContent & { metaConversionsApiConfigured?: boolean; metaTestEventCode?: string }, slug: SalesPageSlug) => {
     const draft = slug === 'infancia_alem_das_telas_es' ? infanciaEsDraft : infanciaDraft
@@ -220,6 +221,7 @@ export function AdminPage() {
 
         {view === 'editor' && (
           <section className="editor-card">
+            <AdminProfile />
             <div className="editor-heading">
               <div>
                 <p className="section-kicker">Página de vendas</p>
@@ -239,6 +241,8 @@ export function AdminPage() {
             </section>
 
             <form className="content-form" onSubmit={handleSave}>
+              <label>Endereço público da página<input type="url" value={content.publicUrl ?? `https://hubpages.com.br/${pageSlug}`} onChange={(event) => setContent({ ...content, publicUrl: event.target.value })} placeholder={`https://hubpages.com.br/${pageSlug}`} /></label>
+              <label className="tracking-toggle"><input type="checkbox" checked={content.published !== false} onChange={(event) => setContent({ ...content, published: event.target.checked })} /><span><strong>{content.published !== false ? 'Página publicada' : 'Rascunho — página desativada'}</strong><small>Salve as alterações para aplicar o estado de publicação.</small></span></label>
               <label>
                 Red Line
                 <input value={content.redLine} onChange={(event) => updateField('redLine', event.target.value)} required />
