@@ -14,5 +14,5 @@ export function resolvePageAddress(store, target, slugs, devOrigin) {
     const samePath = address.pathname.replace(/\/+$/, '') === target.pathname.replace(/\/+$/, '')
     if (samePath && (address.origin === target.origin || (devOrigin && target.origin === devOrigin && target.pathname !== '/'))) return key
   }
-  return [...slugs].find((key) => target.pathname.replace(/\/+$/, '') === `/${key}`)
+  return [...slugs].find((key) => !store.pages?.[key]?.publicUrl && target.pathname.replace(/\/+$/, '') === `/${key}`)
 }

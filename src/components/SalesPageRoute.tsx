@@ -7,10 +7,11 @@ import { HubPagesHome } from '../pages/HubPagesHome'
 
 export function SalesPageRoute() {
   const location = useLocation()
-  const [slug, setSlug] = useState<string | null>(null)
+  const [resolved, setResolved] = useState<{ path: string; slug: string } | null>(null)
+  const slug = resolved?.path === location.pathname ? resolved.slug : null
   useEffect(() => {
     let active = true
-    fetch(`/api/resolve-page?url=${encodeURIComponent(window.location.href)}`).then((r) => r.ok ? r.json() : Promise.reject()).then((data) => { if (active) setSlug(data.slug) }).catch(() => { if (active) setSlug('') })
+    fetch(`/api/resolve-page?url=${encodeURIComponent(window.location.href)}`).then((r) => r.ok ? r.json() : Promise.reject()).then((data) => { if (active) setResolved({ path: location.pathname, slug: data.slug }) }).catch(() => { if (active) setResolved({ path: location.pathname, slug: '' }) })
     return () => { active = false }
   }, [location.pathname])
   if (slug === null) return <p role="status">Carregando…</p>
