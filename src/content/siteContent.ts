@@ -27,6 +27,8 @@ export interface SiteContent {
 }
 
 export interface SalesPageContent {
+  publicUrl?: string
+  published?: boolean
   redLine: string
   eyebrow: string
   title: string

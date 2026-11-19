@@ -3,15 +3,25 @@ import { createReadStream } from 'node:fs'
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
+import { createPostgresStore } from './postgres-store.mjs'
+import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
 const dataFile = resolve(process.env.DATA_FILE ?? '/data/content.json')
+let postgresStore
+if (process.env.DATABASE_URL) {
+  let initialStore = { pages: {} }
+  try { initialStore = JSON.parse(await readFile(dataFile, 'utf8')) }
+  catch (error) { if (error?.code !== 'ENOENT') throw error }
+  postgresStore = await createPostgresStore(process.env.DATABASE_URL, initialStore)
+}
 const allowedOrigins = new Set((process.env.APP_ORIGINS ?? process.env.APP_ORIGIN ?? 'http://localhost:5173').split(',').map((origin) => origin.trim()).filter(Boolean))
 const adminEmail = (process.env.HUBPAGES_ADMIN_EMAIL ?? '').trim().toLowerCase()
 const bootstrapTokenHash = process.env.HUBPAGES_BOOTSTRAP_TOKEN_HASH ?? ''
 const sessionSecret = process.env.HUBPAGES_SESSION_SECRET ?? ''
 const sessionCookie = 'hubpages_admin'
+let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
 const sessionDurationSeconds = 60 * 60 * 8
 const maxBodyBytes = 64 * 1024
 const loginAttempts = new Map()
@@ -62,7 +72,7 @@ function parseCookies(request) {
 
 function signSession(expiresAt) {
   const payload = `${expiresAt}.${randomBytes(18).toString('base64url')}`
-  const signature = createHmac('sha256', sessionSecret).update(payload).digest('base64url')
+  const signature = createHmac('sha256', sessionSecret + credentialRevision).update(payload).digest('base64url')
   return `${payload}.${signature}`
 }
 
@@ -73,7 +83,7 @@ function hasValidSession(request) {
   const parts = token.split('.')
   if (parts.length !== 3) return false
   const payload = `${parts[0]}.${parts[1]}`
-  const expected = createHmac('sha256', sessionSecret).update(payload).digest()
+  const expected = createHmac('sha256', sessionSecret + credentialRevision).update(payload).digest()
   const received = Buffer.from(parts[2], 'base64url')
   return received.length === expected.length && timingSafeEqual(received, expected) && Number(parts[0]) > Math.floor(Date.now() / 1000)
 }
@@ -112,12 +122,23 @@ function hasAllowedOrigin(request) {
   return allowedOrigins.has(request.headers.origin ?? '')
 }
 
+async function hasAllowedSalesOrigin(request) {
+  if (hasAllowedOrigin(request)) return true
+  const store = await loadStore()
+  return [...salesPageSlugs].some((slug) => {
+    const page = store.pages?.[slug]
+    return page?.published !== false && page?.publicUrl && new URL(page.publicUrl).origin === request.headers.origin
+  })
+}
+
 async function loadStore() {
+  if (postgresStore) return postgresStore.read()
   try { return JSON.parse(await readFile(dataFile, 'utf8')) }
   catch (error) { if (error?.code === 'ENOENT') return { pages: {} }; throw error }
 }
 
 async function saveStore(store) {
+  if (postgresStore) return postgresStore.write(store)
   await mkdir(resolve(dataFile, '..'), { recursive: true })
   const temporaryFile = `${dataFile}.${process.pid}.${Date.now()}.tmp`
   await writeFile(temporaryFile, `${JSON.stringify(store, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
@@ -126,6 +147,10 @@ async function saveStore(store) {
 
 function validateSalesContent(value) {
   if (!value || typeof value !== 'object') throw new Error('Conteúdo inválido.')
+  if (value.publicUrl) {
+    value.publicUrl = normalizePageUrl(value.publicUrl)
+    if (new URL(value.publicUrl).pathname === '/' && allowedOrigins.has(new URL(value.publicUrl).origin)) throw new Error('A raiz da HubPages é reservada ao site principal. Informe um caminho para a página de vendas.')
+  }
   const fields = ['redLine', 'eyebrow', 'title', 'description', 'ctaLabel', 'ctaHref', 'status']
   for (const field of fields) {
     if (typeof value[field] !== 'string' || !value[field].trim()) throw new Error(`O campo ${field} é obrigatório.`)
@@ -159,18 +184,19 @@ function adminSalesContent(page, tracking) {
 }
 
 async function sendMetaPageView(request, response, body) {
-  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  if (!await hasAllowedSalesOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
   if (!body || typeof body.eventId !== 'string' || !/^[a-f0-9-]{20,64}$/i.test(body.eventId)) return sendJson(response, 422, { message: 'Evento inválido.' })
 
   let sourceUrl
   try { sourceUrl = new URL(body.eventSourceUrl) }
   catch { return sendJson(response, 422, { message: 'Origem do evento inválida.' }) }
   const pageSlug = typeof body.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
-  if (!pageSlug || !allowedOrigins.has(sourceUrl.origin) || sourceUrl.pathname !== `/${pageSlug}`) return sendJson(response, 422, { message: 'Origem do evento inválida.' })
+  if (!pageSlug || sourceUrl.origin !== request.headers.origin) return sendJson(response, 422, { message: 'Origem do evento inválida.' })
 
   const store = await loadStore()
   const basePage = store.pages?.infancia_alem_das_telas
   const page = store.pages?.[pageSlug] ?? basePage
+  if (page?.published === false || resolvePageAddress(store, sourceUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Página indisponível.' })
   const tracking = store.tracking?.[pageSlug]?.accessToken ? store.tracking[pageSlug] : store.tracking?.infancia_alem_das_telas
   if (!page?.metaPixelEnabled || !/^\d{5,30}$/.test(page.metaPixelId ?? '') || !tracking?.accessToken) return sendJson(response, 202, { accepted: false })
 
@@ -203,7 +229,7 @@ async function sendMetaPageView(request, response, body) {
 }
 
 async function handleAnalyticsVisit(request, response, body) {
-  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  if (!await hasAllowedSalesOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
   const pageSlug = typeof body?.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
   const visitorId = typeof body?.visitorId === 'string' && /^[a-f0-9-]{20,64}$/i.test(body.visitorId) ? body.visitorId : ''
   if (!pageSlug || !visitorId) return sendJson(response, 422, { message: 'Métrica inválida.' })
@@ -214,7 +240,10 @@ async function handleAnalyticsVisit(request, response, body) {
   } catch {
     return sendJson(response, 403, { message: 'Origem da métrica não autorizada.' })
   }
-  if (sourcePath !== `/${pageSlug}`) return sendJson(response, 403, { message: 'Somente páginas de vendas podem registrar métricas.' })
+  const metricStore = await loadStore()
+  const metricPage = metricStore.pages?.[pageSlug]
+  const metricUrl = new URL(request.headers.referer)
+  if (metricPage?.published === false || sourcePath === '/admin' || metricUrl.origin !== request.headers.origin || resolvePageAddress(metricStore, metricUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Somente páginas de vendas publicadas podem registrar métricas.' })
 
   const now = Date.now()
   const pageSessions = onlineSessions.get(pageSlug) ?? new Map()
@@ -244,6 +273,34 @@ function analyticsSnapshot(store) {
 }
 
 async function handleApi(request, response, url) {
+  if (request.method === 'GET' && url.pathname === '/api/resolve-page') {
+    const store = await loadStore()
+    const address = url.searchParams.get('url')
+    let target
+    try { target = new URL(address); target.search = ''; target.hash = '' } catch { return sendJson(response, 422, { message: 'Endereço inválido.' }) }
+    const devOrigin = process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : ''
+    const slug = resolvePageAddress(store, target, salesPageSlugs, devOrigin)
+    if (!slug || store.pages?.[slug]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
+    return sendJson(response, 200, { slug })
+  }
+  if (url.pathname === '/api/admin/profile') {
+    if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Entre novamente.' })
+    const store = await loadStore()
+    if (request.method === 'GET') return sendJson(response, 200, { name: store.admin?.name ?? '', email: store.admin?.email ?? adminEmail })
+    if (request.method === 'PUT') {
+      if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+      const body = await readJsonBody(request)
+      if (typeof body.currentPassword !== 'string' || !verifyEncodedSecret(body.currentPassword, store.admin.passwordHash)) return sendJson(response, 403, { message: 'Senha atual incorreta.' })
+      if (typeof body.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) || body.email.length > 254 || typeof body.name !== 'string' || body.name.length > 120) return sendJson(response, 422, { message: 'Nome ou e-mail inválido.' })
+      if (body.newPassword && (typeof body.newPassword !== 'string' || body.newPassword.length < 12 || body.newPassword.length > 200)) return sendJson(response, 422, { message: 'A nova senha deve ter entre 12 e 200 caracteres.' })
+      store.admin.name = body.name.trim()
+      store.admin.email = body.email.trim().toLowerCase()
+      if (body.newPassword) store.admin.passwordHash = hashSecret(body.newPassword)
+      await saveStore(store)
+      credentialRevision = store.admin.passwordHash
+      return sendJson(response, 200, { name: store.admin.name, email: store.admin.email })
+    }
+  }
   if (request.method === 'GET' && url.pathname === '/health.json') return sendJson(response, 200, { status: 'ok', service: 'hubpages' })
   if (request.method === 'GET' && url.pathname === '/api/admin/session') return sendJson(response, 200, { authenticated: hasValidSession(request) })
   if (request.method === 'GET' && url.pathname === '/api/admin/setup-status') {
@@ -271,6 +328,7 @@ async function handleApi(request, response, url) {
     if (typeof body.password !== 'string' || body.password.length < 12 || body.password.length > 200) return sendJson(response, 422, { message: 'A senha deve ter entre 12 e 200 caracteres.' })
     store.admin = { email: adminEmail, passwordHash: hashSecret(body.password), activatedAt: new Date().toISOString() }
     await saveStore(store)
+    credentialRevision = store.admin.passwordHash
     loginAttempts.delete(ipAddress)
     return sessionResponse(response)
   }
@@ -283,7 +341,7 @@ async function handleApi(request, response, url) {
     const body = await readJsonBody(request)
     const store = await loadStore()
     if (!store.admin?.passwordHash) return sendJson(response, 409, { message: 'Conclua o primeiro acesso antes de entrar.' })
-    const validEmail = typeof body.email === 'string' && body.email.trim().toLowerCase() === adminEmail
+    const validEmail = typeof body.email === 'string' && body.email.trim().toLowerCase() === (store.admin.email ?? adminEmail)
     const validPassword = typeof body.password === 'string' && verifyEncodedSecret(body.password, store.admin.passwordHash)
     if (!validEmail || !validPassword) return sendJson(response, 401, { message: 'E-mail ou senha inválido.' })
     loginAttempts.delete(ipAddress)
@@ -300,7 +358,7 @@ async function handleApi(request, response, url) {
     if (!salesPageSlugs.has(publicPage[1])) return sendJson(response, 404, { message: 'Página não encontrada.' })
     const store = await loadStore()
     const page = store.pages?.[publicPage[1]]
-    return page ? sendJson(response, 200, publicSalesContent(page)) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
+    return page && page.published !== false ? sendJson(response, 200, publicSalesContent(page)) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
   }
 
   const adminPage = url.pathname.match(/^\/api\/admin\/pages\/([a-z0-9_]+)$/)
@@ -316,13 +374,16 @@ async function handleApi(request, response, url) {
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
     const body = await readJsonBody(request)
-    const content = validateSalesContent(body)
+    let content
+    try { content = validateSalesContent(body) }
+    catch (error) { return sendJson(response, 422, { message: error.message }) }
     const newToken = typeof body.metaConversionsApiToken === 'string' ? body.metaConversionsApiToken.trim() : ''
     if (newToken.length > 512) return sendJson(response, 422, { message: 'O token da API de Conversões excede o limite permitido.' })
     const testEventCode = typeof body.metaTestEventCode === 'string' ? body.metaTestEventCode.trim() : ''
     if (testEventCode && !/^[A-Za-z0-9_-]{1,100}$/.test(testEventCode)) return sendJson(response, 422, { message: 'O código de evento de teste contém caracteres inválidos.' })
     const store = await loadStore()
     store.pages ??= {}
+    if (content.publicUrl && Object.entries(store.pages).some(([key, page]) => key !== adminPage[1] && page.publicUrl === content.publicUrl)) return sendJson(response, 422, { message: 'Esse endereço já está sendo usado por outra página.' })
     store.tracking ??= {}
     store.pages[adminPage[1]] = publicSalesContent(content)
     const inheritedTracking = adminPage[1] === 'infancia_alem_das_telas_es' ? store.tracking.infancia_alem_das_telas : undefined
@@ -353,11 +414,21 @@ async function serveStatic(response, pathname) {
   createReadStream(filePath).pipe(response)
 }
 
+let apiQueue = Promise.resolve()
 createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if (url.pathname === '/health.json' || url.pathname.startsWith('/api/')) return await handleApi(request, response, url)
+    if (url.pathname === '/health.json') return await handleApi(request, response, url)
+    if (url.pathname.startsWith('/api/')) {
+      const task = apiQueue.then(() => handleApi(request, response, url))
+      apiQueue = task.catch(() => undefined)
+      return await task
+    }
+    if (salesPageSlugs.has(url.pathname.replace(/^\/|\/$/g, ''))) {
+      const store = await loadStore()
+      if (store.pages?.[url.pathname.replace(/^\/|\/$/g, '')]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
+    }
     return await serveStatic(response, decodeURIComponent(url.pathname))
   } catch (error) {
     console.error(error)
