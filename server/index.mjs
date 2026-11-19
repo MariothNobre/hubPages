@@ -208,6 +208,14 @@ async function handleAnalyticsVisit(request, response, body) {
   const visitorId = typeof body?.visitorId === 'string' && /^[a-f0-9-]{20,64}$/i.test(body.visitorId) ? body.visitorId : ''
   if (!pageSlug || !visitorId) return sendJson(response, 422, { message: 'Métrica inválida.' })
 
+  let sourcePath = ''
+  try {
+    sourcePath = new URL(request.headers.referer ?? '').pathname.replace(/\/$/, '')
+  } catch {
+    return sendJson(response, 403, { message: 'Origem da métrica não autorizada.' })
+  }
+  if (sourcePath !== `/${pageSlug}`) return sendJson(response, 403, { message: 'Somente páginas de vendas podem registrar métricas.' })
+
   const now = Date.now()
   const pageSessions = onlineSessions.get(pageSlug) ?? new Map()
   pageSessions.set(visitorId, now)
