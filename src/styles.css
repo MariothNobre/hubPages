@@ -405,8 +405,21 @@ html.sales-page-root { scroll-behavior: auto; }
 .sales-v2-sample-es__rule { height: 1px; background: rgba(24,63,58,.16); }
 .sales-v2-sample-es > p:last-of-type { margin-top: 12px; margin-bottom: 12px; color: #526860; font-family: Georgia,serif; font-size: .88rem; line-height: 1.5; }
 .sales-v2-sample-es small { color: #7b8d87; font-size: .64rem; }
-.sales-v2-preview__thumbs--es button { display: grid; place-items: center; color: #fff; background: var(--sales-teal); }
-.sales-v2-preview__thumbs--es button span { position: static; background: transparent; font-size: .72rem; }
+.sales-v2-preview__thumbs--es button { position: relative; display: grid; place-items: end start; overflow: hidden; color: #fff; background-color: var(--sales-teal); background-position: center; background-size: cover; }
+.sales-v2-preview__thumbs--es button::after { position: absolute; inset: 0; content: ''; background: linear-gradient(180deg,transparent 35%,rgba(7,29,27,.72)); }
+.sales-v2-preview__thumbs--es button span { position: relative; z-index: 1; min-width: 22px; margin: 5px; padding: 3px 6px; border-radius: 999px; background: rgba(7,29,27,.82); font-size: .68rem; text-align: center; }
+.sales-v2-preview__thumbs--es button:nth-child(1) { background-image: url('/assets/es/samples/01-mundo-conectado.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(2) { background-image: url('/assets/es/samples/02-rutina-familiar.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(3) { background-image: url('/assets/es/samples/03-transicion-pantalla.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(4) { background-image: url('/assets/es/samples/04-caja-sorpresa.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(5) { background-image: url('/assets/es/samples/05-rueda-descubrimientos.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(6) { background-image: url('/assets/es/samples/06-superheroes-cuidado.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(7) { background-image: url('/assets/es/samples/07-titeres.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(8) { background-image: url('/assets/es/samples/08-mascaras-emociones.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(9) { background-image: url('/assets/es/samples/09-circuito-equilibrio.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(10) { background-image: url('/assets/es/samples/10-juego-semaforo.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(11) { background-image: url('/assets/es/samples/11-reflexion.jpg'); }
+.sales-v2-preview__thumbs--es button:nth-child(12) { background-image: url('/assets/es/samples/12-tarjetas-emociones.jpg'); }
 
 .sales-v2-preview { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; }
 .sales-v2-preview__backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(7,29,27,.84); backdrop-filter: blur(8px); cursor: pointer; }
