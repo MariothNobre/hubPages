@@ -36,7 +36,12 @@ export function AdminPage() {
   const [analytics, setAnalytics] = useState<PageAnalytics[]>([])
 
   const pageName = pageSlug === 'infancia_alem_das_telas_es' ? 'Infancia Más Allá de las Pantallas' : 'Infância Além das Telas'
-  const pagePath = content.publicUrl || `/${pageSlug}`
+  const defaultPageUrl = `${window.location.origin}/${pageSlug}`
+  let pagePath = content.publicUrl || defaultPageUrl
+  try {
+    const configured = new URL(pagePath)
+    if (window.location.hostname === 'dev.hubpages.com.br') pagePath = configured.pathname === '/' ? `${window.location.origin}/${pageSlug}` : `${window.location.origin}${configured.pathname}`
+  } catch { pagePath = defaultPageUrl }
 
   const applyAdminContent = useCallback((saved: SalesPageContent & { metaConversionsApiConfigured?: boolean; metaTestEventCode?: string }, slug: SalesPageSlug) => {
     const draft = slug === 'infancia_alem_das_telas_es' ? infanciaEsDraft : infanciaDraft
@@ -123,7 +128,7 @@ export function AdminPage() {
     setError('')
     setMessage('')
     try {
-      const saved = await saveSalesPageContent(pageSlug, content, {
+      const saved = await saveSalesPageContent(pageSlug, { ...content, publicUrl: content.publicUrl || defaultPageUrl }, {
         metaConversionsApiToken: apiToken,
         metaConversionsApiConfigured: apiConfigured,
         metaTestEventCode: testEventCode,
@@ -241,7 +246,7 @@ export function AdminPage() {
             </section>
 
             <form className="content-form" onSubmit={handleSave}>
-              <label>Endereço público da página<input type="url" value={content.publicUrl ?? `https://hubpages.com.br/${pageSlug}`} onChange={(event) => setContent({ ...content, publicUrl: event.target.value })} placeholder={`https://hubpages.com.br/${pageSlug}`} /></label>
+              <label>Domínio e endereço completo da página<input type="url" required maxLength={500} value={content.publicUrl ?? defaultPageUrl} onChange={(event) => setContent({ ...content, publicUrl: event.target.value })} placeholder={defaultPageUrl} /><small>Informe a URL completa com https:// e salve as alterações. Em DEV, “Visualizar página” testa o caminho neste ambiente. Domínios próprios precisam apontar para a HubPages e ter HTTPS configurado; salvar aqui não altera DNS.</small></label>
               <label className="tracking-toggle"><input type="checkbox" checked={content.published !== false} onChange={(event) => setContent({ ...content, published: event.target.checked })} /><span><strong>{content.published !== false ? 'Página publicada' : 'Rascunho — página desativada'}</strong><small>Salve as alterações para aplicar o estado de publicação.</small></span></label>
               <label>
                 Red Line
