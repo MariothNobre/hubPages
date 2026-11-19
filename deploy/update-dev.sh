@@ -22,9 +22,7 @@ fi
 git diff --quiet && git diff --cached --quiet || { echo "Há alterações locais; atualização interrompida." >&2; exit 1; }
 git pull --ff-only origin develop
 
-if [[ -f /opt/hubpages-secrets/dev-db.env ]]; then
-  exec bash "$REPO/deploy/provision-postgres-dev.sh"
-fi
+exec bash "$REPO/deploy/provision-postgres-dev.sh"
 
 install -o root -g root -m 0755 "$REPO/deploy/hubpages-deploy-gateway" /usr/local/sbin/hubpages-deploy-gateway
 

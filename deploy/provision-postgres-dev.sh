@@ -18,8 +18,12 @@ curl --fail --silent --show-error https://app.sistera.com.br/api/health >/dev/nu
 container="$(docker compose -p hubpages_dev -f deploy/compose.dev.yml ps -q hubpages-dev)"
 [[ -n "$container" ]] || { echo 'Container DEV ausente.' >&2; exit 1; }
 docker cp "$container:/data/content.json" "/opt/hubpages-backups/dev/content-$(date -u +%Y%m%dT%H%M%SZ).json"
+if [[ -n "$("${compose[@]}" ps -q hubpages-db)" ]]; then
+  "${compose[@]}" exec -T hubpages-db pg_dump -U hubpages -d hubpages > "/opt/hubpages-backups/dev/postgres-$(date -u +%Y%m%dT%H%M%SZ).sql"
+fi
 "${compose[@]}" config --quiet
 "${compose[@]}" build hubpages-dev
 "${compose[@]}" up -d --wait --wait-timeout 180
+"${compose[@]}" exec -T hubpages-db psql -U hubpages -d hubpages -v ON_ERROR_STOP=1 -c "SELECT id, (SELECT count(*) FROM jsonb_object_keys(payload->'pages')) AS pages FROM hubpages_state;"
 curl --fail --silent --show-error https://dev.hubpages.com.br/health.json
 curl --fail --silent --show-error https://app.sistera.com.br/api/health >/dev/null
