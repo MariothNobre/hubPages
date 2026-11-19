@@ -18,7 +18,7 @@ function cookieValue(name: string) {
   return document.cookie.split('; ').find((item) => item.startsWith(`${name}=`))?.slice(name.length + 1) ?? ''
 }
 
-function initializePixel(pixelId: string, eventId: string) {
+function initializePixel(pixelId: string, eventId: string, pageSlug: string) {
   if (!window.fbq) {
     const fbq = function (...args: unknown[]) {
       if (fbq.callMethod) fbq.callMethod(...args)
@@ -49,6 +49,7 @@ function initializePixel(pixelId: string, eventId: string) {
       body: JSON.stringify({
         eventId,
         eventSourceUrl: window.location.href,
+        pageSlug,
         fbp: cookieValue('_fbp'),
         fbc: cookieValue('_fbc'),
       }),
@@ -59,18 +60,19 @@ function initializePixel(pixelId: string, eventId: string) {
 interface MetaPixelProps {
   enabled: boolean
   pixelId: string
+  pageSlug: string
 }
 
-export function MetaPixel({ enabled, pixelId }: MetaPixelProps) {
+export function MetaPixel({ enabled, pixelId, pageSlug }: MetaPixelProps) {
   const validConfiguration = enabled && /^\d{5,30}$/.test(pixelId)
   const tracked = useRef(false)
 
   useEffect(() => {
     if (validConfiguration && !tracked.current) {
       tracked.current = true
-      initializePixel(pixelId, window.crypto.randomUUID())
+      initializePixel(pixelId, window.crypto.randomUUID(), pageSlug)
     }
-  }, [pixelId, validConfiguration])
+  }, [pageSlug, pixelId, validConfiguration])
 
   return null
 }

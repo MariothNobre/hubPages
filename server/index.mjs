@@ -15,6 +15,13 @@ const sessionCookie = 'hubpages_admin'
 const sessionDurationSeconds = 60 * 60 * 8
 const maxBodyBytes = 64 * 1024
 const loginAttempts = new Map()
+const onlineSessions = new Map()
+const lastCountedVisits = new Map()
+const salesPageSlugs = new Set(['infancia_alem_das_telas', 'infancia_alem_das_telas_es'])
+const salesPageLabels = {
+  infancia_alem_das_telas: 'Infância Além das Telas — Português',
+  infancia_alem_das_telas_es: 'Infancia Más Allá de las Pantallas — Español',
+}
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8', '.ico': 'image/x-icon',
@@ -158,11 +165,13 @@ async function sendMetaPageView(request, response, body) {
   let sourceUrl
   try { sourceUrl = new URL(body.eventSourceUrl) }
   catch { return sendJson(response, 422, { message: 'Origem do evento inválida.' }) }
-  if (!allowedOrigins.has(sourceUrl.origin) || sourceUrl.pathname !== '/infancia_alem_das_telas') return sendJson(response, 422, { message: 'Origem do evento inválida.' })
+  const pageSlug = typeof body.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
+  if (!pageSlug || !allowedOrigins.has(sourceUrl.origin) || sourceUrl.pathname !== `/${pageSlug}`) return sendJson(response, 422, { message: 'Origem do evento inválida.' })
 
   const store = await loadStore()
-  const page = store.pages?.infancia_alem_das_telas
-  const tracking = store.tracking?.infancia_alem_das_telas
+  const basePage = store.pages?.infancia_alem_das_telas
+  const page = store.pages?.[pageSlug] ?? basePage
+  const tracking = store.tracking?.[pageSlug]?.accessToken ? store.tracking[pageSlug] : store.tracking?.infancia_alem_das_telas
   if (!page?.metaPixelEnabled || !/^\d{5,30}$/.test(page.metaPixelId ?? '') || !tracking?.accessToken) return sendJson(response, 202, { accepted: false })
 
   const userData = { client_user_agent: request.headers['user-agent'] ?? '' }
@@ -193,6 +202,39 @@ async function sendMetaPageView(request, response, body) {
   return sendJson(response, 202, { accepted: true })
 }
 
+async function handleAnalyticsVisit(request, response, body) {
+  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  const pageSlug = typeof body?.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
+  const visitorId = typeof body?.visitorId === 'string' && /^[a-f0-9-]{20,64}$/i.test(body.visitorId) ? body.visitorId : ''
+  if (!pageSlug || !visitorId) return sendJson(response, 422, { message: 'Métrica inválida.' })
+
+  const now = Date.now()
+  const pageSessions = onlineSessions.get(pageSlug) ?? new Map()
+  pageSessions.set(visitorId, now)
+  onlineSessions.set(pageSlug, pageSessions)
+
+  const countKey = `${pageSlug}:${visitorId}`
+  const shouldCount = body.isNewVisit === true && now - (lastCountedVisits.get(countKey) ?? 0) > 5000
+  if (shouldCount) {
+    const store = await loadStore()
+    store.analytics ??= {}
+    store.analytics[pageSlug] ??= { visits: 0 }
+    store.analytics[pageSlug].visits += 1
+    await saveStore(store)
+    lastCountedVisits.set(countKey, now)
+  }
+  return sendJson(response, 202, { accepted: true })
+}
+
+function analyticsSnapshot(store) {
+  const threshold = Date.now() - 45000
+  return [...salesPageSlugs].map((slug) => {
+    const sessions = onlineSessions.get(slug) ?? new Map()
+    for (const [visitorId, lastSeen] of sessions) if (lastSeen < threshold) sessions.delete(visitorId)
+    return { slug, label: salesPageLabels[slug], visits: store.analytics?.[slug]?.visits ?? 0, online: sessions.size }
+  })
+}
+
 async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/health.json') return sendJson(response, 200, { status: 'ok', service: 'hubpages' })
   if (request.method === 'GET' && url.pathname === '/api/admin/session') return sendJson(response, 200, { authenticated: hasValidSession(request) })
@@ -201,6 +243,12 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { needsSetup: !store.admin?.passwordHash })
   }
   if (request.method === 'POST' && url.pathname === '/api/meta/events') return sendMetaPageView(request, response, await readJsonBody(request))
+  if (request.method === 'POST' && url.pathname === '/api/analytics/visit') return handleAnalyticsVisit(request, response, await readJsonBody(request))
+  if (request.method === 'GET' && url.pathname === '/api/admin/analytics') {
+    if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
+    const store = await loadStore()
+    return sendJson(response, 200, { pages: analyticsSnapshot(store), measuredAt: new Date().toISOString() })
+  }
 
   if (request.method === 'POST' && url.pathname === '/api/admin/activate') {
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
@@ -241,6 +289,7 @@ async function handleApi(request, response, url) {
 
   const publicPage = url.pathname.match(/^\/api\/pages\/([a-z0-9_]+)$/)
   if (request.method === 'GET' && publicPage) {
+    if (!salesPageSlugs.has(publicPage[1])) return sendJson(response, 404, { message: 'Página não encontrada.' })
     const store = await loadStore()
     const page = store.pages?.[publicPage[1]]
     return page ? sendJson(response, 200, publicSalesContent(page)) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
@@ -248,12 +297,14 @@ async function handleApi(request, response, url) {
 
   const adminPage = url.pathname.match(/^\/api\/admin\/pages\/([a-z0-9_]+)$/)
   if (request.method === 'GET' && adminPage) {
+    if (!salesPageSlugs.has(adminPage[1])) return sendJson(response, 404, { message: 'Página não encontrada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
     const store = await loadStore()
     const page = store.pages?.[adminPage[1]]
     return page ? sendJson(response, 200, adminSalesContent(page, store.tracking?.[adminPage[1]])) : sendJson(response, 404, { message: 'Conteúdo ainda não publicado.' })
   }
   if (request.method === 'PUT' && adminPage) {
+    if (!salesPageSlugs.has(adminPage[1])) return sendJson(response, 404, { message: 'Página não encontrada.' })
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
     const body = await readJsonBody(request)
@@ -266,10 +317,11 @@ async function handleApi(request, response, url) {
     store.pages ??= {}
     store.tracking ??= {}
     store.pages[adminPage[1]] = publicSalesContent(content)
-    const previousToken = store.tracking[adminPage[1]]?.accessToken ?? ''
+    const inheritedTracking = adminPage[1] === 'infancia_alem_das_telas_es' ? store.tracking.infancia_alem_das_telas : undefined
+    const previousToken = store.tracking[adminPage[1]]?.accessToken ?? inheritedTracking?.accessToken ?? ''
     store.tracking[adminPage[1]] = {
       accessToken: body.clearMetaConversionsApiToken === true ? '' : (newToken || previousToken),
-      testEventCode,
+      testEventCode: testEventCode || inheritedTracking?.testEventCode || '',
     }
     await saveStore(store)
     return sendJson(response, 200, adminSalesContent(content, store.tracking[adminPage[1]]))
