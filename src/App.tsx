@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { HubPagesHome } from './pages/HubPagesHome'
 import { InfanciaAlemDasTelas } from './pages/InfanciaAlemDasTelas'
+import { InfanciaAlemDasTelasEs } from './pages/InfanciaAlemDasTelasEs'
 import { NotFound } from './pages/NotFound'
 import { AdminPage } from './pages/AdminPage'
 
@@ -9,6 +10,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HubPagesHome />} />
       <Route path="/infancia_alem_das_telas" element={<InfanciaAlemDasTelas />} />
+      <Route path="/infancia_alem_das_telas_es" element={<InfanciaAlemDasTelasEs />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
