@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { createPostgresStore } from './postgres-store.mjs'
+import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -121,6 +122,15 @@ function hasAllowedOrigin(request) {
   return allowedOrigins.has(request.headers.origin ?? '')
 }
 
+async function hasAllowedSalesOrigin(request) {
+  if (hasAllowedOrigin(request)) return true
+  const store = await loadStore()
+  return [...salesPageSlugs].some((slug) => {
+    const page = store.pages?.[slug]
+    return page?.published !== false && page?.publicUrl && new URL(page.publicUrl).origin === request.headers.origin
+  })
+}
+
 async function loadStore() {
   if (postgresStore) return postgresStore.read()
   try { return JSON.parse(await readFile(dataFile, 'utf8')) }
@@ -138,9 +148,8 @@ async function saveStore(store) {
 function validateSalesContent(value) {
   if (!value || typeof value !== 'object') throw new Error('Conteúdo inválido.')
   if (value.publicUrl) {
-    const publicUrl = new URL(value.publicUrl)
-    if (publicUrl.protocol !== 'https:' || publicUrl.username || publicUrl.password || publicUrl.search || publicUrl.hash) throw new Error('Informe um endereço HTTPS sem credenciais, parâmetros ou fragmentos.')
-    if (publicUrl.pathname === '/' || /^\/(admin|api|assets)(\/|$)/.test(publicUrl.pathname)) throw new Error('Esse caminho é reservado para o sistema.')
+    value.publicUrl = normalizePageUrl(value.publicUrl)
+    if (new URL(value.publicUrl).pathname === '/' && allowedOrigins.has(new URL(value.publicUrl).origin)) throw new Error('A raiz da HubPages é reservada ao site principal. Informe um caminho para a página de vendas.')
   }
   const fields = ['redLine', 'eyebrow', 'title', 'description', 'ctaLabel', 'ctaHref', 'status']
   for (const field of fields) {
@@ -175,19 +184,19 @@ function adminSalesContent(page, tracking) {
 }
 
 async function sendMetaPageView(request, response, body) {
-  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  if (!await hasAllowedSalesOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
   if (!body || typeof body.eventId !== 'string' || !/^[a-f0-9-]{20,64}$/i.test(body.eventId)) return sendJson(response, 422, { message: 'Evento inválido.' })
 
   let sourceUrl
   try { sourceUrl = new URL(body.eventSourceUrl) }
   catch { return sendJson(response, 422, { message: 'Origem do evento inválida.' }) }
   const pageSlug = typeof body.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
-  if (!pageSlug || !allowedOrigins.has(sourceUrl.origin)) return sendJson(response, 422, { message: 'Origem do evento inválida.' })
+  if (!pageSlug || sourceUrl.origin !== request.headers.origin) return sendJson(response, 422, { message: 'Origem do evento inválida.' })
 
   const store = await loadStore()
   const basePage = store.pages?.infancia_alem_das_telas
   const page = store.pages?.[pageSlug] ?? basePage
-  if (page?.published === false || (sourceUrl.pathname !== `/${pageSlug}` && page?.publicUrl?.replace(/\/$/, '') !== `${sourceUrl.origin}${sourceUrl.pathname}`.replace(/\/$/, ''))) return sendJson(response, 403, { message: 'Página indisponível.' })
+  if (page?.published === false || resolvePageAddress(store, sourceUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Página indisponível.' })
   const tracking = store.tracking?.[pageSlug]?.accessToken ? store.tracking[pageSlug] : store.tracking?.infancia_alem_das_telas
   if (!page?.metaPixelEnabled || !/^\d{5,30}$/.test(page.metaPixelId ?? '') || !tracking?.accessToken) return sendJson(response, 202, { accepted: false })
 
@@ -220,7 +229,7 @@ async function sendMetaPageView(request, response, body) {
 }
 
 async function handleAnalyticsVisit(request, response, body) {
-  if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+  if (!await hasAllowedSalesOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
   const pageSlug = typeof body?.pageSlug === 'string' && salesPageSlugs.has(body.pageSlug) ? body.pageSlug : ''
   const visitorId = typeof body?.visitorId === 'string' && /^[a-f0-9-]{20,64}$/i.test(body.visitorId) ? body.visitorId : ''
   if (!pageSlug || !visitorId) return sendJson(response, 422, { message: 'Métrica inválida.' })
@@ -233,8 +242,8 @@ async function handleAnalyticsVisit(request, response, body) {
   }
   const metricStore = await loadStore()
   const metricPage = metricStore.pages?.[pageSlug]
-  const configuredPath = metricPage?.publicUrl ? new URL(metricPage.publicUrl).pathname.replace(/\/$/, '') : ''
-  if (metricPage?.published === false || sourcePath === '/admin' || (sourcePath !== `/${pageSlug}` && sourcePath !== configuredPath)) return sendJson(response, 403, { message: 'Somente páginas de vendas publicadas podem registrar métricas.' })
+  const metricUrl = new URL(request.headers.referer)
+  if (metricPage?.published === false || sourcePath === '/admin' || metricUrl.origin !== request.headers.origin || resolvePageAddress(metricStore, metricUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Somente páginas de vendas publicadas podem registrar métricas.' })
 
   const now = Date.now()
   const pageSessions = onlineSessions.get(pageSlug) ?? new Map()
@@ -269,7 +278,8 @@ async function handleApi(request, response, url) {
     const address = url.searchParams.get('url')
     let target
     try { target = new URL(address); target.search = ''; target.hash = '' } catch { return sendJson(response, 422, { message: 'Endereço inválido.' }) }
-    const slug = [...salesPageSlugs].find((key) => target.pathname.replace(/\/$/, '') === `/${key}` || store.pages?.[key]?.publicUrl?.replace(/\/$/, '') === target.toString().replace(/\/$/, ''))
+    const devOrigin = process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : ''
+    const slug = resolvePageAddress(store, target, salesPageSlugs, devOrigin)
     if (!slug || store.pages?.[slug]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
     return sendJson(response, 200, { slug })
   }
@@ -364,7 +374,9 @@ async function handleApi(request, response, url) {
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
     const body = await readJsonBody(request)
-    const content = validateSalesContent(body)
+    let content
+    try { content = validateSalesContent(body) }
+    catch (error) { return sendJson(response, 422, { message: error.message }) }
     const newToken = typeof body.metaConversionsApiToken === 'string' ? body.metaConversionsApiToken.trim() : ''
     if (newToken.length > 512) return sendJson(response, 422, { message: 'O token da API de Conversões excede o limite permitido.' })
     const testEventCode = typeof body.metaTestEventCode === 'string' ? body.metaTestEventCode.trim() : ''
