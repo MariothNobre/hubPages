@@ -115,7 +115,7 @@ export const infanciaDraft: SalesPageContent = {
 }
 
 export const infanciaEsDraft: SalesPageContent = {
-  redLine: 'Oferta especial: colección completa de R$ 197,00 por R$ 29,90',
+  redLine: 'Oferta especial internacional: colección completa por US$ 6.90',
   eyebrow: 'Método práctico para familias con niños de 3 a 10 años',
   title: 'Tu hijo merece una infancia llena de recuerdos, no solo de pantallas.',
   description:
