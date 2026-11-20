@@ -547,6 +547,10 @@ createServer(async (request, response) => {
       response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
+    if(request.method==='GET'&&/^\/studio\/preview\/[a-f0-9-]{36}$/.test(url.pathname)&&url.searchParams.get('embedded')==='1'){
+      response.setHeader('X-Frame-Options','SAMEORIGIN')
+      response.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+    }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
     if(url.pathname==='/api/public/meta/events')return await handleApi(request,response,url)
     if (url.pathname.startsWith('/api/')) {
