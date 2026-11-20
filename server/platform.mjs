@@ -16,6 +16,21 @@ function https(value) {
   if (url.protocol !== 'https:' || url.username || url.password) fail('Somente URLs HTTPS sem credenciais são permitidas.')
   return url.toString()
 }
+function image(value) {
+  const url = text(value, 2000)
+  if (/^\/assets\/[a-zA-Z0-9_./-]+\.(webp|png|jpe?g)$/.test(url) && !url.includes('..')) return url
+  if (/^\/api\/platform\/pages\/[a-f0-9-]{36}\/images\/(hero|[a-f0-9-]{36})$/.test(url)) return url
+  return https(url)
+}
+function number(value, min, max, fallback) {
+  if (value === undefined) return fallback
+  if (!Number.isFinite(value) || value < min || value > max) fail('Dimensão ou espaçamento inválido.')
+  return Math.round(value)
+}
+function style(value = {}) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Layout inválido.')
+  return { width: number(value.width, 20, 100, 100), imageWidth: number(value.imageWidth, 10, 100, 100), padding: number(value.padding, 0, 120, 32), margin: number(value.margin, 0, 120, 16), gap: number(value.gap, 0, 80, 24), fontSize: number(value.fontSize, 14, 64, 18), headingSize: number(value.headingSize,20,80,36), buttonWidth: number(value.buttonWidth,20,100,100), buttonPadding: number(value.buttonPadding,8,40,16), columns: number(value.columns, 1, 3, 1), font: ['serif','rounded'].includes(value.font) ? value.font : 'system', align: ['left','center','right'].includes(value.align) ? value.align : 'left', animation: ['fade','rise'].includes(value.animation) ? value.animation : 'none', background: /^#[a-f0-9]{6}$/i.test(value.background ?? '') ? value.background : '#ffffff', imageFit: value.imageFit === 'cover' ? 'cover' : 'contain', imageHeight: number(value.imageHeight, 80, 800, 360) }
+}
 export function validateDraft(input) {
   if (!input || typeof input !== 'object') fail('Rascunho inválido.')
   const step = Number(input.step ?? 1)
@@ -33,10 +48,11 @@ export function validateDraft(input) {
     title: text(input.title, 240), description: text(input.description, 3000),
     ctaLabel: text(input.ctaLabel, 100, 'Quero saber mais'),
     checkoutUrl: https(text(input.checkoutUrl, 2000)), publicUrl: https(text(input.publicUrl, 500)),
-    imageUrl: https(text(input.imageUrl, 2000)), metaPixelId, ga4Id, color, step,
+    imageUrl: image(input.imageUrl), metaPixelId, ga4Id, color, step,
+    redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',
-    template: input.template === 'colecao' ? 'colecao' : 'essencial',
-    blocks: blocks.map((block) => ({ title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: https(text(block?.imageUrl, 2000)) })),
+    template: ['colecao', 'infancia_pt'].includes(input.template) ? input.template : 'essencial',
+    blocks: blocks.map((block) => ({ id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), style: style(block?.style) })),
   }
 }
 function owned(state, ownerId, id) {
