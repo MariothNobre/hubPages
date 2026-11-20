@@ -22,6 +22,7 @@ services:
       - hubpages_dev_content:/data
     environment:
       HUBPAGES_ENV: development
+      HUBPAGES_PLATFORM_ENABLED: 'true'
       APP_ORIGINS: https://dev.hubpages.com.br,https://www.dev.hubpages.com.br
       HUBPAGES_ADMIN_EMAIL: ${HUBPAGES_ADMIN_EMAIL:-}
       HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${HUBPAGES_BOOTSTRAP_TOKEN_HASH:-}

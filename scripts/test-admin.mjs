@@ -11,13 +11,25 @@ const hash = `scrypt$${salt.toString('base64url')}$${scryptSync(password, salt, 
 const file = join(directory, 'content.json')
 await writeFile(file, JSON.stringify({ admin: { email: 'test@example.com', passwordHash: hash }, pages: { infancia_alem_das_telas: { publicUrl: 'https://test.example.com/oferta', published: true } } }))
 const base = 'http://localhost:4196'
-const child = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, DATABASE_URL: '', PORT: '4196', STATIC_DIR: resolve('dist'), DATA_FILE: file, APP_ORIGINS: base, HUBPAGES_ADMIN_EMAIL: 'test@example.com', HUBPAGES_SESSION_SECRET: 'local-test-secret' }, stdio: ['ignore', 'pipe', 'pipe'] })
+const child = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, HUBPAGES_PLATFORM_ENABLED: 'true', DATABASE_URL: '', PORT: '4196', STATIC_DIR: resolve('dist'), DATA_FILE: file, APP_ORIGINS: base, HUBPAGES_ADMIN_EMAIL: 'test@example.com', HUBPAGES_SESSION_SECRET: 'local-test-secret' }, stdio: ['ignore', 'pipe', 'pipe'] })
 try {
   await new Promise((done, reject) => { child.stdout.once('data', done); child.once('exit', (code) => reject(new Error(`Server exited: ${code}`))) })
   const login = await fetch(`${base}/api/admin/login`, { method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com', password }) })
   assert.equal(login.status, 200)
   const cookie = login.headers.get('set-cookie').split(';')[0]
   const headers = { Origin: base, Cookie: cookie, 'Content-Type': 'application/json' }
+  assert.equal((await fetch(`${base}/api/platform/pages`)).status, 401)
+  const createdResponse = await fetch(`${base}/api/platform/pages`, { method: 'POST', headers, body: JSON.stringify({ name: 'Rascunho local' }) })
+  assert.equal(createdResponse.status, 201)
+  const created = await createdResponse.json()
+  assert.equal((await fetch(`${base}/api/platform/pages/${created.id}`)).status, 401)
+  assert.equal((await fetch(`${base}/api/pages/${created.id}`)).status, 404)
+  assert.equal((await fetch(`${base}/api/platform/pages/${created.id}/publish`, { method: 'POST', headers })).status, 409)
+  const preserved = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(preserved.admin.passwordHash, hash)
+  assert.equal(preserved.pages.infancia_alem_das_telas.publicUrl, 'https://test.example.com/oferta')
+  assert.equal(preserved.platform.pages[created.id].editorialStatus, 'draft')
+  console.log('PASS: authenticated Studio, no public draft access, publication blocked without payment, legacy unchanged')
   const alias = await fetch(`${base}/api/resolve-page?url=${encodeURIComponent('https://test.example.com/oferta')}`)
   assert.equal((await alias.json()).slug, 'infancia_alem_das_telas')
   const profile = await fetch(`${base}/api/admin/profile`, { method: 'PUT', headers, body: JSON.stringify({ name: 'Teste', email: 'updated@example.com', currentPassword: password, newPassword: 'UpdatedPassword123!' }) })
@@ -30,4 +42,7 @@ try {
   assert.equal((await fetch(`${base}/api/resolve-page?url=${encodeURIComponent('https://test.example.com/oferta')}`)).status, 404)
   assert.equal((await fetch(`${base}/api/pages/infancia_alem_das_telas`)).status, 404)
   console.log('PASS: login, alias, profile, password invalidation and draft blocking')
-} finally { child.kill() }
+} finally {
+  if (process.env.HUBPAGES_TEST_PREVIEW === 'true') console.log(`Local isolated preview: ${base}/studio (updated@example.com / UpdatedPassword123!)`)
+  else child.kill()
+}
