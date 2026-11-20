@@ -120,13 +120,13 @@ export function StudioPage() {
   async function backToPages(){if(transition.current)return;transition.current=true;setLeaving(true);try{if(pending.current&&!await pending.current)return;if(!await flush())return;current.current=null;setPage(null);await refresh()}catch(error){setNotice(error instanceof Error?error.message:'Falha ao carregar páginas.')}finally{transition.current=false;setLeaving(false)}}
   const addressPageId=page?.id,addressValue=page?.draft.publicUrl
   useEffect(()=>{if(!addressPageId||!addressValue)return;const controller=new AbortController();const timer=window.setTimeout(()=>{fetch(`/api/platform/pages/${addressPageId}/address-availability?url=${encodeURIComponent(addressValue)}`,{signal:controller.signal}).then(response=>{if(!controller.signal.aborted)setAddressCheck({pageId:addressPageId,url:addressValue,available:response.ok})}).catch(()=>{if(!controller.signal.aborted)setAddressCheck({pageId:addressPageId,url:addressValue,available:false})})},300);return()=>{window.clearTimeout(timer);controller.abort()}},[addressPageId,addressValue])
-  const reviewPageId=page?.id,reviewRevision=page?.revision,reviewPublicationId=page?.publication?.id||''
+  const reviewPageId=page?.id,reviewPublicationId=page?.publication?.id||''
   useEffect(()=>{
     if(!reviewPageId)return
     const controller=new AbortController()
     const timer=window.setTimeout(()=>{fetch(`/api/platform/pages/${reviewPageId}/publication-review`,{signal:controller.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw new Error(data.message);if(!controller.signal.aborted)setReview({...data,publishedDraft:data.publishedDraft?withLegacyRoles(data.publishedDraft):null,pageId:reviewPageId,publicationId:reviewPublicationId,error:''})}).catch(error=>{if(!controller.signal.aborted)setReview(previous=>({pageId:reviewPageId,publicationId:reviewPublicationId,publishedDraft:previous?.pageId===reviewPageId?previous.publishedDraft:null,publishedAt:previous?.pageId===reviewPageId?previous.publishedAt:null,changedImageSlots:[],assetVersion:'',error:error.message}))})},200)
     return()=>{window.clearTimeout(timer);controller.abort()}
-  },[reviewPageId,reviewRevision,reviewPublicationId,assetRefresh])
+  },[reviewPageId,reviewPublicationId,assetRefresh])
   const draft = page?.draft
   const reviewCurrent=review?.pageId===page?.id&&review?.publicationId===reviewPublicationId?review:null
   const changes=draft&&(!page?.publication||reviewCurrent&&!reviewCurrent.error)?pendingChanges(draft,reviewCurrent?.publishedDraft||null,reviewCurrent?.changedImageSlots):[]
