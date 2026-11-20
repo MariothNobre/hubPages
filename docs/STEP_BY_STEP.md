@@ -301,3 +301,13 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - QA local sintético: controles das seis capas visíveis em grade no editor e composição expandida na prévia; três mídias independentes na pilha confirmadas no DOM; quatro preços editáveis, FAQ expandida com título sem transform, autor desabilitado ausente na prévia e logo de rodapé sem link. Modal manteve troca de mídia e textos editados. Catálogo recebeu quatro capturas atuais do modelo padrão.
 - Desfazer: texto restaurado, bloco excluído restaurado e Ctrl+Z confirmado; após foto substituir vídeo, botão Desfazer recuperou video/webm de 554058 bytes idêntico ao fixture original (comparação binária pela API local). Fixture CC0 usada somente localmente, sem commit/deploy. Histórico limitado em RAM validado por teste. Duas abas antigas de QA causaram conflito de revisão corretamente recusado; repetição em sessão única passou.
 - Navegador resetado e tabs de QA fechadas; servidor sintético encerrado. Nenhuma fixture, login de teste ou evento Meta foi enviado às páginas reais.
+
+
+## HP-026 — v0.7.0-dev.13 — Editor e Desfazer entregues em DEV
+
+- 2026-11-20 20:29 BRT / 23:29 UTC. Implementação a7ba7c94f43f03b803036f74dcc771a4ba59827d, PR #13, merge/runtime develop b51475de22d6baf655c6f9bde35fc25ad8c112ff. Tag v0.7.0-dev.13 aponta ao runtime implantado.
+- CI PR 44836680165 / job 136634708088 e CI develop 44836897311 / job 136635464981: sucesso, incluindo PostgreSQL 17 isolado, migração 007, propriedade, Range, publicação atômica, remoção física dos binários históricos e preservação das cadeias JSON. Lint/build, contrato PT/ES e Desfazer passaram.
+- Deploy DEV 44836897194 / job 136635465200: sucesso; banco e app healthy. Restaurações isoladas verificadas antes e depois: /opt/hubpages-backups/dev/verified-20261120T232722Z-88630.dump e /opt/hubpages-backups/dev/verified-20261120T232837Z-91058.dump. Documentos, referências e revisões íntegros. Sem alterações das contas/credenciais.
+- Conferência externa somente leitura: Studio 200, bundle index-xts88dYL.js confirmado com Desfazer e troca imagem/vídeo. APIs privadas de páginas/métricas 401 sem sessão. Health DEV, produção e Sistera 200; API customer em produção permanece 404. Não foram abertas páginas de vendas reais para gerar acessos nem enviados eventos Meta.
+- Homologação: recarregar https://dev.hubpages.com.br/studio. Desfazer fica no cabeçalho junto de Salvar agora; Cards e recursos controla quantidades e galeria máxima de seis mídias. Contrato em docs/DIRETRIZES_TEMPLATES_E_EDITOR.md e guia em docs/GUIA_EDITOR_VISUAL_DEV.md. Evidências locais sintéticas em docs/evidence/hp025.
+- Produção/main, Sistera, DNS/proxy/firewall preservados. Documentação final com skip-ci; sem novo deploy.

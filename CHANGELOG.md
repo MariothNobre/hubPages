@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.7.0-dev.13] - 2026-11-20 (somente DEV)
+
+- Contrato compartilhado de edição para templates PT/ES e futuros modelos: ações sem navegar no editor, preço legível em quatro posições, FAQ corrigida, visibilidade individual de botões e quantidades configuráveis.
+- Autor e degustação opcionais; metadados do leitor editáveis, substituição centralizada sem fechar o modal e três mídias independentes na pilha. Galeria da coleção de até seis imagens/vídeos com composição expandida na prévia.
+- Mídias atuais por espaço, vídeo MP4/WebM com Range e limpeza de binários antigos ao republicar/despublicar, preservando a publicação atual enquanto o rascunho muda. Migração 007 e histórico JSON preservado.
+- Botão Desfazer e Ctrl+Z/Cmd+Z para alterações do rascunho, incluindo mídias e blocos removidos. Até 50 ações/100 MB temporários na RAM, sem biblioteca online.
+- Marca apenas no rodapé de vendas sem link, catálogo atualizado, renderizadores carregados sob demanda e diretrizes versionadas em docs/DIRETRIZES_TEMPLATES_E_EDITOR.md.
+
 ## [Não publicado]
 
 ### Adicionado
