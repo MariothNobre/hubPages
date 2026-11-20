@@ -5,7 +5,9 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { createPostgresStore } from './postgres-store.mjs'
 import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
-import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicateDraft, restoreDraft } from './platform.mjs'
+import { PlatformError } from './platform.mjs'
+import { createPlatformStore } from './platform-store.mjs'
+import { templates, templateInput } from './templates.mjs'
 import { createIdentityStore } from './identity-store.mjs'
 import { customerAuth, customerCookie, termsVersion } from './customer-auth.mjs'
 
@@ -24,6 +26,7 @@ const adminEmail = (process.env.HUBPAGES_ADMIN_EMAIL ?? '').trim().toLowerCase()
 const bootstrapTokenHash = process.env.HUBPAGES_BOOTSTRAP_TOKEN_HASH ?? ''
 const sessionSecret = process.env.HUBPAGES_SESSION_SECRET ?? ''
 const customers = process.env.HUBPAGES_PLATFORM_ENABLED === 'true' ? customerAuth(await createIdentityStore(process.env.DATABASE_URL, `${dataFile}.identity.json`)) : null
+const platformStore = customers ? await createPlatformStore(process.env.DATABASE_URL, { read: loadStore, write: saveStore }) : null
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
 const sessionDurationSeconds = 60 * 60 * 8
@@ -316,25 +319,40 @@ async function handleApi(request, response, url) {
     // Compatibility account: no mutation of the legacy administrator identity.
     const ownerId = customer?.accountId ?? 'legacy-owner'
     try {
-      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: listDrafts(state, ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
+      if (url.pathname === '/api/platform/templates' && request.method === 'GET') return sendJson(response, 200, { templates })
+      const imageMatch = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/images\/(hero|[a-f0-9-]{36})$/)
+      if (imageMatch) {
+        const [, id, slot] = imageMatch
+        if (request.method === 'PUT') {
+          await platformStore.read(ownerId, id)
+          const chunks = []; let size = 0
+          for await (const chunk of request) { size += chunk.length; if (size > 2 * 1024 * 1024) return sendJson(response, 413, { message: 'Envie uma imagem de até 2 MB.' }); chunks.push(chunk) }
+          const content = Buffer.concat(chunks)
+          const mime = content.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) ? 'image/png' : content.subarray(0,3).equals(Buffer.from([255,216,255])) ? 'image/jpeg' : content.toString('ascii',0,4)==='RIFF' && content.toString('ascii',8,12)==='WEBP' ? 'image/webp' : ''
+          if (!mime) return sendJson(response, 422, { message: 'Formato inválido. Use PNG, JPEG ou WebP.' })
+          await platformStore.putImage(ownerId,id,slot,mime,content)
+          return sendJson(response,200,{ url: url.pathname })
+        }
+        if (request.method === 'GET') { const image = await platformStore.getImage(ownerId,id,slot); response.writeHead(200,{ 'Content-Type': image.mime, 'Cache-Control': 'private, no-store' }); return response.end(image.content) }
+        return sendJson(response,405,{message:'Método não permitido.'})
+      }
+      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
-        if (listDrafts(state, ownerId).length >= 1000) return sendJson(response, 422, { message: 'Limite de uso justo atingido. Contate o suporte.' })
-        const page = createDraft(state, ownerId, await readJsonBody(request)); await saveStore(state)
+        const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request)))
         return sendJson(response, 201, page)
       }
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
-      if (request.method === 'GET' && !action) return sendJson(response, 200, readDraft(state, ownerId, id))
+      if (request.method === 'GET' && !action) return sendJson(response, 200, await platformStore.read(ownerId, id))
       let page
-      if (request.method === 'PUT' && !action) page = saveDraft(state, ownerId, id, await readJsonBody(request))
-      else if (request.method === 'POST' && action === 'duplicate') page = duplicateDraft(state, ownerId, id)
-      else if (request.method === 'POST' && action === 'restore') { const input = await readJsonBody(request); page = restoreDraft(state, ownerId, id, input.version, input.revision) }
+      if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request))
+      else if (request.method === 'POST' && action === 'duplicate') page = await platformStore.duplicate(ownerId, id)
+      else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request))
       else if (request.method === 'POST' && action === 'publish') {
-        readDraft(state, ownerId, id)
+        await platformStore.read(ownerId, id)
         return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
       } else return sendJson(response, 405, { message: 'Método não permitido.' })
-      await saveStore(state)
       return sendJson(response, 200, page)
     } catch (error) {
       if (error instanceof PlatformError) return sendJson(response, error.status, { message: error.message })
@@ -487,7 +505,7 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname)) {
+    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }

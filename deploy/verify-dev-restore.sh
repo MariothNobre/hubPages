@@ -23,6 +23,10 @@ docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "S
 # Verify the critical legacy structures after PostgreSQL accepted the full restore.
 docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "SELECT jsonb_typeof(payload->'pages') FROM hubpages_state WHERE id=1;" | grep -qx object
 docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM hubpages_state WHERE id=1 AND payload->'admin'->>'passwordHash' IS NOT NULL;" | grep -qx 1
+if [[ "$(docker exec "$restore" psql -U hubpages -d hubpages -At -c "SELECT to_regclass('hubpages_studio_pages') IS NOT NULL;")" == t ]]; then
+  docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM hubpages_studio_pages p WHERE revision <> COALESCE((SELECT max(version) FROM hubpages_studio_revisions r WHERE r.page_id=p.id),0);" | grep -qx 0
+  echo 'Restore DEV: cadeias de revisoes do Studio integras.'
+fi
 sha256sum "$dump" > "$dump.sha256"
 docker inspect hubpages_dev-hubpages-dev-1 --format '{{.Image}}' > "$backup_dir/image-$stamp.txt"
 printf 'Restore DEV verificado em container isolado sem rede ou porta pública; backup protegido: %s\n' "$dump"
