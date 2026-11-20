@@ -46,6 +46,7 @@ function walk(node){
 }walk(root)
 let jsx=source.slice(root.getStart(file),root.end)
 for(const[start,end,value]of edits.sort((a,b)=>b[0]-a[0]))jsx=jsx.slice(0,start-root.getStart(file))+value+jsx.slice(end-root.getStart(file))
+jsx=jsx.replace('<div className="sales-v2">',()=>'<div className="sales-v2" style={draft.layoutOverrides?.includes("color")?{"--sales-teal":draft.color,"--sales-teal-dark":draft.color} as CSSProperties:undefined}>')
 jsx=jsx.replace('<a href={content.ctaHref}>{content.ctaLabel}</a>',"{buyButton('','sticky')}")
 const parsed=ts.createSourceFile('view.tsx','const view=('+jsx+')',ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
 let main

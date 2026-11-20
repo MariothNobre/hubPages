@@ -32,7 +32,7 @@ function style(value = {}) {
   return { width: number(value.width, 20, 100, 100), imageWidth: number(value.imageWidth, 10, 100, 100), padding: number(value.padding, 0, 120, 32), margin: number(value.margin, 0, 120, 16), gap: number(value.gap, 0, 80, 24), fontSize: number(value.fontSize, 14, 64, 18), headingSize: number(value.headingSize,20,80,36), buttonWidth: number(value.buttonWidth,20,100,100), buttonPadding: number(value.buttonPadding,8,40,16), columns: number(value.columns, 1, 3, 1), font: ['serif','rounded'].includes(value.font) ? value.font : 'system', align: ['left','center','right'].includes(value.align) ? value.align : 'left', animation: ['fade','rise'].includes(value.animation) ? value.animation : 'none', background: /^#[a-f0-9]{6}$/i.test(value.background ?? '') ? value.background : '#ffffff', imageFit: value.imageFit === 'cover' ? 'cover' : 'contain', imageHeight: number(value.imageHeight, 80, 800, 360) }
 }
 function overrides(value=[]) {
-  if(!Array.isArray(value)||value.length>24||value.some(key=>!['width','imageWidth','imageHeight','imageFit','padding','margin','gap','fontSize','headingSize','buttonWidth','buttonPadding','font','columns','align','animation','background'].includes(key)))fail('Ajustes de layout inválidos.')
+  if(!Array.isArray(value)||value.length>24||value.some(key=>!['color','width','imageWidth','imageHeight','imageFit','padding','margin','gap','fontSize','headingSize','buttonWidth','buttonPadding','font','columns','align','animation','background'].includes(key)))fail('Ajustes de layout inválidos.')
   return [...new Set(value)]
 }
 export function validateDraft(input) {
