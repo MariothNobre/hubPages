@@ -1,6 +1,6 @@
 # Studio unificado — DEV
 
-Implementação de 20/11/2026; atualização de contadores v0.7.0-dev.12. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
+Implementação de 20/11/2026; atualização de contadores v0.7.0-dev.12 publicada em DEV. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
 
 ## Criar, editar e publicar
 
