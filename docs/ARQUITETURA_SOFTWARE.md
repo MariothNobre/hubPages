@@ -72,3 +72,9 @@ Asaas aprovado pelo responsável em 19/11/2026. Sem credenciais/integração rea
 Novo teste de restauração DEV: `deploy/verify-dev-restore.sh` cria dump custom protegido e manifesto SHA256, restaura integralmente em PostgreSQL efêmero sem rede/porta pública, valida tabela/páginas/admin e remove apenas o container do teste. Invocado antes de build/deploy quando o banco DEV já existe. Sem execução de migrações destrutivas. Deploy automático do workflow nesta branch limitado a develop; main não é publicado por este workflow sem nova alteração aprovada.
 
 Pendente: auditoria privada integral de registros/contagens, E2E no DEV com admin real, tenants e cadastro/recuperação/MFA, upload/retention, publicador separado, prova DNS/SSL, Asaas sandbox+produção, GA4/Ads/eventos, importador autorizado/SSRF, notificações e teste de carga. Nenhum item pendente deve ser anunciado como pronto.
+
+## Estado reconciliado após deploy — 2026-11-20 01:27 UTC
+
+Studio publicado exclusivamente em DEV pelo merge 43abda5, Actions 44653421519 (sucesso). Restaurar backup foi efetivamente executado e validado duas vezes em PostgreSQL efêmero. Caminhos, manifestos e evidências em STEP_BY_STEP HP-002. Gates privados confirmados externamente (401); noindex confirmado no shell do Studio; produção continua sem a API nova (404). Healths DEV/produção/Sistera saudáveis. Não houve migração destrutiva nem reset de credenciais.
+
+Pendência de escala: o primeiro incremento usa JSONB compartilhado e serialização por processo, exclusivamente para homologação do administrador. Antes de disponibilizar contas públicas, mover somente os novos recursos para tabelas relacionais aditivas com índices/transactions/tenantId, mantendo o adaptador legado e sem migrar dados existentes por fixtures.

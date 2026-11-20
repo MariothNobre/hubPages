@@ -28,3 +28,16 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Desenvolvido mas ainda não publicado no momento deste registro. Restore PostgreSQL ainda a executar no pipeline DEV; seu resultado será registrado em entrada posterior.
 - Rollback: flag DEV off e imagem anterior, mantendo payload.platform e todas as revisões. Não limpar banco/volumes. Main/produção não alterados.
 - Próximo lote: consolidar isolamento por conta e schema relacional aditivo após restore, fluxo de clientes, upload/artefatos e Asaas real. O sistema SaaS completo ainda não está entregue.
+
+## HP-002 — v0.7.0-dev.1 — Homologação e restore comprovados
+
+- UTC: 2026-11-20 01:27; BRT: 2026-11-19 22:27. Autor: Codex.
+- Commits: dc0c1e6 (auditoria/governança), 3656741 (implementação), 43abda5 (merge DEV).
+- CI 44653421406: sucesso. Deploy DEV 44653421519 / job 136013658972: sucesso. Logs confirmam dois testes de restore (a esteira publica e reprovisiona o painel), PostgreSQL e app healthy.
+- Backups restaurados e verificados: `/opt/hubpages-backups/dev/verified-20261120T012456Z-2879747.dump` e `/opt/hubpages-backups/dev/verified-20261120T012612Z-2882025.dump`; manifestos SHA256 e IDs de imagem no mesmo diretório privado. Containers de teste sem rede/porta pública removidos pelo trap; volumes reais preservados.
+- Consulta SQL pós-deploy confirmou uma página configurada no estado legado de DEV; nenhum dado de produção ou fixture de teste foi copiado para DEV. Registros legados não foram removidos ou criados pelo Studio.
+- Verificação externa: `/studio` DEV 200 com noindex/nofollow/noarchive; `/api/platform/pages` anônimo 401. Health DEV e produção ok, Sistera 200. API de plataforma em produção 404: não implantada lá.
+- Banco: nenhuma migração relacional ou conversão de dados legados; criação de rascunhos futuros adiciona apenas payload.platform. Usuário/admin real preservado; login manual remoto não executado por ausência de credencial e desnecessário para alterar senhas existentes. Login/edição/persistência visual comprovados apenas na instância local sintética.
+- Status: primeiro incremento publicado em DEV. Produção continua em ca05749/v0.6.0, sem merge, tag de release de produção ou alteração DNS/proxy/firewall.
+- Acesso para homologação: https://dev.hubpages.com.br/admin, depois link HubPages Studio, ou https://dev.hubpages.com.br/studio após autenticar.
+- Próximos critérios de aceite: clientes/tenants reais com IDOR E2E, uploads e artefatos versionados, domínio verificado, Asaas sandbox+webhook e vigência real. Asaas está aprovado, mas não integrado nem anunciado como ativo.
