@@ -13,5 +13,5 @@ export function StudioPreviewPage() {
     fetch(`/api/platform/pages/${id}`,{credentials:'same-origin',cache:'no-store'}).then(async(response)=>{const result=await response.json();if(!response.ok) throw new Error(result.message);if(active) setDraft(result.draft)}).catch((error)=>{if(active) setNotice(error.message)})
     return()=>{active=false}
   },[id])
-  return <div className="studio private-preview"><div className="private-preview-bar"><span>PRÉVIA PRIVADA · NÃO PUBLICADA · links abrem em nova aba</span><Link to="/studio">Voltar ao Studio</Link></div>{draft ? <StudioCanvas draft={draft} interactive /> : <p role="status">{notice} <Link to="/conta">Entrar na conta</Link></p>}</div>
+  return <div className={draft?.template==='infancia_pt'?'private-preview legacy-preview-shell':'studio private-preview'}><div className="private-preview-bar"><span>PRÉVIA PRIVADA · NÃO PUBLICADA · links abrem em nova aba</span><Link to="/studio">Voltar ao Studio</Link></div>{draft ? <StudioCanvas draft={draft} interactive /> : <p role="status">{notice} <Link to="/conta">Entrar na conta</Link></p>}</div>
 }

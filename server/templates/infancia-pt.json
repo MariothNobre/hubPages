@@ -18,7 +18,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "pain",
+      "showButton": true
     },
     {
       "kind": "content",
@@ -27,7 +29,9 @@
       "imageUrl": "/assets/books/infancia-alem-das-telas.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "solution",
+      "showButton": true
     },
     {
       "kind": "content",
@@ -36,7 +40,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "method",
+      "showButton": true
     },
     {
       "kind": "sample",
@@ -45,7 +51,9 @@
       "imageUrl": "/assets/samples/01-mundo-conectado.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-0",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -54,7 +62,9 @@
       "imageUrl": "/assets/samples/02-rotina-familia.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-1",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -63,7 +73,9 @@
       "imageUrl": "/assets/samples/03-nao-quer-desligar.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-2",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -72,7 +84,9 @@
       "imageUrl": "/assets/samples/04-caixa-assuntos.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-3",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -81,7 +95,9 @@
       "imageUrl": "/assets/samples/05-roda-descobertas.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-4",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -90,7 +106,9 @@
       "imageUrl": "/assets/samples/06-super-herois-cuidado.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-5",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -99,7 +117,9 @@
       "imageUrl": "/assets/samples/07-oficina-fantoches.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-6",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -108,7 +128,9 @@
       "imageUrl": "/assets/samples/08-mascaras-emocoes.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-7",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -117,7 +139,9 @@
       "imageUrl": "/assets/samples/09-circuito-equilibrio.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-8",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -126,7 +150,9 @@
       "imageUrl": "/assets/samples/10-jogo-semaforo.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-9",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -135,7 +161,9 @@
       "imageUrl": "/assets/samples/11-reflexao-especial.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-10",
+      "showButton": false
     },
     {
       "kind": "sample",
@@ -144,7 +172,9 @@
       "imageUrl": "/assets/samples/12-cartoes-emocoes.webp",
       "style": {
         "background": "#fff3d9"
-      }
+      },
+      "templateRole": "sample-11",
+      "showButton": false
     },
     {
       "kind": "content",
@@ -153,7 +183,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "manual",
+      "showButton": true
     },
     {
       "kind": "bonus",
@@ -162,7 +194,9 @@
       "imageUrl": "/assets/books/100-brincadeiras.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "bonus-0",
+      "showButton": true
     },
     {
       "kind": "bonus",
@@ -171,7 +205,9 @@
       "imageUrl": "/assets/books/calendario-reconexao.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "bonus-1",
+      "showButton": true
     },
     {
       "kind": "bonus",
@@ -180,7 +216,9 @@
       "imageUrl": "/assets/books/acordo-familiar.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "bonus-2",
+      "showButton": true
     },
     {
       "kind": "bonus",
@@ -189,7 +227,9 @@
       "imageUrl": "/assets/books/sos-desligar.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "bonus-3",
+      "showButton": true
     },
     {
       "kind": "bonus",
@@ -198,7 +238,9 @@
       "imageUrl": "/assets/books/familia-presente.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "bonus-4",
+      "showButton": true
     },
     {
       "kind": "content",
@@ -207,7 +249,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "possibilities",
+      "showButton": true
     },
     {
       "kind": "offer",
@@ -216,7 +260,9 @@
       "imageUrl": "/assets/books/infancia-alem-das-telas.webp",
       "style": {
         "background": "#e6f0e6"
-      }
+      },
+      "templateRole": "offer",
+      "showButton": true
     },
     {
       "kind": "author",
@@ -225,7 +271,9 @@
       "imageUrl": "/assets/author/marioth-nobre.webp",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "author",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -234,7 +282,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-0",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -243,7 +293,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-1",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -252,7 +304,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-2",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -261,7 +315,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-3",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -270,7 +326,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-4",
+      "showButton": false
     },
     {
       "kind": "faq",
@@ -279,7 +337,9 @@
       "imageUrl": "",
       "style": {
         "background": "#ffffff"
-      }
+      },
+      "templateRole": "faq-5",
+      "showButton": false
     },
     {
       "kind": "offer",
@@ -288,7 +348,9 @@
       "imageUrl": "",
       "style": {
         "background": "#e6f0e6"
-      }
+      },
+      "templateRole": "final",
+      "showButton": true
     }
   ],
   "style": {
