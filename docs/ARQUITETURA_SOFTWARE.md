@@ -156,3 +156,7 @@ Edições e troca/remoção de imagens privadas não mudam o snapshot no ar. Rep
 UI: cartões com Rascunho/Publicada, link para página ativa, aviso de revisão posterior à publicação, Excluir página com diálogo, Lixeira e Restaurar. Etapa 8 permite Publicar/Atualizar publicação/Despublicar. Resultado de publicação não sobrescreve alterações locais feitas enquanto a requisição estava em trânsito. Desativar a flag impede novas publicações gratuitas, preservando as já liberadas até despublicação explícita.
 
 Limites: concessão gratuita de homologação sem expiração financeira automática; cobrança/30 dias/renovação/reembolso Asaas, domínio próprio e trackers das páginas novas ainda pendentes. Pixel/online/CAPI/admin e páginas legadas permanecem inalterados. Testes isolados com dois clientes cobrem publicação anônima, snapshots imutáveis, remoção/retorno e invariantes; nenhuma fixture vai à VPS. Produção continua congelada.
+
+## Estado reconciliado — v0.7.0-dev.5, 2026-11-20 10:48 UTC
+
+Lote implantado apenas no DEV pelo merge 85056e5, com CI 44721920889 e deploy 44721920941 bem-sucedidos. Migration 003 iniciou na aplicação saudável após restore verificado; a segunda restauração incluiu tabelas novas e validou versões publicadas/referências. Rotas privadas protegidas, inexistentes públicas 404 e healths DEV/produção/Sistera saudáveis. Evidências em STEP_BY_STEP HP-010. Free publishing está limitado ao DEV conforme autorização explícita; Asaas e produção não foram ativados.
