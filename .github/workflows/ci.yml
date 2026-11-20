@@ -17,6 +17,20 @@ jobs:
   validar:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_DB: hubpages_ci
+          POSTGRES_USER: hubpages
+          POSTGRES_PASSWORD: ci-only-isolated-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hubpages -d hubpages_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -45,6 +59,12 @@ jobs:
           node scripts/test-platform.mjs
           node scripts/test-page-address.mjs
           node scripts/test-admin.mjs
+          node scripts/test-customers.mjs
+
+      - name: Validar contas e migração no PostgreSQL isolado
+        env:
+          HUBPAGES_TEST_DATABASE_URL: postgres://hubpages:ci-only-isolated-password@127.0.0.1:5432/hubpages_ci
+        run: node scripts/test-customers.mjs
 
       - name: Verificar tipos e build
         run: pnpm build

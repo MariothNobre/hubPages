@@ -6,6 +6,8 @@ import { extname, join, normalize, resolve } from 'node:path'
 import { createPostgresStore } from './postgres-store.mjs'
 import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
 import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicateDraft, restoreDraft } from './platform.mjs'
+import { createIdentityStore } from './identity-store.mjs'
+import { customerAuth, customerCookie, termsVersion } from './customer-auth.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -21,6 +23,7 @@ const allowedOrigins = new Set((process.env.APP_ORIGINS ?? process.env.APP_ORIGI
 const adminEmail = (process.env.HUBPAGES_ADMIN_EMAIL ?? '').trim().toLowerCase()
 const bootstrapTokenHash = process.env.HUBPAGES_BOOTSTRAP_TOKEN_HASH ?? ''
 const sessionSecret = process.env.HUBPAGES_SESSION_SECRET ?? ''
+const customers = process.env.HUBPAGES_PLATFORM_ENABLED === 'true' ? customerAuth(await createIdentityStore(process.env.DATABASE_URL, `${dataFile}.identity.json`)) : null
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
 const sessionDurationSeconds = 60 * 60 * 8
@@ -274,16 +277,46 @@ function analyticsSnapshot(store) {
 }
 
 async function handleApi(request, response, url) {
+  if (url.pathname.startsWith('/api/customer/')) {
+    response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    if (!customers) return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
+    if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+    const token = parseCookies(request)[customerCookie]
+    try {
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', environment: 'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
+      if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
+        const key = `${url.pathname}:${request.socket.remoteAddress}`
+        if (!canAttemptLogin(key)) return sendJson(response, 429, { message: 'Muitas tentativas. Aguarde antes de tentar novamente.' })
+        const body = await readJsonBody(request)
+        if (url.pathname.endsWith('/register') && process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED !== 'true') return sendJson(response, 403, { message: 'Cadastro ainda não liberado neste ambiente.' })
+        const state = await loadStore()
+        const result = url.pathname.endsWith('/register') ? await customers.register(body, state.admin?.email ?? adminEmail) : await customers.login(body)
+        loginAttempts.delete(key)
+        return sendJson(response, url.pathname.endsWith('/register') ? 201 : 200, { user: result.user }, { 'Set-Cookie': result.cookie })
+      }
+      if (request.method === 'POST' && url.pathname === '/api/customer/logout') return sendJson(response, 200, { authenticated: false }, { 'Set-Cookie': await customers.logout(token) })
+      if (request.method === 'GET' && url.pathname === '/api/customer/profile') return sendJson(response, 200, await customers.readProfile(token))
+      if (request.method === 'PUT' && url.pathname === '/api/customer/profile') { const state = await loadStore(); return sendJson(response, 200, await customers.updateProfile(token, await readJsonBody(request), state.admin?.email ?? adminEmail)) }
+      return sendJson(response, 404, { message: 'Recurso não encontrado.' })
+    } catch (error) {
+      if (error.code === '23505') return sendJson(response, 409, { message: 'Este e-mail não está disponível.' })
+      if (error.status) return sendJson(response, error.status, { message: error.message })
+      throw error
+    }
+  }
   if (url.pathname.startsWith('/api/platform/')) {
     response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
     if (process.env.HUBPAGES_PLATFORM_ENABLED !== 'true') return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
-    if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Entre no painel para acessar o Studio privado.' })
+    const customer = await customers?.resolve(parseCookies(request)[customerCookie])
+    const isAdmin = !customer && hasValidSession(request)
+    if (!customer && !isAdmin) return sendJson(response, 401, { message: 'Entre na sua conta para acessar o Studio privado.' })
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const state = await loadStore()
     // Compatibility account: no mutation of the legacy administrator identity.
-    const ownerId = 'legacy-owner'
+    const ownerId = customer?.accountId ?? 'legacy-owner'
     try {
-      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: listDrafts(state, ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) })
+      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: listDrafts(state, ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
         if (listDrafts(state, ownerId).length >= 1000) return sendJson(response, 422, { message: 'Limite de uso justo atingido. Contate o suporte.' })
         const page = createDraft(state, ownerId, await readJsonBody(request)); await saveStore(state)
@@ -454,7 +487,7 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if (url.pathname === '/studio') {
+    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname)) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
