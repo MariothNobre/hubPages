@@ -67,16 +67,16 @@ export function validateDraft(input) {
     blocks: blocks.map((block) => ({ id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
   }
 }
-function owned(state, ownerId, id) {
+function owned(state, ownerId, id, includeTrashed = false) {
   const page = state.platform?.pages?.[id]
-  if (!page || page.ownerId !== ownerId) throw new PlatformError(404, 'Página não encontrada.')
+  if (!page || page.ownerId !== ownerId || page.trashedAt && !includeTrashed) throw new PlatformError(404, 'Página não encontrada.')
   return page
 }
 function audit(state, ownerId, action, pageId) {
   state.platform.audit.push({ id: randomUUID(), at: new Date().toISOString(), actorId: ownerId, action, pageId })
 }
-export function listDrafts(state, ownerId) {
-  return Object.values(state.platform?.pages ?? {}).filter((p) => p.ownerId === ownerId).map(({ draft, revisions, ...page }) => ({ ...page, name: draft.name, title: draft.title, step: draft.step, revisions: revisions.length }))
+export function listDrafts(state, ownerId, trashed = false) {
+  return Object.values(state.platform?.pages ?? {}).filter((p) => p.ownerId === ownerId && Boolean(p.trashedAt) === trashed).map(({ draft, revisions, ...page }) => ({ ...page, name: draft.name, title: draft.title, step: draft.step, revisions: revisions.length }))
 }
 export function readDraft(state, ownerId, id) { return structuredClone(owned(state, ownerId, id)) }
 export function createDraft(state, ownerId, input = {}) {
@@ -111,4 +111,43 @@ export function duplicateDraft(state, ownerId, id) {
   const copy = createDraft(state, ownerId, { ...page.draft, name: `${page.draft.name.slice(0,100)} — cópia`, publicUrl: '' })
   state.platform.pages[copy.id].origin = page.origin
   return readDraft(state, ownerId, copy.id)
+}
+function lifecycle(page, ownerId, revision, reason) {
+  if(revision!==page.revision)throw new PlatformError(409,'A página mudou. Atualize a lista e tente novamente.')
+  page.revision+=1;page.updatedAt=new Date().toISOString()
+  page.revisions.push({version:page.revision,at:page.updatedAt,actorId:ownerId,draft:structuredClone(page.draft),reason})
+}
+export function trashDraft(state,ownerId,id,revision,restore=false) {
+  const page=owned(state,ownerId,id,restore)
+  if(restore&&!page.trashedAt)throw new PlatformError(409,'A página não está na lixeira.')
+  if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui uma vigência financeira. Gerencie a publicação antes de excluí-la.')
+  lifecycle(page,ownerId,revision,restore?'untrash':'trash')
+  if(restore)delete page.trashedAt;else page.trashedAt=page.updatedAt
+  page.editorialStatus='draft'
+  audit(state,ownerId,restore?'page.untrash':'page.trash',id)
+  return structuredClone(page)
+}
+export function unpublishDraft(state,ownerId,id,revision) {
+  const page=owned(state,ownerId,id)
+  lifecycle(page,ownerId,revision,'unpublish')
+  page.editorialStatus='draft';audit(state,ownerId,'page.unpublish',id)
+  return structuredClone(page)
+}
+export function publishDraft(state,ownerId,id,revision,origin) {
+  const page=owned(state,ownerId,id)
+  if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui vigência financeira e não pode usar a liberação gratuita de homologação.')
+  if(page.origin!=='native')throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
+  const url=`${origin}/p/${id}`
+  if(page.draft.publicUrl&&page.draft.publicUrl.replace(/\/$/,'')!==url)throw new PlatformError(409,`Nesta homologação, use ${url} ou deixe o endereço vazio. Domínios próprios precisam de verificação antes de publicar.`)
+  if(!page.draft.title||!page.draft.checkoutUrl)throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
+  lifecycle(page,ownerId,revision,'publish')
+  const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:'dev-free',draft:structuredClone(page.draft)}
+  const image=(value)=>value.startsWith(`/api/platform/pages/${id}/images/`)?value.replace(`/api/platform/pages/${id}/images/`,`/api/public/publications/${publication.id}/images/`):value
+  publication.draft.imageUrl=image(publication.draft.imageUrl)
+  publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)})
+  state.platform.publications??={};state.platform.publications[publication.id]=publication
+  const {draft:_draft,...metadata}=publication
+  page.publication=metadata;page.editorialStatus='published'
+  audit(state,ownerId,'page.publish.dev-free',id)
+  return structuredClone(page)
 }

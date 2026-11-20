@@ -16,6 +16,15 @@ Ambiente: https://dev.hubpages.com.br/studio. Produção não recebe estas alter
 
 Imagens enviadas e substituídas não possuem arquivo binário histórico: restaurar uma versão não recupera a imagem antiga. Reenvie a imagem desejada quando necessário. Isso se aplica aos uploads novos; arquivos públicos legados permanecem disponíveis.
 
-Publicação paga dos novos rascunhos ainda bloqueada: Asaas, verificação de domínios e publicador versionado são próximos módulos. Nenhuma cobrança é criada por editar ou visualizar.
+Publicação paga continua pendente da integração Asaas. Por autorização do responsável, modelos nativos podem ser publicados gratuitamente e temporariamente no DEV. Não há registro de pagamento nem vigência financeira de 30 dias nessa liberação.
+
+12. No cartão, **Excluir página** abre uma confirmação. Confirmar move para **Lixeira**; cancelar mantém a página. Se estiver publicada, ela sai do ar. O conteúdo, as imagens atuais e o histórico permanecem preservados. Não há exclusão definitiva neste recurso.
+13. Em **Lixeira**, use **Restaurar página** para voltar como **Rascunho**. A restauração não republica automaticamente. Páginas excluídas continuam contando na política de uso justo e armazenamento, pois seus dados são recuperáveis.
+14. Na etapa **Publicação**, configure título e checkout, deixe o endereço vazio ou use a URL de homologação indicada e clique **Publicar página**. O cartão passa para **Publicada** e oferece **Visitar página publicada**. A URL tem o formato `https://dev.hubpages.com.br/p/IDENTIFICADOR` e abre sem login.
+15. Editar e salvar mantém o site publicado na versão anterior. **Atualizar publicação** cria uma versão nova de texto e imagens. O cartão avisa **Alterações não publicadas** quando há revisão posterior à publicação. **Despublicar e voltar a rascunho** retira o site do ar sem excluir seus dados.
+
+As imagens de uma publicação recebem cópia versionada, para que substituir/remover a imagem no rascunho não quebre o site no ar. Essas cópias não formam biblioteca pessoal; pertencem ao histórico da publicação. Há limite de 100 MB de binários de versões publicadas por conta no DEV, além dos 20 MB de imagens ativas de rascunho.
+
+Esta liberação usa somente o domínio de DEV, sem indexação, cobrança ou configuração automática de DNS. Páginas de origem importada continuam exigindo domínio próprio verificado e não usam essa liberação. Rastreamento/métricas das páginas novas e a integração Asaas continuam pendentes; páginas legadas e suas integrações permanecem preservadas. Desligar a flag de novas publicações gratuitas impede novas ativações, mas não despublica automaticamente páginas já liberadas no DEV.
 
 O modelo Infância Além das Telas reutiliza a estrutura e os estilos da página original em https://hubpages.com.br/infancia_alem_das_telas: 13 seções principais e 16 CTAs na página inicial, sem repetição de botão em cada FAQ/página de degustação. O leitor abre na própria página e mantém o CTA próprio. A prévia completa apresenta o modelo sem ferramentas do editor; sua faixa superior informa que não está publicado. Alterar conteúdo/layout ou remover botões naturalmente modifica a cópia criada pelo usuário, preservando a página original.
