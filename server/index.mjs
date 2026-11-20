@@ -1,3 +1,4 @@
+import { visitorHash } from './workspace-model.mjs'
 import { forwardStudioMeta } from './studio-tracking.mjs'
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { createReadStream } from 'node:fs'
@@ -6,7 +7,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { createPostgresStore } from './postgres-store.mjs'
 import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
-import { PlatformError } from './platform.mjs'
+import { PlatformError,validateDraft } from './platform.mjs'
 import { createPlatformStore } from './platform-store.mjs'
 import { templates, templateInput } from './templates.mjs'
 import { createIdentityStore } from './identity-store.mjs'
@@ -31,6 +32,8 @@ const devPublicOrigin=process.env.HUBPAGES_DEV_PUBLIC_ORIGIN||'https://dev.hubpa
 const platformStore = customers ? await createPlatformStore(process.env.DATABASE_URL, { read: loadStore, write: saveStore,publicOrigin:devPublicOrigin,credentialKey:sessionSecret }) : null
 const pageView=({revisions,...page})=>({...page,revisionCount:page.revision})
 const isDevPublication=Boolean(platformStore)&&process.env.HUBPAGES_ENV==='development'&&allowedOrigins.has(devPublicOrigin)&&(/^https:\/\/dev\.hubpages\.com\.br$/.test(devPublicOrigin)||/^http:\/\/localhost:\d+$/.test(devPublicOrigin))
+const unifiedStudio=isDevPublication&&process.env.HUBPAGES_STUDIO_UNIFIED_ENABLED==='true'
+if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true'
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
@@ -257,6 +260,11 @@ async function handleAnalyticsVisit(request, response, body) {
   const metricStore = await loadStore()
   const metricPage = metricStore.pages?.[pageSlug]
   const metricUrl = new URL(request.headers.referer)
+  if(unifiedStudio&&await platformStore.legacyManaged(pageSlug)){
+    if(metricUrl.origin!==devPublicOrigin||metricUrl.origin!==request.headers.origin)return sendJson(response,403,{message:'Origem da métrica não autorizada.'})
+    try{const url=metricUrl.origin+sourcePath,pub=await platformStore.publicResolve(url);return sendJson(response,202,await platformStore.track({publicationId:pub.id,url,visitor:visitorHash(visitorId,sessionSecret),tabId:visitorId,isNewVisit:body.isNewVisit===true,active:true}))}
+    catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});throw error}
+  }
   if (metricPage?.published === false || sourcePath === '/admin' || metricUrl.origin !== request.headers.origin || resolvePageAddress(metricStore, metricUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Somente páginas de vendas publicadas podem registrar métricas.' })
 
   const now = Date.now()
@@ -290,6 +298,13 @@ async function handleApi(request, response, url) {
   if(url.pathname.startsWith('/api/public/')) {
     if(!isDevPublication||request.headers.host!==new URL(devPublicOrigin).host)return sendJson(response,404,{message:'Página não encontrada.'})
     try {
+      if(url.pathname==='/api/public/traffic'&&request.method==='POST'){
+        if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+        const body=await readJsonBody(request);if(!allowMetaEvent('traffic:'+request.socket.remoteAddress+':'+String(body.visitorId).slice(0,40)))return sendJson(response,429,{message:'Aguarde antes de tentar novamente.'});const source=new URL(body.url),referer=new URL(request.headers.referer||'about:blank')
+        if(source.origin!==devPublicOrigin||referer.origin!==source.origin||referer.pathname!==source.pathname||!/^([a-f0-9-]{36})$/.test(body.publicationId||'')||!/^([a-f0-9-]{36})$/.test(body.tabId||''))throw new PlatformError(403,'Somente a página publicada registra visitas.')
+        const canonical=source.origin+source.pathname.replace(/\/$/,'')
+        return sendJson(response,202,await platformStore.track({publicationId:body.publicationId,url:canonical,visitor:visitorHash(body.visitorId,sessionSecret),tabId:body.tabId,isNewVisit:body.isNewVisit===true,active:body.active!==false}))
+      }
       if(url.pathname==='/api/public/meta/events'&&request.method==='POST'){if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'});if(!allowMetaEvent(request.socket.remoteAddress))return sendJson(response,429,{message:'Aguarde.'});return sendJson(response,200,await forwardStudioMeta({store:platformStore,body:await readJsonBody(request),origin:devPublicOrigin,userAgent:request.headers['user-agent']}))}
       if(url.pathname==='/api/public/resolve'&&request.method==='GET'){const target=new URL(url.searchParams.get('url'));if(target.origin!==devPublicOrigin)throw new PlatformError(404,'Página não encontrada.');return sendJson(response,200,await platformStore.publicResolve(target.origin+target.pathname.replace(/\/$/,'')))}
     }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});return sendJson(response,404,{message:'Página não encontrada.'})}
@@ -334,6 +349,11 @@ async function handleApi(request, response, url) {
   if (url.pathname.startsWith('/api/platform/')) {
     response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
     if (process.env.HUBPAGES_PLATFORM_ENABLED !== 'true') return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
+    if(url.pathname==='/api/platform/logout'&&request.method==='POST'){
+      if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+      const cookie=customers?await customers.logout(parseCookies(request)[customerCookie]):''
+      return sendJson(response,200,{authenticated:false},{'Set-Cookie':[cookie,`${sessionCookie}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`].filter(Boolean)})
+    }
     const customer = await customers?.resolve(parseCookies(request)[customerCookie])
     const isAdmin = !customer && hasValidSession(request)
     if (!customer && !isAdmin) return sendJson(response, 401, { message: 'Entre na sua conta para acessar o Studio privado.' })
@@ -342,6 +362,20 @@ async function handleApi(request, response, url) {
     // Compatibility account: no mutation of the legacy administrator identity.
     const ownerId = customer?.accountId ?? 'legacy-owner'
     try {
+      if(url.pathname==='/api/platform/preferences'&&['GET','PUT'].includes(request.method))return sendJson(response,200,await platformStore.preferences(ownerId,request.method==='PUT'?(await readJsonBody(request)).listView:undefined))
+      if(url.pathname==='/api/platform/profile'){
+        if(request.method==='GET')return sendJson(response,200,{role:isAdmin?'admin':'customer',...(customer?await customers.readProfile(parseCookies(request)[customerCookie]):{name:state.admin?.name||'',email:state.admin?.email||adminEmail})})
+        if(request.method==='PUT'){
+          const body=await readJsonBody(request)
+          if(customer)return sendJson(response,200,await customers.updateProfile(parseCookies(request)[customerCookie],body,state.admin?.email||adminEmail))
+          if(typeof body.currentPassword!=='string'||!verifyEncodedSecret(body.currentPassword,state.admin.passwordHash))return sendJson(response,403,{message:'Senha atual incorreta.'})
+          if(typeof body.name!=='string'||body.name.length>120||typeof body.email!=='string'||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)||body.email.length>254||body.newPassword&&(typeof body.newPassword!=='string'||body.newPassword.length<12||body.newPassword.length>200))throw new PlatformError(422,'Confira nome, e-mail e a nova senha (mínimo de 12 caracteres).')
+          state.admin.name=body.name.trim();state.admin.email=body.email.trim().toLowerCase();if(body.newPassword)state.admin.passwordHash=hashSecret(body.newPassword);await saveStore(state);credentialRevision=state.admin.passwordHash
+          return sendJson(response,200,{name:state.admin.name,email:state.admin.email,role:'admin'})
+        }
+      }
+      if(url.pathname==='/api/platform/metrics'&&request.method==='GET')return sendJson(response,200,{metrics:await platformStore.summary(ownerId)})
+      if(url.pathname==='/api/platform/templates/infancia_pt/preview'&&request.method==='GET')return sendJson(response,200,{draft:validateDraft({...templateInput({template:'infancia_pt'}),checkoutUrl:'#oferta'})})
       if (url.pathname === '/api/platform/templates' && request.method === 'GET') return sendJson(response, 200, { templates })
       const imageMatch = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/images\/(hero|[a-f0-9-]{36})$/)
       if (imageMatch) {
@@ -360,14 +394,19 @@ async function handleApi(request, response, url) {
         return sendJson(response,405,{message:'Método não permitido.'})
       }
       if(url.pathname==='/api/platform/trash'&&request.method==='GET')return sendJson(response,200,{pages:await platformStore.list(ownerId,true)})
-      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false, temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
+      if (url.pathname === '/api/platform/pages' && request.method === 'GET') {
+        const metrics=await platformStore.summary(ownerId)
+        return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
+      }
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
         return sendJson(response, 201, pageView(page))
       }
-      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking))?$/)
+      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking|metrics|purge))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
+      if(action==='metrics'&&request.method==='GET')return sendJson(response,200,await platformStore.metrics(ownerId,id))
+      if(action==='purge'&&request.method==='POST')return sendJson(response,200,await platformStore.purge(ownerId,id,await readJsonBody(request)))
       if(action==='publication-review'&&request.method==='GET')return sendJson(response,200,await platformStore.review(ownerId,id))
       if(action==='address-suggestion'&&request.method==='GET')return sendJson(response,200,await platformStore.suggestion(ownerId,id,url.searchParams.get('name')))
       if(action==='address-availability'&&request.method==='GET')return sendJson(response,200,await platformStore.availability(ownerId,id,url.searchParams.get('url')))
@@ -399,6 +438,7 @@ async function handleApi(request, response, url) {
     try { target = new URL(address); target.search = ''; target.hash = '' } catch { return sendJson(response, 422, { message: 'Endereço inválido.' }) }
     const devOrigin = process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : ''
     const slug = resolvePageAddress(store, target, salesPageSlugs, devOrigin)
+    if(unifiedStudio&&slug&&await platformStore.legacyManaged(slug))return sendJson(response,404,{message:'Página gerenciada pelo Studio.'})
     if (!slug || store.pages?.[slug]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
     return sendJson(response, 200, { slug })
   }
@@ -492,6 +532,7 @@ async function handleApi(request, response, url) {
     if (!salesPageSlugs.has(adminPage[1])) return sendJson(response, 404, { message: 'Página não encontrada.' })
     if (!hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Sessão expirada. Entre novamente.' })
+    if(unifiedStudio&&await platformStore.legacyManaged(adminPage[1]))return sendJson(response,409,{message:'Esta página agora é editada no Studio.'})
     const body = await readJsonBody(request)
     let content
     try { content = validateSalesContent(body) }
@@ -539,20 +580,20 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
+    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
-    if(isDevPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')){
+    if(isDevPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
       response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
-    if(request.method==='GET'&&/^\/studio\/preview\/[a-f0-9-]{36}$/.test(url.pathname)&&url.searchParams.get('embedded')==='1'){
+    if(request.method==='GET'&&(/^\/studio\/preview\/[a-f0-9-]{36}$/.test(url.pathname)||url.pathname==='/studio/modelos/infancia_pt')&&url.searchParams.get('embedded')==='1'){
       response.setHeader('X-Frame-Options','SAMEORIGIN')
       response.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
     }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
-    if(url.pathname==='/api/public/meta/events')return await handleApi(request,response,url)
+    if(['/api/public/meta/events','/api/public/traffic'].includes(url.pathname))return await handleApi(request,response,url)
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))
       apiQueue = task.catch(() => undefined)

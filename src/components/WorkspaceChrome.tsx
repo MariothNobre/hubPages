@@ -1,0 +1,4 @@
+import { Link,useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+export function WorkspaceLinks(){const navigate=useNavigate(),[busy,setBusy]=useState(false),[error,setError]=useState('');return <nav className="workspace-links" aria-label="Minha conta"><Link to="/">Site HubPages</Link><Link to="/perfil">Meu Perfil</Link><button disabled={busy} onClick={async()=>{setBusy(true);try{const r=await fetch('/api/platform/logout',{method:'POST'});if(!r.ok)throw new Error('Não foi possível sair.');navigate('/conta',{replace:true})}catch(error){setError(error instanceof Error?error.message:'Falha ao sair.');setBusy(false)}}}>{busy?'Saindo…':'Sair'}</button>{error&&<span role="alert">{error}</span>}</nav>}
+export function WorkspaceFooter(){return <footer className="workspace-footer">© HubPages 2026 - Todos os Direitos Reservados</footer>}

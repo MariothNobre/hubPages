@@ -25,7 +25,7 @@ export function pendingChanges(draft,published,changedImageSlots=[]) {
   return changes
 }
 export function reviewSignature(draft,assetVersion='') {
-  const {step:_step,addressAuto:_auto,reviewedSignature:_review,...content}=draft
+  const {step:_step,visitedSteps:_visited,addressAuto:_auto,reviewedSignature:_review,...content}=draft
   const text=JSON.stringify(clean(content))+'|'+assetVersion
   let hash=2166136261
   for(let i=0;i<text.length;i++)hash=Math.imul(hash^text.charCodeAt(i),16777619)
@@ -35,5 +35,5 @@ export function reviewSignature(draft,assetVersion='') {
 export function wizardReadiness(draft,origin,reviewed,published,pending) {
   let address=false;try{const url=new URL(draft.publicUrl);address=url.origin===origin&&/^\/[a-z0-9][a-z0-9_-]*$/.test(url.pathname)}catch{/* Address is still being chosen. */}
   let checkout=false;try{const url=new URL(draft.checkoutUrl);checkout=url.protocol==='https:'&&!url.username&&!url.password}catch{/* Checkout is still being filled. */}
-  return [!!draft.name.trim(),!!draft.title.trim(),checkout,!draft.metaPixelEnabled||/^\d{5,30}$/.test(draft.metaPixelId),address,reviewed,published&&pending===0]
+  return [!!draft.name.trim(),!!draft.title.trim(),checkout,!draft.metaPixelEnabled||/^\d{5,30}$/.test(draft.metaPixelId),address,reviewed,published&&pending===0].map((valid,i)=>valid&&(draft.visitedSteps||[]).includes([1,2,4,5,6,7,8][i]))
 }

@@ -1,0 +1,362 @@
+{
+  "name": "Infancia Más Allá de las Pantallas",
+  "title": "Tu hijo merece una infancia llena de recuerdos, no solo de pantallas.",
+  "description": "Descubre un recorrido práctico de 30 días para establecer límites con mayor claridad, encontrar alternativas al celular y crear nuevos momentos de conexión familiar.",
+  "redLine": "Oferta especial internacional: colección completa por US$ 6.90",
+  "eyebrow": "Método práctico para familias con niños de 3 a 10 años",
+  "ctaLabel": "Quiero la colección completa",
+  "priceLabel": "US$ 6.90",
+  "originalPrice": "",
+  "imageUrl": "/assets/es/books/infancia-mas-alla-de-las-pantallas.png",
+  "color": "#15534f",
+  "locale": "es",
+  "blocks": [
+    {
+      "kind": "content",
+      "title": "¿El celular se convirtió en la primera opción de diversión de tu hijo?",
+      "body": "Una escena conocida por muchas familias\n\nApagar la televisión, guardar la tableta o interrumpir un juego puede acabar en llanto, insistencia y discusiones. Y después queda la pregunta: “¿qué le ofrezco en su lugar?”\n\n¿Cómo poner límites sin convertir todo en una pelea?\n\n¿Cómo despertar interés por otras actividades?\n\n¿Cómo construir una rutina que la familia pueda mantener?\n\n¿Cómo aprovechar mejor el poco tiempo disponible?\n\nTu hijo no tiene que dejar de disfrutar la tecnología. También necesita descubrir todo lo interesante que existe más allá de ella.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "pain",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "No se trata solo de reducir pantallas. Se trata de recuperar posibilidades.",
+      "body": "Conoce la colección\n\nInfancia Más Allá de las Pantallas convierte la orientación en acción: te ayuda a observar la rutina, establecer acuerdos, atravesar la resistencia y ofrecer experiencias que devuelven espacio a la curiosidad, el movimiento y la convivencia.",
+      "imageUrl": "/assets/es/books/infancia-mas-alla-de-las-pantallas.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "solution",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "30 días. Cinco movimientos. Una nueva mirada a la rutina.",
+      "body": "Observar — Comprende una situación real antes de intentar cambiarlo todo.\n\nAcordar — Crea límites claros, previsibles y adecuados para la edad.\n\nPreparar — Organiza el ambiente y deja alternativas al alcance.\n\nExperimentar — Pon en práctica una pequeña acción con presencia.\n\nRevisar — Reconoce lo que funcionó, ajusta y continúa.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "method",
+      "showButton": true
+    },
+    {
+      "kind": "sample",
+      "title": "La infancia en un mundo conectado",
+      "body": "Observa qué lugar ocupan las pantallas en la rutina familiar y distingue los usos necesarios del entretenimiento automático.",
+      "imageUrl": "/assets/es/samples/01-mundo-conectado.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-0",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Conociendo la rutina familiar",
+      "body": "Registra horarios, hábitos y momentos sensibles para encontrar una oportunidad concreta de cambio.",
+      "imageUrl": "/assets/es/samples/02-rutina-familiar.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-1",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Cuando el niño no quiere apagar",
+      "body": "Acércate, reconoce el deseo de continuar y muestra con claridad cuál es el siguiente paso.",
+      "imageUrl": "/assets/es/samples/03-transicion-pantalla.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-2",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "La Caja de Temas Sorpresa",
+      "body": "Una figura abre una conversación y despierta recuerdos e imaginación sin obligar a nadie a contar algo personal.",
+      "imageUrl": "/assets/es/samples/04-caja-sorpresa.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-3",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "La Rueda de los Pequeños Descubrimientos",
+      "body": "Cada persona comparte algo que observó y el grupo descubre nuevas maneras de mirar lo cotidiano.",
+      "imageUrl": "/assets/es/samples/05-rueda-descubrimientos.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-4",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Superhéroes del Cuidado",
+      "body": "Convierte pequeños gestos de ayuda en misiones de cuidado, cooperación y escucha.",
+      "imageUrl": "/assets/es/samples/06-superheroes-cuidado.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-5",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Taller de Títeres",
+      "body": "Papel, personajes e imaginación para representar historias y expresar lo que a veces cuesta decir.",
+      "imageUrl": "/assets/es/samples/07-titeres.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-6",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Máscaras de las Emociones",
+      "body": "Una actividad visual para identificar sentimientos, representarlos y hablar de ellos con naturalidad.",
+      "imageUrl": "/assets/es/samples/08-mascaras-emociones.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-7",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Circuito del Equilibrio",
+      "body": "Crea un recorrido adaptable en el que cada niño pueda participar a su ritmo y celebrar sus avances.",
+      "imageUrl": "/assets/es/samples/09-circuito-equilibrio.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-8",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "El Juego del Semáforo",
+      "body": "Señales simples, movimiento y diversión para practicar la pausa, la atención y la respuesta consciente.",
+      "imageUrl": "/assets/es/samples/10-juego-semaforo.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-9",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Día 10 — Una Reflexión Especial",
+      "body": "Reserva un momento breve para escuchar, conversar y reconocer algo valioso que ocurrió durante el día.",
+      "imageUrl": "/assets/es/samples/11-reflexion.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-10",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Tarjetas de las Emociones",
+      "body": "Un recurso ilustrado para que el niño identifique su emoción y encuentre palabras para compartirla.",
+      "imageUrl": "/assets/es/samples/12-tarjetas-emociones.jpg",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-11",
+      "showButton": false
+    },
+    {
+      "kind": "content",
+      "title": "300 páginas para comprender, actuar y continuar.",
+      "body": "Comprender la infancia digital — Entiende el contexto de las pantallas y observa qué espacio ocupan en la rutina.\n\nConocer a tu familia — Identifica horarios, dificultades, necesidades y oportunidades de cambio.\n\nEstrategias de reconexión — Encuentra respuestas prácticas para situaciones frecuentes del día a día.\n\nOrientaciones por edad — Adapta el enfoque para niños de 3–5, 6–7 y 8–10 años.\n\nMétodo Reconexión — Sigue 30 experiencias familiares con objetivos y registros.\n\nContinuidad y herramientas — Revisa los acuerdos y conserva los avances después de los 30 días.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "manual",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "100 Juegos Fuera de las Pantallas",
+      "body": "100 propuestas organizadas por tiempo, espacio, materiales y edad.\n190 páginas · incluido",
+      "imageUrl": "/assets/es/books/100-juegos.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-0",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Calendario de la Reconexión — 30 Días",
+      "body": "Misiones diarias, registros y pequeñas acciones para llevar la reconexión a la rutina.\n96 páginas · incluido",
+      "imageUrl": "/assets/es/books/calendario-reconexion.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-1",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Acuerdo Familiar para el Uso de Pantallas",
+      "body": "Modelos y herramientas visuales para crear reglas claras y acuerdos familiares.\n112 páginas · incluido",
+      "imageUrl": "/assets/es/books/acuerdo-familiar.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-2",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "¡SOS! Mi Hijo No Quiere Apagar la Pantalla",
+      "body": "Orientaciones, frases útiles y estrategias para los momentos de transición.\n128 páginas · incluido",
+      "imageUrl": "/assets/es/books/sos-apagar.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-3",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Familia Presente",
+      "body": "Hábitos digitales de los adultos, 12 rituales de conexión y herramientas prácticas.\n128 páginas · incluido",
+      "imageUrl": "/assets/es/books/familia-presente.png",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-4",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "Más ideas para jugar. Más claridad para acordar. Más presencia para vivir.",
+      "body": "Lo que empieza a caber en la rutina",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "possibilities",
+      "showButton": true
+    },
+    {
+      "kind": "offer",
+      "title": "Una biblioteca práctica para tu familia.",
+      "body": "Oferta especial de lanzamiento\n\nManual principal de 300 páginas\n\nMétodo Reconexión de 30 Días\n\nCinco ebooks complementarios\n\n954 páginas en la colección completa\n\nHerramientas, modelos, registros y actividades\n\nColección digital · manual principal + 5 bonos",
+      "imageUrl": "/assets/es/books/infancia-mas-alla-de-las-pantallas.png",
+      "style": {
+        "background": "#e6f0e6"
+      },
+      "templateRole": "offer",
+      "showButton": true
+    },
+    {
+      "kind": "author",
+      "title": "Marioth Nobre",
+      "body": "Sobre el autor\n\nPadre de tres hijos y autor de la colección Infancia Más Allá de las Pantallas.\n\nMarioth une su experiencia como consultor especializado en procesos y negocios con la vida cotidiana de la paternidad. La colección nace de ese encuentro: organización práctica, observación de la rutina y el propósito de ayudar a otras familias a equilibrar tecnología y convivencia.",
+      "imageUrl": "/assets/author/marioth-nobre.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "author",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Para qué edades está indicado?",
+      "body": "Para madres, padres y responsables de niños de 3 a 10 años, con orientaciones y adaptaciones por edad.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-0",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Tengo que eliminar todas las pantallas?",
+      "body": "No. La propuesta es construir una relación más equilibrada con la tecnología y recuperar espacio para jugar, descansar, moverse y convivir.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-1",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Necesito leer las 300 páginas antes de empezar?",
+      "body": "No. Puedes leer el manual en orden o consultarlo según tu necesidad. El plan de 30 días y las herramientas son fáciles de localizar.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-2",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Qué recibo con esta oferta?",
+      "body": "El manual principal y los cinco bonos digitales presentados aquí: una colección de 954 páginas en total.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-3",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Los materiales son digitales?",
+      "body": "Sí. La colección se entrega en formato digital, con navegación interna y herramientas para dispositivos compatibles.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-4",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "¿Puedo adaptar las actividades?",
+      "body": "Sí. Las propuestas se ajustan al tiempo, el espacio, los intereses y los apoyos que cada niño necesite.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-5",
+      "showButton": false
+    },
+    {
+      "kind": "offer",
+      "title": "La infancia no espera. Los momentos en familia comienzan ahora.",
+      "body": "El mejor momento para crear un nuevo recuerdo es el próximo.\n\nEmpieza con una conversación, un juego, un acuerdo o unos minutos de atención compartida.\n\n“La infancia pasa demasiado rápido para vivirla a través de una pantalla.”",
+      "imageUrl": "",
+      "style": {
+        "background": "#e6f0e6"
+      },
+      "templateRole": "final",
+      "showButton": true
+    }
+  ],
+  "style": {
+    "headingSize": 48,
+    "background": "#fffaf0"
+  },
+  "metaPixelId": "",
+  "metaPixelEnabled": false
+}

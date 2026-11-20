@@ -13,7 +13,7 @@
 .studio:not(.private-preview) input::placeholder,.studio:not(.private-preview) textarea::placeholder{color:#597780;opacity:1}
 .studio:not(.private-preview) .studio-notice{background:#e7f2f6;border-left-color:#df8063}
 .studio:not(.private-preview) :is(.studio-grid article>span,.wizard-header-actions>span,.wizard-progress,.wizard-legend,.review-device-hint,.review-device-info>span,.direct-editor-hint){color:var(--hp-muted)}
-.studio:not(.private-preview) :is(.wizard-timeline button[aria-current=step],.wizard-timeline button[aria-current=step]:hover,.studio-viewports [aria-pressed=true]){background:var(--hp-primary);color:#fff;border-color:var(--hp-primary)}
+.studio:not(.private-preview) .studio-viewports [aria-pressed=true]{background:var(--hp-primary);color:#fff;border-color:var(--hp-primary)}
 .studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary):hover{background:var(--hp-hover);color:#fff}
 .studio:not(.private-preview) .wizard-timeline .is-complete button:not([aria-current]){background:#eaf5f3;border-color:#b3d7ce;color:#205b55}
 .studio:not(.private-preview) .wizard-step-index{color:var(--hp-muted);border-color:#b5cfd7;background:#fff}
@@ -74,7 +74,7 @@
 .studio:not(.private-preview) .wizard-timeline .is-complete .wizard-step-index{background:#fffaf6;border-color:#dba887;color:#8f482e}
 .studio:not(.private-preview) .wizard-timeline button[aria-current=step],.studio:not(.private-preview) .wizard-timeline button[aria-current=step]:hover{background:linear-gradient(125deg,#f0a27e,#df8063);color:#082b33;border-color:#c36b4f;box-shadow:0 5px 16px #df806333}
 .studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-index{background:#fff6ec;color:#082b33;border-color:#ffffffb3}
-.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-hint{color:#183e45}
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-hint{color:#082b33}
 .studio:not(.private-preview) .wizard-timeline li:after{background:#efd7c6}
 .studio:not(.private-preview) .wizard-timeline li.is-complete:after{background:linear-gradient(90deg,#df8063,#edb18c)}
 .studio:not(.private-preview) .wizard-progress progress{appearance:none;accent-color:#df8063;background:#f5e4d8;overflow:hidden;border-radius:20px}
@@ -106,3 +106,5 @@
 .studio:not(.private-preview) .wizard-flow button>.wizard-shortcut-label{min-width:0;flex:1;white-space:normal;overflow-wrap:normal}
 
 .studio:not(.private-preview) .studio-page-navigation .wizard-timeline{padding:16px 10px}
+
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] :is(.wizard-step-name,.wizard-step-hint,.wizard-step-status){color:#082b33}
