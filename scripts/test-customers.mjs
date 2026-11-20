@@ -10,6 +10,7 @@ import { createPostgresStore } from '../server/postgres-store.mjs'
 import { createIdentityStore } from '../server/identity-store.mjs'
 import { createPlatformStore } from '../server/platform-store.mjs'
 const testDatabase = process.env.HUBPAGES_TEST_DATABASE_URL ?? ''
+const publishingTests=process.env.HUBPAGES_TEST_PUBLICATION==='true'
 if (testDatabase && new URL(testDatabase).pathname !== '/hubpages_ci') throw new Error('PostgreSQL tests require an exclusive database named hubpages_ci')
 const directory = await mkdtemp(join(tmpdir(), 'hubpages-customer-test-'))
 const file = join(directory, 'content.json')
@@ -30,7 +31,7 @@ if(testDatabase) {
 }
 await writeFile(file, JSON.stringify(legacy))
 const base = 'http://localhost:4197'
-const child = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, DATABASE_URL: testDatabase, DATA_FILE: file, STATIC_DIR: resolve('dist'), PORT: '4197', APP_ORIGINS: base, HUBPAGES_PLATFORM_ENABLED: 'true', HUBPAGES_CUSTOMER_SIGNUP_ENABLED: 'true', HUBPAGES_ADMIN_EMAIL: legacy.admin.email, HUBPAGES_SESSION_SECRET: 'local-admin-test-secret' }, stdio: ['ignore', 'pipe', 'pipe'] })
+const child = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, DATABASE_URL: testDatabase, DATA_FILE: file, STATIC_DIR: resolve('dist'), PORT: '4197', APP_ORIGINS: base, HUBPAGES_PLATFORM_ENABLED: 'true', HUBPAGES_CUSTOMER_SIGNUP_ENABLED: 'true', HUBPAGES_ENV:publishingTests?'development':'test',HUBPAGES_DEV_FREE_PUBLISH_ENABLED:publishingTests?'true':'false',HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ADMIN_EMAIL: legacy.admin.email, HUBPAGES_SESSION_SECRET: 'local-admin-test-secret' }, stdio: ['ignore', 'pipe', 'pipe'] })
 const request = async (path, method = 'GET', body, cookie = '') => fetch(`${base}${path}`, { method, headers: { Origin: base, 'Content-Type': 'application/json', Cookie: cookie }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
 const cookieOf = (response) => response.headers.get('set-cookie').split(';')[0]
 try {
@@ -84,10 +85,60 @@ try {
   assert.equal(configured.draft.blocks[0].showButton,false)
   assert.equal(configured.draft.blocks[0].templateRole,'pain')
   assert.equal(configured.draft.blocks[0].inheritLink,false)
+  assert.equal((await request(`/api/platform/pages/${copied.id}`,'DELETE',{revision:0},a)).status,409)
+  assert.equal((await request(`/api/platform/pages/${copied.id}`,'DELETE',{revision:copied.revision},b)).status,404)
+  const deleted=await (await request(`/api/platform/pages/${copied.id}`,'DELETE',{revision:copied.revision},a)).json()
+  assert.ok(deleted.trashedAt)
+  assert.equal((await request(`/api/platform/pages/${copied.id}`,'GET',undefined,a)).status,404)
+  assert.equal((await request(copied.draft.imageUrl,'GET',undefined,a)).status,404)
+  assert.equal((await request(`/api/platform/pages/${copied.id}/untrash`,'POST',{revision:deleted.revision},b)).status,404)
+  assert.ok((await (await request('/api/platform/trash','GET',undefined,a)).json()).pages.some(p=>p.id===copied.id))
+  const recovered=await (await request(`/api/platform/pages/${copied.id}/untrash`,'POST',{revision:deleted.revision},a)).json()
+  assert.equal(recovered.editorialStatus,'draft');assert.equal(recovered.trashedAt,undefined)
+  assert.deepEqual(recovered.draft,copied.draft)
+  assert.equal((await request(copied.draft.imageUrl,'GET',undefined,a)).status,200)
+  console.log('PASS: trash, restore, revision conflict, private image preservation and cross-account deletion protection')
+  if(publishingTests) {
+    let p=await (await request('/api/platform/pages','POST',{name:'Publicação sintética',template:'infancia_pt'},a)).json()
+    const root=`/api/platform/pages/${p.id}`,publicPath=`/api/public/pages/${p.id}`,privateImage=`${root}/images/hero`
+    assert.equal((await request(publicPath)).status,404)
+    const putImage=bytes=>fetch(`${base}${privateImage}`,{method:'PUT',headers:{Origin:base,Cookie:a,'Content-Type':'image/png'},body:bytes})
+    assert.equal((await putImage(imageBytes)).status,200)
+    p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,checkoutUrl:'https://pay.hotmart.com/example?ref=keep',imageUrl:privateImage}},a)).json()
+    assert.equal((await request(`${root}/publish`,'POST',{revision:p.revision},b)).status,404)
+    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    assert.equal(p.editorialStatus,'published');assert.equal(p.financialStatus,'unpaid');assert.equal(p.publication.mode,'dev-free');assert.equal(p.publication.url,`${base}/p/${p.id}`)
+    let live=await (await request(publicPath)).json()
+    assert.equal(live.ownerId,undefined)
+    const firstImage=live.draft.imageUrl
+    assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
+    const changed=Buffer.concat([imageBytes,Buffer.from('synthetic-new-version')])
+    assert.equal((await putImage(changed)).status,200)
+    p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,title:'Novo título ainda em rascunho'}},a)).json()
+    assert.notEqual((await (await request(publicPath)).json()).draft.title,p.draft.title)
+    assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
+    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    live=await (await request(publicPath)).json()
+    assert.equal(live.draft.title,p.draft.title)
+    assert.notEqual(live.draft.imageUrl,firstImage)
+    assert.deepEqual(Buffer.from(await (await request(live.draft.imageUrl)).arrayBuffer()),changed)
+    assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
+    p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,imageUrl:''}},a)).json()
+    assert.equal((await request(privateImage,'GET',undefined,a)).status,404)
+    assert.equal((await request(live.draft.imageUrl)).status,200)
+    p=await (await request(`${root}/unpublish`,'POST',{revision:p.revision},a)).json()
+    assert.equal(p.editorialStatus,'draft');assert.equal((await request(publicPath)).status,404);assert.equal((await request(firstImage)).status,404)
+    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    p=await (await request(root,'DELETE',{revision:p.revision},a)).json()
+    assert.equal((await request(publicPath)).status,404)
+    p=await (await request(`${root}/untrash`,'POST',{revision:p.revision},a)).json()
+    assert.equal(p.editorialStatus,'draft');assert.equal((await request(publicPath)).status,404)
+    console.log('PASS: real public URL without login, immutable text/image snapshots, republish, unpublish and trash deactivation; no payment recorded')
+  }
   const bList = await (await request('/api/platform/pages', 'GET', undefined, b)).json()
   assert.equal(bList.pages.length, 0); assert.equal(bList.legacyPages.length, 0)
   for (const [path, method, body] of [[`/api/platform/pages/${created.id}`, 'GET'], [`/api/platform/pages/${created.id}`, 'PUT', { revision: 1, draft: created.draft }], [`/api/platform/pages/${created.id}/duplicate`, 'POST'], [`/api/platform/pages/${created.id}/restore`, 'POST', { version: 1, revision: 1 }], [`/api/platform/pages/${created.id}/publish`, 'POST']]) assert.equal((await request(path, method, body, b)).status, 404, `${method} ${path} must reject other accounts`)
-  assert.equal((await request(`/api/platform/pages/${created.id}/publish`, 'POST', undefined, a)).status, 409)
+  assert.equal((await request(`/api/platform/pages/${created.id}/publish`, 'POST', {revision:restored.revision}, a)).status, publishingTests?422:409)
   const updated = await request('/api/customer/profile', 'PUT', { name: 'Conta A atualizada', email: 'a-new@example.test', currentPassword: password, newPassword: 'UpdatedLocalPassword123!' }, a)
   assert.equal(updated.status, 200)
   assert.equal((await request(`/api/platform/pages/${created.id}`, 'GET', undefined, a)).status, 401)
@@ -101,6 +152,7 @@ try {
   assert.equal(adminLogin.status, 200)
   const adminPages = await (await request('/api/platform/pages', 'GET', undefined, cookieOf(adminLogin))).json()
   assert.equal(adminPages.pages.length, 1); assert.equal(adminPages.legacyPages.length, 2)
+  if(publishingTests){const blocked=await request(`/api/platform/pages/${seed.id}/publish`,'POST',{revision:legacy.platform.pages[seed.id].revision},cookieOf(adminLogin));assert.equal(blocked.status,409);assert.match((await blocked.json()).message,/domínio próprio verificado/)}
   let actual = JSON.parse(await readFile(file, 'utf8'))
   if (testDatabase) {
     const pool = new pg.Pool({ connectionString: testDatabase })
@@ -110,6 +162,12 @@ try {
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_accounts')).rows[0].n, 2)
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_schema_migrations WHERE version=1')).rows[0].n, 1)
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_schema_migrations WHERE version=2')).rows[0].n, 1)
+      assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_schema_migrations WHERE version=3')).rows[0].n, 1)
+      if(publishingTests) {
+        assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_publications')).rows[0].n,3)
+        await assert.rejects(pool.query('UPDATE hubpages_studio_publications SET draft=draft'),/append-only/)
+        await assert.rejects(pool.query('UPDATE hubpages_studio_publication_images SET content=content'),/append-only/)
+      }
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_images WHERE page_id=$1',[copied.id])).rows[0].n,1)
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_revisions WHERE page_id=$1',[created.id])).rows[0].n,3)
       await assert.rejects(pool.query('UPDATE hubpages_studio_revisions SET document=document WHERE page_id=$1',[created.id]),/append-only/)

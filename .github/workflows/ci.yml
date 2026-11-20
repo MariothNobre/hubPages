@@ -63,10 +63,12 @@ jobs:
           node scripts/test-page-address.mjs
           node scripts/test-admin.mjs
           node scripts/test-customers.mjs
+          HUBPAGES_TEST_PUBLICATION=true node scripts/test-customers.mjs
 
       - name: Validar contas e migração no PostgreSQL isolado
         env:
           HUBPAGES_TEST_DATABASE_URL: postgres://hubpages:ci-only-isolated-password@127.0.0.1:5432/hubpages_ci
+          HUBPAGES_TEST_PUBLICATION: 'true'
         run: node scripts/test-customers.mjs
 
       - name: Verificar tipos e build

@@ -27,6 +27,9 @@ const bootstrapTokenHash = process.env.HUBPAGES_BOOTSTRAP_TOKEN_HASH ?? ''
 const sessionSecret = process.env.HUBPAGES_SESSION_SECRET ?? ''
 const customers = process.env.HUBPAGES_PLATFORM_ENABLED === 'true' ? customerAuth(await createIdentityStore(process.env.DATABASE_URL, `${dataFile}.identity.json`)) : null
 const platformStore = customers ? await createPlatformStore(process.env.DATABASE_URL, { read: loadStore, write: saveStore }) : null
+const devPublicOrigin=process.env.HUBPAGES_DEV_PUBLIC_ORIGIN||'https://dev.hubpages.com.br'
+const isDevPublication=Boolean(platformStore)&&process.env.HUBPAGES_ENV==='development'&&allowedOrigins.has(devPublicOrigin)&&(/^https:\/\/dev\.hubpages\.com\.br$/.test(devPublicOrigin)||/^http:\/\/localhost:\d+$/.test(devPublicOrigin))
+const freePublishing=isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true'
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
 const sessionDurationSeconds = 60 * 60 * 8
@@ -280,6 +283,18 @@ function analyticsSnapshot(store) {
 }
 
 async function handleApi(request, response, url) {
+  if(url.pathname.startsWith('/api/public/')) {
+    if(!isDevPublication||request.headers.host!==new URL(devPublicOrigin).host)return sendJson(response,404,{message:'Página não encontrada.'})
+    if(request.method!=='GET')return sendJson(response,405,{message:'Método não permitido.'})
+    const page=url.pathname.match(/^\/api\/public\/pages\/([a-f0-9-]{36})$/)
+    const image=url.pathname.match(/^\/api\/public\/publications\/([a-f0-9-]{36})\/images\/(hero|[a-f0-9-]{36})$/)
+    const id=page?.[1]||image?.[1]
+    if(!id||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))return sendJson(response,404,{message:'Página não encontrada.'})
+    try {
+      if(page)return sendJson(response,200,await platformStore.publicPage(id))
+      const result=await platformStore.publicImage(id,image[2]);response.writeHead(200,{'Content-Type':result.mime,'Cache-Control':'no-store'});return response.end(result.content)
+    }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});throw error}
+  }
   if (url.pathname.startsWith('/api/customer/')) {
     response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
     if (!customers) return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
@@ -336,22 +351,27 @@ async function handleApi(request, response, url) {
         if (request.method === 'GET') { const image = await platformStore.getImage(ownerId,id,slot); response.writeHead(200,{ 'Content-Type': image.mime, 'Cache-Control': 'private, no-store' }); return response.end(image.content) }
         return sendJson(response,405,{message:'Método não permitido.'})
       }
-      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
+      if(url.pathname==='/api/platform/trash'&&request.method==='GET')return sendJson(response,200,{pages:await platformStore.list(ownerId,true)})
+      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false, temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
         return sendJson(response, 201, page)
       }
-      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish))?$/)
+      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
       if (request.method === 'GET' && !action) return sendJson(response, 200, await platformStore.read(ownerId, id))
       let page
-      if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request,256*1024))
+      if(request.method==='DELETE'&&!action)page=await platformStore.trash(ownerId,id,await readJsonBody(request))
+      else if(request.method==='POST'&&action==='untrash')page=await platformStore.untrash(ownerId,id,await readJsonBody(request))
+      else if(request.method==='POST'&&action==='unpublish')page=await platformStore.unpublish(ownerId,id,await readJsonBody(request))
+      else if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request,256*1024))
       else if (request.method === 'POST' && action === 'duplicate') page = await platformStore.duplicate(ownerId, id)
       else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request,256*1024))
       else if (request.method === 'POST' && action === 'publish') {
         await platformStore.read(ownerId, id)
-        return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
+        if(!freePublishing)return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
+        page=await platformStore.publish(ownerId,id,{...await readJsonBody(request),origin:devPublicOrigin})
       } else return sendJson(response, 405, { message: 'Método não permitido.' })
       return sendJson(response, 200, page)
     } catch (error) {
@@ -505,7 +525,7 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/')) {
+    if (['/studio', '/conta', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }

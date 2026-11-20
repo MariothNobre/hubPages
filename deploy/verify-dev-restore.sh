@@ -27,6 +27,10 @@ if [[ "$(docker exec "$restore" psql -U hubpages -d hubpages -At -c "SELECT to_r
   docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM hubpages_studio_pages p WHERE revision <> COALESCE((SELECT max(version) FROM hubpages_studio_revisions r WHERE r.page_id=p.id),0);" | grep -qx 0
   echo 'Restore DEV: cadeias de revisoes do Studio integras.'
 fi
+if [[ "$(docker exec "$restore" psql -U hubpages -d hubpages -At -c "SELECT to_regclass('hubpages_studio_publications') IS NOT NULL;")" == t ]]; then
+  docker exec "$restore" psql -U hubpages -d hubpages -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM hubpages_studio_publications p WHERE NOT EXISTS(SELECT 1 FROM hubpages_studio_revisions r WHERE r.page_id=p.page_id AND r.version=p.revision);" | grep -qx 0
+  echo 'Restore DEV: versoes publicadas e referencias integras.'
+fi
 sha256sum "$dump" > "$dump.sha256"
 docker inspect hubpages_dev-hubpages-dev-1 --format '{{.Image}}' > "$backup_dir/image-$stamp.txt"
 printf 'Restore DEV verificado em container isolado sem rede ou porta pública; backup protegido: %s\n' "$dump"
