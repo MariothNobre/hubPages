@@ -59,6 +59,7 @@ jobs:
           node scripts/generate-legacy-template.mjs
           git diff --exit-code -- src/components/LegacySalesTemplate.tsx
           node scripts/test-legacy-template.cjs
+          node scripts/test-studio-slug.mjs
           node scripts/test-studio-tracking.mjs
           node scripts/test-platform.mjs
           node scripts/test-page-address.mjs
