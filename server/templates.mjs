@@ -1,11 +1,10 @@
 import { readFile } from 'node:fs/promises'
 const infancia = JSON.parse(await readFile(new URL('./templates/infancia-pt.json', import.meta.url), 'utf8'))
+const infanciaEs=JSON.parse(await readFile(new URL('./templates/infancia-es.json',import.meta.url),'utf8'))
 export const templates = [
-  { id: 'infancia_pt', name: 'Infância Além das Telas', description: 'Página legada em português: oferta, coleção, degustação, autor e perguntas frequentes.', imageUrl: '/assets/books/infancia-alem-das-telas.webp' },
-  { id: 'essencial', name: 'Essencial', description: 'Oferta e benefícios.', imageUrl: '' },
-  { id: 'colecao', name: 'Coleção', description: 'Produto e seções em cartões.', imageUrl: '' },
+  { id: 'infancia_pt', name: 'Infância Além das Telas', description: 'Modelo completo em português: oferta, coleção, degustação, autor e perguntas frequentes.', imageUrl: '/assets/books/infancia-alem-das-telas.webp' },
 ]
 export function templateInput(input) {
-  if (input?.template !== 'infancia_pt') return input
-  return { ...structuredClone(infancia), name: input.name || 'Minha nova página', template: 'infancia_pt', step: 1, checkoutUrl: '', publicUrl: '', metaPixelId: '', ga4Id: '' }
+  if (!['infancia_pt','infancia_es'].includes(input?.template)) return input
+  return { ...structuredClone(input.template==='infancia_es'?infanciaEs:infancia), name: input.name || 'Minha nova página', template: input.template, step: 1, checkoutUrl: '', publicUrl: '', metaPixelId: '', ga4Id: '' }
 }

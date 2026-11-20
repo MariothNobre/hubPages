@@ -1,3 +1,4 @@
+import { pgWorkspace,fileWorkspace } from './workspace-store.mjs'
 import { pendingChanges } from '../shared/studio-wizard.mjs'
 import { readFile } from 'node:fs/promises'
 import { randomUUID,createHash } from 'node:crypto'
@@ -52,7 +53,7 @@ async function loadPage(client, ownerId, id, history=true) {
 export async function createPlatformStore(connectionString, fallback) {
   if (!connectionString) return fileStore(fallback)
   const publicOrigin=fallback?.publicOrigin||'https://dev.hubpages.com.br'
-  const checkAddress=async(client,id,value)=>{const url=normalizeStudioAddress(value,publicOrigin);if(legacyAddressConflict(await fallback?.read?.()||{pages:{}},url))throw new PlatformError(409,'Este endereço já está em uso.');const taken=await client.query('SELECT page_id FROM hubpages_studio_addresses WHERE public_url=$1 AND page_id<>$2',[url,id]);if(taken.rowCount)throw new PlatformError(409,'Este endereço já está em uso.');return url}
+  const checkAddress=async(client,id,value)=>{const own=(await client.query('SELECT slug FROM hubpages_studio_legacy WHERE page_id=$1',[id])).rows[0]?.slug;const url=normalizeStudioAddress(value,publicOrigin,!!own);if(legacyAddressConflict(await fallback?.read?.()||{pages:{}},url,own))throw new PlatformError(409,'Este endereço já está em uso.');const taken=await client.query('SELECT page_id FROM hubpages_studio_addresses WHERE public_url=$1 AND page_id<>$2',[url,id]);if(taken.rowCount)throw new PlatformError(409,'Este endereço já está em uso.');return url}
   const syncAddress=async(client,page)=>{const keep=[];if(!page.trashedAt){try{keep.push(normalizeStudioAddress(page.draft.publicUrl,publicOrigin))}catch{/* Existing drafts keep their content until an address is selected. */}if(page.editorialStatus==='published'&&page.publication?.url)keep.push(page.publication.url)}await client.query('DELETE FROM hubpages_studio_addresses WHERE page_id=$1 AND NOT(public_url=ANY($2::text[]))',[page.id,keep]);for(const url of keep)await client.query('INSERT INTO hubpages_studio_addresses(public_url,page_id,owner_id) VALUES($1,$2,$3) ON CONFLICT(public_url) DO NOTHING',[url,page.id,page.ownerId])}
   const pool = new pg.Pool({ connectionString, max: 3, connectionTimeoutMillis: 5000 })
   const migration = await pool.connect()
@@ -75,6 +76,7 @@ export async function createPlatformStore(connectionString, fallback) {
     }
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=3')).rowCount) await migration.query(await readFile(new URL('./migrations/003-dev-publications.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=4')).rowCount)await migration.query(await readFile(new URL('./migrations/004-studio-address-tracking.sql',import.meta.url),'utf8'))
+    if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=5')).rowCount)await migration.query(await readFile(new URL('./migrations/005-studio-workspace.sql',import.meta.url),'utf8'))
     await migration.query('COMMIT')
   } catch (error) { await migration.query('ROLLBACK'); throw error }
   finally { migration.release() }
@@ -164,6 +166,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
     finally { client.release() }
   }
   return {
+    ...pgWorkspace(pool,fallback,{ensureOwner,writePage,writeAudit,loadPage}),
     addressOccupied:async(url)=>Boolean((await pool.query('SELECT 1 FROM hubpages_studio_addresses WHERE public_url=$1',[publicOrigin+new URL(url).pathname.replace(/\/$/,'')])).rowCount),
     review:(ownerId,id)=>execute(ownerId,id,'review'),
     suggestion:(ownerId,id,name)=>execute(ownerId,id,'suggestion',{name}),
@@ -178,7 +181,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       const result = await pool.query(`SELECT p.*, (SELECT s.draft FROM hubpages_studio_publications s WHERE s.id::text=p.extra->'publication'->>'id') AS published_draft, ARRAY(SELECT i.slot FROM hubpages_studio_images i LEFT JOIN hubpages_studio_publication_images v ON v.publication_id::text=p.extra->'publication'->>'id' AND v.slot=i.slot WHERE i.page_id=p.id AND i.content IS DISTINCT FROM v.content) AS changed_images, (SELECT count(*)::integer FROM hubpages_studio_revisions r WHERE r.page_id=p.id) AS revision_count FROM hubpages_studio_pages p WHERE owner_id=$1 AND (COALESCE(extra->>'trashedAt','')<>'')=$2 ORDER BY created_at,id`, [ownerId,trashed])
       return result.rows.map((row) => {
         const { draft, revisions: _revisions, ...page } = fromRow(row)
-        return { ...page, name: draft.name, title: draft.title, step: draft.step, revisions: row.revision_count,pendingChangeCount:pendingChanges(draft,row.published_draft,row.changed_images).length }
+        return { ...page, name: draft.name, title: draft.title, step: draft.step, revisions: row.revision_count,coverUrl:draft.imageUrl,locale:draft.locale,pendingChangeCount:pendingChanges(draft,row.published_draft,row.changed_images).length }
       })
     },
     read: (ownerId, id) => execute(ownerId, id, 'read'),
@@ -214,10 +217,11 @@ function fileStore({ read, write,publicOrigin,credentialKey }) {
     pending = task.catch(() => undefined)
     return task
   }
-  const checkAddress=(s,id,value)=>{const url=normalizeStudioAddress(value,publicOrigin);if(legacyAddressConflict(s,url)||Object.values(s.platform?.pages||{}).some(p=>p.id!==id&&!p.trashedAt&&(p.draft.publicUrl===url||(p.editorialStatus==='published'&&p.publication?.url===url))))throw new PlatformError(409,'Este endereço já está em uso.');return url}
+  const checkAddress=(s,id,value)=>{const own=s.platform?.pages?.[id]?.legacySlug;const url=normalizeStudioAddress(value,publicOrigin,!!own);if(legacyAddressConflict(s,url,own)||Object.values(s.platform?.pages||{}).some(p=>p.id!==id&&!p.trashedAt&&(p.draft.publicUrl===url||(p.editorialStatus==='published'&&p.publication?.url===url))))throw new PlatformError(409,'Este endereço já está em uso.');return url}
   const review=(s,ownerId,id)=>{const page=readDraft(s,ownerId,id),pub=s.platform.publications?.[page.publication?.id],images=Object.entries(s.platform.images?.[id]||{}).sort(([a],[b])=>a.localeCompare(b));return {publishedDraft:pub?.draft||null,publishedAt:pub?.publishedAt||null,changedImageSlots:images.filter(([slot,img])=>img.content!==pub?.images?.[slot]?.content).map(([slot])=>slot),assetVersion:createHash('sha256').update(JSON.stringify(images)).digest('hex')}}
   const quota = (state, ownerId) => { if (listDrafts(state, ownerId).length+listDrafts(state,ownerId,true).length >= 1000) throw new PlatformError(422, 'Limite de uso justo atingido. Contate o suporte.') }
   return {
+    ...fileWorkspace(operation,{publicOrigin,credentialKey}),
     addressOccupied:(url)=>operation(s=>{try{checkAddress(s,'',publicOrigin+new URL(url).pathname);return false}catch(error){return error.status===409}},false),
     review:(ownerId,id)=>operation(s=>review(s,ownerId,id),false),
     suggestion:(ownerId,id,name)=>operation(async s=>{readDraft(s,ownerId,id);return suggestStudioAddress(name,publicOrigin,url=>checkAddress(s,id,url))},false),
@@ -228,7 +232,7 @@ function fileStore({ read, write,publicOrigin,credentialKey }) {
     metaContext:(id)=>operation(s=>{const pub=s.platform?.publications?.[id],p=s.platform?.pages?.[pub?.pageId];if(!p||p.trashedAt||p.editorialStatus!=='published'||p.publication?.id!==id)return null;const t=s.platform.tracking?.[p.id];return{enabled:pub.draft.metaPixelEnabled,pixelId:pub.draft.metaPixelId,url:pub.url,accessToken:openToken(t?.token_ciphertext,credentialKey),testEventCode:t?.test_event_code}},false),
     claimMeta:(id,event)=>operation(s=>{s.platform.metaEvents??={};const key=id+':'+event;if(s.platform.metaEvents[key])return false;s.platform.metaEvents[key]='pending';return true}),
     finishMeta:(id,event,status)=>operation(s=>{s.platform.metaEvents[id+':'+event]=status}),
-    list: (ownerId,trashed=false) => operation((s) => listDrafts(s, ownerId,trashed).map(page=>{if(trashed)return page;const context=review(s,ownerId,page.id);return{...page,pendingChangeCount:pendingChanges(s.platform.pages[page.id].draft,context.publishedDraft,context.changedImageSlots).length}}), false),
+    list: (ownerId,trashed=false) => operation((s) => listDrafts(s, ownerId,trashed).map(page=>{if(trashed)return page;const context=review(s,ownerId,page.id);return{...page,coverUrl:s.platform.pages[page.id].draft.imageUrl,locale:s.platform.pages[page.id].draft.locale,pendingChangeCount:pendingChanges(s.platform.pages[page.id].draft,context.publishedDraft,context.changedImageSlots).length}}), false),
     read: (ownerId, id) => operation((s) => readDraft(s, ownerId, id), false),
     create: (ownerId, input) => operation((s) => { quota(s, ownerId); const p = createDraft(s, ownerId, input);if(p.draft.publicUrl){p.draft.publicUrl=checkAddress(s,p.id,p.draft.publicUrl);p.revisions[0].draft=structuredClone(p.draft);s.platform.pages[p.id]=p} checkImages(p); return p }),
     save: (ownerId, id, input) => operation((s) => { if(input.draft?.publicUrl&&input.draft.publicUrl!==readDraft(s,ownerId,id).draft.publicUrl)input={...input,draft:{...input.draft,publicUrl:checkAddress(s,id,input.draft.publicUrl)}};const p = saveDraft(s, ownerId, id, input); checkImages(p); for (const key of Object.keys(s.platform.images?.[id] ?? {})) if (!slots(p).includes(key)) delete s.platform.images[id][key]; return p }),

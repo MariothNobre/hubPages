@@ -57,12 +57,13 @@ export function validateDraft(input) {
     name: text(input.name, 120, 'Minha página') || 'Minha página',
     title: text(input.title, 240), description: text(input.description, 3000),
     ctaLabel: text(input.ctaLabel, 100, 'Quero saber mais'),
-    checkoutUrl: https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
+    checkoutUrl: /^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(input.checkoutUrl||'')?text(input.checkoutUrl,2000):https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
+    visitedSteps:Array.isArray(input.visitedSteps)?[...new Set(input.visitedSteps.filter(id=>[1,2,4,5,6,7,8].includes(id)))].slice(0,7):[],
     addressAuto: input.addressAuto===true, reviewedSignature:text(input.reviewedSignature,20),
     imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',
-    template: ['colecao', 'infancia_pt'].includes(input.template) ? input.template : 'essencial',
+    template: ['colecao', 'infancia_pt','infancia_es'].includes(input.template) ? input.template : 'essencial',
     layoutCustomized: input.layoutCustomized===true,
     layoutOverrides: overrides(input.layoutOverrides),
     templateTexts:Object.fromEntries(Object.entries(templateTexts).map(([key,value])=>{if(typeof value!=='string'||value.length>5000)fail('Texto do modelo inválido.');return[text(key,80),value]})),
@@ -140,8 +141,8 @@ export function publishDraft(state,ownerId,id,revision,origin) {
   const page=owned(state,ownerId,id)
   if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui vigência financeira e não pode usar a liberação gratuita de homologação.')
   if(page.origin!=='native')throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
-  const url=normalizeStudioAddress(page.draft.publicUrl,origin)
-  if(!page.draft.title||!page.draft.checkoutUrl)throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
+  const url=normalizeStudioAddress(page.draft.publicUrl,origin,!!page.legacySlug)
+  if(!page.draft.title||!page.draft.checkoutUrl||(!page.legacySlug&&!page.draft.checkoutUrl.startsWith('https://')))throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
   lifecycle(page,ownerId,revision,'publish')
   const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:'dev-free',draft:structuredClone(page.draft)}
   const image=(value)=>value.startsWith(`/api/platform/pages/${id}/images/`)?value.replace(`/api/platform/pages/${id}/images/`,`/api/public/publications/${publication.id}/images/`):value

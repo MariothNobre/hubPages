@@ -2,14 +2,15 @@
 import fs from 'node:fs'
 import ts from 'typescript'
 import { createHash } from 'node:crypto'
-const originalBlocks=JSON.parse(fs.readFileSync('server/templates/infancia-pt.json','utf8')).blocks
-const source=fs.readFileSync('src/pages/InfanciaAlemDasTelas.tsx','utf8').replace(/\r\n/g,'\n')
+const spanish=process.argv.includes('--es')
+const originalBlocks=JSON.parse(fs.readFileSync(spanish?'server/templates/infancia-es.json':'server/templates/infancia-pt.json','utf8')).blocks
+const source=fs.readFileSync(spanish?'src/pages/InfanciaAlemDasTelasEs.tsx':'src/pages/InfanciaAlemDasTelas.tsx','utf8').replace(/\r\n/g,'\n')
 const file=ts.createSourceFile('legacy.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
 const map={pain:'pain',solution:'solution',method:'method',tasting:'tasting',manual:'manual',bonuses:'bonuses',possibilities:'possibilities',offer:'offer',author:'author',faq:'faq',final:'final',hero:'hero',header:'header','mobile-cta':'sticky',preview:'preview'}
 function role(node){for(let p=node;p;p=p.parent){if(ts.isJsxElement(p)){const attr=p.openingElement.attributes.properties.find(a=>a.name?.getText(file)==='className');const name=attr?.initializer?.text;const key=name?.split(' ')[0]?.replace('sales-v2-','');if(map[key])return map[key]}}return 'hero'}
 function inLoop(node,name){for(let p=node;p;p=p.parent)if(ts.isArrowFunction(p)&&p.parent?.getText(file).startsWith(name+'.map'))return true;return false}
 let root
-function find(node){if(ts.isJsxElement(node)&&node.openingElement.attributes.properties.some(a=>a.name?.getText(file)==='className'&&a.initializer?.text==='sales-v2'))root=node;ts.forEachChild(node,find)}find(file)
+function find(node){if(ts.isJsxElement(node)&&node.openingElement.attributes.properties.some(a=>a.name?.getText(file)==='className'&&a.initializer?.text?.split(' ')[0]==='sales-v2'))root=node;ts.forEachChild(node,find)}find(file)
 const edits=[]
 function walk(node){
   if(ts.isJsxSelfClosingElement(node)&&['MetaPixel','AnalyticsTracker'].includes(node.tagName.getText(file))){edits.push([node.pos,node.end,'']);return}
@@ -25,6 +26,8 @@ function walk(node){
     let expression=`lit(${JSON.stringify(key)},${JSON.stringify(value)},${JSON.stringify(role(node))})`
     if(originalBlock?.title===value.trim())expression=`blockField(groupBlock(${JSON.stringify(role(node))}),'title',${JSON.stringify(value)})`
     else if(value.trim()==='29,90')expression=`field('priceLabel',${JSON.stringify(value.match(/^\s*/)[0])}+(content.priceLabel.startsWith('R$')?content.priceLabel.slice(2).trim():content.priceLabel))`
+    else if(spanish&&value.trim()==='6.90')expression=`field('priceLabel',${JSON.stringify(value.match(/^\s*/)[0])}+content.priceLabel.replace(/^US\\$/,'').trim())`
+    else if(spanish&&value.trim()==='US$ 6.90')expression=`field('priceLabel',content.priceLabel)`
     else if(value.trim()==='R$ 197,00')expression=`field('originalPrice',content.originalPrice)`
     edits.push([node.pos,node.end,`{${expression}}`]);return
   }
@@ -46,7 +49,8 @@ function walk(node){
 }walk(root)
 let jsx=source.slice(root.getStart(file),root.end)
 for(const[start,end,value]of edits.sort((a,b)=>b[0]-a[0]))jsx=jsx.slice(0,start-root.getStart(file))+value+jsx.slice(end-root.getStart(file))
-jsx=jsx.replace('<div className="sales-v2">',()=>'<div className="sales-v2" style={draft.layoutOverrides?.includes("color")?{"--sales-teal":draft.color,"--sales-teal-dark":draft.color} as CSSProperties:undefined}>')
+const rootClass=spanish?'sales-v2 sales-v2--es':'sales-v2'
+jsx=jsx.replace('<div className="'+rootClass+'">',()=>'<div className="'+rootClass+'" style={draft.layoutOverrides?.includes("color")?{"--sales-teal":draft.color,"--sales-teal-dark":draft.color} as CSSProperties:undefined}>')
 jsx=jsx.replace('<a href={content.ctaHref}>{content.ctaLabel}</a>',"{buyButton('','sticky')}")
 const parsed=ts.createSourceFile('view.tsx','const view=('+jsx+')',ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
 let main
@@ -56,7 +60,8 @@ for(const section of sections){if(section.key==='faq')section.jsx=section.jsx.re
 const start=main.openingElement.end-'const view=('.length,end=main.closingElement.pos-'const view=('.length
 jsx=jsx.slice(0,start)+'{sequence.map((key)=><Fragment key={key}>{renderSection(key)}</Fragment>)}'+jsx.slice(end)
 const arrays=source.slice(source.indexOf('const bonuses'),source.indexOf('export function')).replace(/const (bonuses|previewPages|methodSteps|manualParts|questions) =/g,'const original_$1 =').replace(/const original_questions = \[[\s\S]*?\n\]/,'')
-const helper=fs.readFileSync('scripts/legacy-template-runtime.txt','utf8').replace(/\r\n/g,'\n')
+let helper=fs.readFileSync('scripts/legacy-template-runtime.txt','utf8').replace(/\r\n/g,'\n')
+if(spanish)helper=helper.replaceAll(' · incluso',' · incluido').replace("{scope!=='sticky'&&<> <span aria-hidden=\"true\">→</span></>}",'').replace('teaser:block.body,block','teaser:block.body,body:block.body,block').replace('className?:string;key?:string}', 'className?:string;key?:string;style?:CSSProperties}').replace('style:Object.keys(imageStyle).length?imageStyle:undefined','style:Object.keys(imageStyle).length?{...attrs.style,...imageStyle}:attrs.style')+'\n  const page=previewPages[previewIndex]\n'
 const output=`// Generated from the approved original. Source SHA256: ${createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex')}
 import { Fragment, useEffect, useRef, useState, cloneElement } from 'react'
 import type { ReactElement, CSSProperties } from 'react'
@@ -64,13 +69,13 @@ import { InlineText } from './InlineText'
 import type { CanvasEditing } from './StudioCanvas'
 import type { Draft, Block } from './studio-model'
 import { withLegacyRoles } from './legacy-template-model'
-${arrays}
+${spanish?"const mainCover='/assets/es/books/infancia-mas-alla-de-las-pantallas.png'\n":''}${arrays}
 const originalBlocks=${JSON.stringify(originalBlocks)}
-export function LegacySalesTemplate({draft:input,editing,onMove,onSelect,selected}:{draft:Draft;editing?:CanvasEditing;onMove?:(from:number,to:number)=>void;onSelect?:(index:number)=>void;selected?:number}) {
+export function ${spanish?'LegacySalesTemplateEs':'LegacySalesTemplate'}({draft:input,editing,onMove,onSelect,selected}:{draft:Draft;editing?:CanvasEditing;onMove?:(from:number,to:number)=>void;onSelect?:(index:number)=>void;selected?:number}) {
 ${helper}
   const sections:Record<string,()=>ReactElement<{style?:CSSProperties;className?:string}>>={${sections.map(s=>`${JSON.stringify(s.key)}:()=>(${s.jsx})`).join(',\n')}}
   const renderSection=(key:string)=>{const block=key.startsWith('custom:')?draft.blocks.find(b=>b.id===key.slice(7)):groupBlock(key);const node:ReactElement<{style?:CSSProperties;className?:string}>|null=sections[key]?.()||(block?<section className="sales-v2-manual">{blockField(block,'title',block.title)}{blockField(block,'body',block.body)}{image(block,{src:block.imageUrl,alt:block.title})}{buyButton(undefined,block)}</section>:null);if(!node)return null;const index=block?draft.blocks.indexOf(block):-1;const styled=block?.layoutCustomized||key==='hero'&&draft.layoutCustomized?cloneElement(node,{style:customStyle(block),className:node.props.className+' has-layout-customization'}):node;if(!editing||!block||key==='hero'||key==='trust')return styled;return <div className={'legacy-edit-section '+(selected===index?'is-selected':'')} onClick={()=>onSelect?.(index)} onDragOver={e=>{if(!e.dataTransfer.types.includes('Files'))e.preventDefault()}} onDrop={e=>{const value=e.dataTransfer.getData('application/x-hubpages-block');if(/^[0-9]+$/.test(value)){e.preventDefault();onMove?.(Number(value),index)}}}><div className="canvas-block-tools"><button draggable onDragStart={e=>e.dataTransfer.setData('application/x-hubpages-block',String(index))}>⠿ Arrastar seção</button><button onClick={()=>onSelect?.(index)}>Selecionar seção</button><button disabled={neighbor(key,-1)<0} onClick={()=>onMove?.(index,neighbor(key,-1))}>Subir</button><button disabled={neighbor(key,1)<0} onClick={()=>onMove?.(index,neighbor(key,1))}>Descer</button></div>{styled}</div>}
   return (${jsx})
 }
 `
-fs.writeFileSync('src/components/LegacySalesTemplate.tsx',output)
+fs.writeFileSync(spanish?'src/components/LegacySalesTemplateEs.tsx':'src/components/LegacySalesTemplate.tsx',output)

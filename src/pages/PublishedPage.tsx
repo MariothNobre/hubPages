@@ -1,3 +1,4 @@
+import { StudioVisitor } from '../components/StudioVisitor'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { PublishedMetaPixel } from '../components/PublishedMetaPixel'
@@ -16,6 +17,6 @@ export function PublishedPage() {
     fetch(`/api/public/resolve?url=${encodeURIComponent(window.location.origin+pathname)}`,{cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw new Error('Esta página não existe ou não está publicada.');if(active){setDraft(data.draft);setPublication(data.id);setLoadedPath(pathname)}}).catch(error=>{if(active){setMessage(error.message);setLoadedPath(pathname);setDraft(null)}})
     return()=>{active=false}
   },[pathname])
-  useEffect(()=>{if(!draft)return;const previous=document.title;document.title=draft.title||draft.name;return()=>{document.title=previous}},[draft])
-  return draft&&loadedPath===pathname?<div className="public-studio-page"><PublishedMetaPixel key={publication} publicationId={publication} enabled={draft.metaPixelEnabled===true} pixelId={draft.metaPixelId}/><StudioCanvas draft={draft} interactive/></div>:<main className="public-page-message"><h1>{loadedPath&&loadedPath!==pathname?'Carregando página…':message}</h1></main>
+  useEffect(()=>{if(!draft)return;const previous=document.title,lang=document.documentElement.lang;document.title=draft.title||draft.name;document.documentElement.lang=draft.locale||'pt-BR';document.documentElement.classList.add('sales-page-root');return()=>{document.title=previous;document.documentElement.lang=lang;document.documentElement.classList.remove('sales-page-root')}},[draft])
+  return draft&&loadedPath===pathname?<div className="public-studio-page"><PublishedMetaPixel key={publication} publicationId={publication} enabled={draft.metaPixelEnabled===true} pixelId={draft.metaPixelId}/><StudioVisitor key={publication+pathname} publicationId={publication}/><StudioCanvas draft={draft} interactive/></div>:<main className="public-page-message"><h1>{loadedPath&&loadedPath!==pathname?'Carregando página…':message}</h1></main>
 }
