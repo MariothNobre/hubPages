@@ -133,4 +133,10 @@ Upload usa referência específica da página/espaço; reutilização de URL de 
 
 Modelo inicial conserva as 13 seções e 16 CTAs da página original. As 12 páginas da degustação ficam no leitor original; FAQ não recebe CTA por pergunta. Papéis do seed mantêm seções agrupadas (bônus/perguntas/degustação) e cópias antigas recebem compatibilidade por evidências de título/imagem/tipo. Remover/reordenar/editar modifica apenas o rascunho da conta.
 
+Botões adicionais em perguntas/autor só são renderizados após ativação explícita; o estado inicial continua sem esses CTAs. A movimentação de grupos entre seções preserva todos os seus blocos, enquanto a movimentação interna altera sua ordem. LayoutOverrides distingue o estilo original das alterações desejadas; redimensionar imagem não regrava margens, fundo, fonte ou botões da seção.
+
 Preview legado usa shell independente do CSS administrativo para preservar medidas/cores/fonte, mantendo barra de homologação externa à página e API autenticada/noindex. Nunca instancia MetaPixel ou AnalyticsTracker. A página original de produção continua com sua implementação completa. Publicador/Asaas/e-mail/MFA permanecem etapas pendentes.
+
+## Estado reconciliado — v0.7.0-dev.4, 2026-11-20 03:21 UTC
+
+Implantação exclusivamente DEV concluída no merge 0407d65, CI 44666800925 e deploy 44666801038 bem-sucedidos. Dois restores com histórico íntegro, APIs privadas protegidas e healths DEV/produção/Sistera saudáveis. Referências em STEP_BY_STEP HP-008. Produção e publicações comerciais de rascunhos novos continuam fora deste lote.
