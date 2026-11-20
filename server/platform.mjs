@@ -52,8 +52,13 @@ export function validateDraft(input) {
   const templateTexts=input.templateTexts ?? {}
   if(!templateTexts || typeof templateTexts!=='object' || Array.isArray(templateTexts) || Object.keys(templateTexts).length>160) fail('Textos do modelo inválidos.')
   const buttons=input.templateButtons ?? {}
-  if(!buttons || typeof buttons!=='object' || Array.isArray(buttons) || Object.keys(buttons).some((key)=>!['header','hero','faq','sticky','preview'].includes(key))) fail('Botões do modelo inválidos.')
+  if(!buttons || typeof buttons!=='object' || Array.isArray(buttons) || Object.keys(buttons).length>100||Object.keys(buttons).some(key=>!/^[a-zA-Z][a-zA-Z0-9:_-]{0,79}$/.test(key))) fail('Botões do modelo inválidos.')
+  const counts=input.sectionCounts??{}
+  if(!counts||typeof counts!=='object'||Array.isArray(counts)||Object.entries(counts).some(([key,n])=>!['method','manual','bonus','sample'].includes(key)||!Number.isInteger(n)||n<0||n>20))fail('Quantidade de cards inválida (0 a 20).')
+  if(input.offerGallery!==undefined&&(!Array.isArray(input.offerGallery)||input.offerGallery.length>6||new Set(input.offerGallery.map(m=>m?.id)).size!==input.offerGallery.length||input.offerGallery.some(m=>!m||!/^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|hero)$/.test(m.id))))fail('A galeria aceita até 6 mídias, sem espaços duplicados.')
   return {
+    ...(input.offerGallery===undefined?{}:{offerGallery:input.offerGallery.map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240)}))}),
+    sectionCounts:{...counts},sampleEnabled:input.sampleEnabled!==false,mediaType:input.mediaType==='video'?'video':'image',
     name: text(input.name, 120, 'Minha página') || 'Minha página',
     title: text(input.title, 240), description: text(input.description, 3000),
     ctaLabel: text(input.ctaLabel, 100, 'Quero saber mais'),
@@ -68,7 +73,7 @@ export function validateDraft(input) {
     layoutOverrides: overrides(input.layoutOverrides),
     templateTexts:Object.fromEntries(Object.entries(templateTexts).map(([key,value])=>{if(typeof value!=='string'||value.length>5000)fail('Texto do modelo inválido.');return[text(key,80),value]})),
     templateButtons:Object.fromEntries(Object.entries(buttons).map(([key,value])=>[key,{enabled:value?.enabled!==false,label:text(value?.label,100),url:https(text(value?.url,2000)),inheritLink:value?.inheritLink!==false}])),
-    blocks: blocks.map((block) => ({ id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
+    blocks: blocks.map((block) => ({ enabled:block?.enabled!==false,mediaType:block?.mediaType==='video'?'video':'image',sampleSource:block?.sampleSource===undefined?undefined:text(block.sampleSource,240),sampleKicker:block?.sampleKicker===undefined?undefined:text(block.sampleKicker,240),id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
   }
 }
 function owned(state, ownerId, id, includeTrashed = false) {
@@ -147,7 +152,7 @@ export function publishDraft(state,ownerId,id,revision,origin) {
   const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:'dev-free',draft:structuredClone(page.draft)}
   const image=(value)=>value.startsWith(`/api/platform/pages/${id}/images/`)?value.replace(`/api/platform/pages/${id}/images/`,`/api/public/publications/${publication.id}/images/`):value
   publication.draft.imageUrl=image(publication.draft.imageUrl)
-  publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)})
+  publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)});publication.draft.offerGallery?.forEach(m=>{m.imageUrl=image(m.imageUrl)})
   state.platform.publications??={};state.platform.publications[publication.id]=publication
   const {draft:_draft,...metadata}=publication
   page.publication=metadata;page.editorialStatus='published'

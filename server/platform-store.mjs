@@ -11,16 +11,16 @@ import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicate
 const core = ['id', 'ownerId', 'origin', 'editorialStatus', 'financialStatus', 'createdAt', 'updatedAt', 'revision', 'draft', 'revisions']
 const imagePrefix = (id) => `/api/platform/pages/${id}/images/`
 function checkImages(page) {
-  for (const [url,slot] of [[page.draft.imageUrl,'hero'], ...page.draft.blocks.map((b) => [b.imageUrl,b.id])]) {
+  for (const [url,slot] of [[page.draft.imageUrl,'hero'], ...page.draft.blocks.map((b) => [b.imageUrl,b.id]),...(page.draft.offerGallery||[]).map(m=>[m.imageUrl,m.id])]) {
     if (url.startsWith('/api/') && url !== imagePrefix(page.id)+slot) throw new PlatformError(422, 'Use a imagem deste espaço ou envie uma nova imagem.')
   }
 }
-function slots(page) { return [page.draft.imageUrl === imagePrefix(page.id)+'hero' ? 'hero' : '', ...page.draft.blocks.filter((b) => b.imageUrl === imagePrefix(page.id) + b.id).map((b) => b.id)] }
-function checkSlot(page, slot) { if (slot !== 'hero' && !page.draft.blocks.some((b) => b.id === slot)) throw new PlatformError(404, 'Espaço de imagem não encontrado.') }
+function slots(page) { return [page.draft.imageUrl === imagePrefix(page.id)+'hero' ? 'hero' : '', ...page.draft.blocks.filter((b) => b.imageUrl === imagePrefix(page.id) + b.id).map((b) => b.id),...(page.draft.offerGallery||[]).filter(m=>m.imageUrl===imagePrefix(page.id)+m.id).map(m=>m.id)] }
+function checkSlot(page, slot) { if (slot !== 'hero' && !page.draft.blocks.some((b) => b.id === slot)&&!page.draft.offerGallery?.some(m=>m.id===slot)) throw new PlatformError(404, 'Espaço de imagem não encontrado.') }
 function copyImages(page, originalId) {
   const replace = (url) => url.replace(imagePrefix(originalId), imagePrefix(page.id))
   page.draft.imageUrl = replace(page.draft.imageUrl)
-  page.draft.blocks.forEach((b) => { b.imageUrl = replace(b.imageUrl) })
+  page.draft.blocks.forEach((b) => { b.imageUrl = replace(b.imageUrl) });page.draft.offerGallery?.forEach(m=>{m.imageUrl=replace(m.imageUrl)})
   page.revisions[0].draft = structuredClone(page.draft)
 }
 function fromRow(row, revisions = []) {
@@ -78,6 +78,7 @@ export async function createPlatformStore(connectionString, fallback) {
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=4')).rowCount)await migration.query(await readFile(new URL('./migrations/004-studio-address-tracking.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=5')).rowCount)await migration.query(await readFile(new URL('./migrations/005-studio-workspace.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=6')).rowCount)await migration.query(await readFile(new URL('./migrations/006-traffic-pageviews.sql',import.meta.url),'utf8'))
+    if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=7')).rowCount)await migration.query(await readFile(new URL('./migrations/007-current-media.sql',import.meta.url),'utf8'))
     await migration.query('COMMIT')
   } catch (error) { await migration.query('ROLLBACK'); throw error }
   finally { migration.release() }
@@ -108,12 +109,13 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
         if(action==='publish'&&original.origin==='native')await checkAddress(client,id,original.draft.publicUrl)
         const page=action==='publish'?publishDraft(state,ownerId,id,input.revision,input.origin):action==='unpublish'?unpublishDraft(state,ownerId,id,input.revision):trashDraft(state,ownerId,id,input.revision,action==='untrash')
         const publication=action==='publish'?state.platform.publications[page.publication.id]:null
+        if(['publish','unpublish','trash'].includes(action)){await client.query("SELECT set_config('hubpages.media_prune_page',$1,true)",[id]);await client.query('DELETE FROM hubpages_studio_publication_images WHERE publication_id IN(SELECT id FROM hubpages_studio_publications WHERE page_id=$1)',[id])}
         if(publication) {
           const imageSlots=[...new Set(slots(page).filter(Boolean))]
           const active=(await client.query('SELECT count(*)::integer AS n,COALESCE(sum(octet_length(content)),0)::integer AS bytes FROM hubpages_studio_images WHERE page_id=$1 AND slot=ANY($2::text[])',[id,imageSlots])).rows[0]
           if(active.n!==imageSlots.length)throw new PlatformError(422,'Reenvie as imagens que não estão mais disponíveis antes de publicar.')
           const used=(await client.query('SELECT COALESCE(sum(octet_length(i.content)),0)::integer AS bytes FROM hubpages_studio_publication_images i JOIN hubpages_studio_publications p ON p.id=i.publication_id WHERE p.owner_id=$1',[ownerId])).rows[0].bytes
-          if(used+active.bytes>100*1024*1024)throw new PlatformError(422,'Limite de 100 MB de versões publicadas por conta atingido. Contate o suporte.')
+          if(used+active.bytes>100*1024*1024)throw new PlatformError(422,'Limite de 100 MB de mídias publicadas por conta atingido. Contate o suporte.')
           await client.query('INSERT INTO hubpages_studio_publications(id,page_id,owner_id,revision,draft,published_at,public_url,mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[publication.id,id,ownerId,publication.revision,publication.draft,publication.publishedAt,publication.url,publication.mode])
           await client.query('INSERT INTO hubpages_studio_publication_images(publication_id,slot,mime,content) SELECT $1,slot,mime,content FROM hubpages_studio_images WHERE page_id=$2 AND slot=ANY($3::text[])',[publication.id,id,imageSlots])
         }
@@ -126,7 +128,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
         checkSlot(original, input.slot)
         if (action === 'putImage') {
           const bytes = (await client.query('SELECT COALESCE(sum(octet_length(i.content)),0)::integer AS n FROM hubpages_studio_images i JOIN hubpages_studio_pages p ON p.id=i.page_id WHERE p.owner_id=$1 AND NOT(i.page_id=$2 AND i.slot=$3)', [ownerId, id, input.slot])).rows[0].n
-          if (bytes + input.content.length > 20 * 1024 * 1024) throw new PlatformError(422, 'Limite de 20 MB de imagens ativas por conta atingido.')
+          if (bytes + input.content.length > 100 * 1024 * 1024) throw new PlatformError(422, 'Limite de 100 MB de mídias atuais por conta atingido.')
           await client.query('INSERT INTO hubpages_studio_images(page_id,slot,mime,content) VALUES($1,$2,$3,$4) ON CONFLICT(page_id,slot) DO UPDATE SET mime=EXCLUDED.mime,content=EXCLUDED.content,updated_at=now()', [id, input.slot, input.mime, input.content])
           await writeAudit(client, [{ id: randomUUID(), actorId: ownerId, pageId: id, action: 'image.replace', at: new Date().toISOString(), slot: input.slot }])
         }
@@ -155,7 +157,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       if (action === 'duplicate') {
         const used = (await client.query('SELECT COALESCE(sum(octet_length(i.content)),0)::integer AS n FROM hubpages_studio_images i JOIN hubpages_studio_pages p ON p.id=i.page_id WHERE p.owner_id=$1', [ownerId])).rows[0].n
         const copying = (await client.query('SELECT COALESCE(sum(octet_length(content)),0)::integer AS n FROM hubpages_studio_images WHERE page_id=$1',[id])).rows[0].n
-        if (used+copying>20*1024*1024) throw new PlatformError(422,'Limite de 20 MB de imagens ativas por conta atingido.')
+        if (used+copying>100*1024*1024) throw new PlatformError(422,'Limite de 100 MB de mídias atuais por conta atingido.')
         await client.query('INSERT INTO hubpages_studio_images(page_id,slot,mime,content) SELECT $1,slot,mime,content FROM hubpages_studio_images WHERE page_id=$2', [page.id, id])
       }
       // Only active slots, no personal library or binary image history.
@@ -182,7 +184,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       const result = await pool.query(`SELECT p.*, (SELECT s.draft FROM hubpages_studio_publications s WHERE s.id::text=p.extra->'publication'->>'id') AS published_draft, ARRAY(SELECT i.slot FROM hubpages_studio_images i LEFT JOIN hubpages_studio_publication_images v ON v.publication_id::text=p.extra->'publication'->>'id' AND v.slot=i.slot WHERE i.page_id=p.id AND i.content IS DISTINCT FROM v.content) AS changed_images, (SELECT count(*)::integer FROM hubpages_studio_revisions r WHERE r.page_id=p.id) AS revision_count FROM hubpages_studio_pages p WHERE owner_id=$1 AND (COALESCE(extra->>'trashedAt','')<>'')=$2 ORDER BY created_at,id`, [ownerId,trashed])
       return result.rows.map((row) => {
         const { draft, revisions: _revisions, ...page } = fromRow(row)
-        return { ...page, name: draft.name, title: draft.title, step: draft.step, revisions: row.revision_count,coverUrl:draft.imageUrl,locale:draft.locale,pendingChangeCount:pendingChanges(draft,row.published_draft,row.changed_images).length }
+        return { ...page, name: draft.name, title: draft.title, step: draft.step, revisions: row.revision_count,coverUrl:draft.imageUrl,coverType:draft.mediaType,locale:draft.locale,pendingChangeCount:pendingChanges(draft,row.published_draft,row.changed_images).length }
       })
     },
     read: (ownerId, id) => execute(ownerId, id, 'read'),
@@ -201,7 +203,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       return {id:row.id,revision:row.revision,draft:row.draft,publishedAt:row.published_at.toISOString(),url:row.public_url}
     },
     async publicImage(id,slot) {
-      const result=await pool.query("SELECT i.mime,i.content FROM hubpages_studio_publication_images i JOIN hubpages_studio_publications s ON s.id=i.publication_id JOIN hubpages_studio_pages p ON p.id=s.page_id WHERE s.id=$1 AND i.slot=$2 AND p.editorial_status='published' AND COALESCE(p.extra->>'trashedAt','')=''",[id,slot])
+      const result=await pool.query("SELECT i.mime,i.content FROM hubpages_studio_publication_images i JOIN hubpages_studio_publications s ON s.id=i.publication_id JOIN hubpages_studio_pages p ON p.id=s.page_id WHERE s.id=$1 AND i.slot=$2 AND p.extra->'publication'->>'id'=s.id::text AND p.editorial_status='published' AND COALESCE(p.extra->>'trashedAt','')=''",[id,slot])
       if(!result.rowCount)throw new PlatformError(404,'Imagem não encontrada.')
       return result.rows[0]
     },
@@ -233,20 +235,20 @@ function fileStore({ read, write,publicOrigin,credentialKey }) {
     metaContext:(id)=>operation(s=>{const pub=s.platform?.publications?.[id],p=s.platform?.pages?.[pub?.pageId];if(!p||p.trashedAt||p.editorialStatus!=='published'||p.publication?.id!==id)return null;const t=s.platform.tracking?.[p.id];return{enabled:pub.draft.metaPixelEnabled,pixelId:pub.draft.metaPixelId,url:pub.url,accessToken:openToken(t?.token_ciphertext,credentialKey),testEventCode:t?.test_event_code}},false),
     claimMeta:(id,event)=>operation(s=>{s.platform.metaEvents??={};const key=id+':'+event;if(s.platform.metaEvents[key])return false;s.platform.metaEvents[key]='pending';return true}),
     finishMeta:(id,event,status)=>operation(s=>{s.platform.metaEvents[id+':'+event]=status}),
-    list: (ownerId,trashed=false) => operation((s) => listDrafts(s, ownerId,trashed).map(page=>{if(trashed)return page;const context=review(s,ownerId,page.id);return{...page,coverUrl:s.platform.pages[page.id].draft.imageUrl,locale:s.platform.pages[page.id].draft.locale,pendingChangeCount:pendingChanges(s.platform.pages[page.id].draft,context.publishedDraft,context.changedImageSlots).length}}), false),
+    list: (ownerId,trashed=false) => operation((s) => listDrafts(s, ownerId,trashed).map(page=>{if(trashed)return page;const context=review(s,ownerId,page.id);return{...page,coverUrl:s.platform.pages[page.id].draft.imageUrl,coverType:s.platform.pages[page.id].draft.mediaType,locale:s.platform.pages[page.id].draft.locale,pendingChangeCount:pendingChanges(s.platform.pages[page.id].draft,context.publishedDraft,context.changedImageSlots).length}}), false),
     read: (ownerId, id) => operation((s) => readDraft(s, ownerId, id), false),
     create: (ownerId, input) => operation((s) => { quota(s, ownerId); const p = createDraft(s, ownerId, input);if(p.draft.publicUrl){p.draft.publicUrl=checkAddress(s,p.id,p.draft.publicUrl);p.revisions[0].draft=structuredClone(p.draft);s.platform.pages[p.id]=p} checkImages(p); return p }),
     save: (ownerId, id, input) => operation((s) => { if(input.draft?.publicUrl&&input.draft.publicUrl!==readDraft(s,ownerId,id).draft.publicUrl)input={...input,draft:{...input.draft,publicUrl:checkAddress(s,id,input.draft.publicUrl)}};const p = saveDraft(s, ownerId, id, input); checkImages(p); for (const key of Object.keys(s.platform.images?.[id] ?? {})) if (!slots(p).includes(key)) delete s.platform.images[id][key]; return p }),
     duplicate: (ownerId, id) => operation((s) => { readDraft(s, ownerId, id); quota(s, ownerId); const p = duplicateDraft(s, ownerId, id); copyImages(p,id); s.platform.pages[p.id]=p; s.platform.images ??= {}; s.platform.images[p.id] = structuredClone(s.platform.images[id] ?? {}); return p }),
     restore: (ownerId, id, input) => operation((s) => restoreDraft(s, ownerId, id, input.version, input.revision)),
-    trash:(ownerId,id,input)=>operation(s=>trashDraft(s,ownerId,id,input.revision)),
+    trash:(ownerId,id,input)=>operation(s=>{const p=trashDraft(s,ownerId,id,input.revision);for(const pub of Object.values(s.platform.publications||{}))if(pub.pageId===id)pub.images={};return p}),
     untrash:(ownerId,id,input)=>operation(s=>trashDraft(s,ownerId,id,input.revision,true)),
-    unpublish:(ownerId,id,input)=>operation(s=>unpublishDraft(s,ownerId,id,input.revision)),
-    publish:(ownerId,id,input)=>operation(s=>{const original=readDraft(s,ownerId,id);if(original.origin==='native')checkAddress(s,id,original.draft.publicUrl);const page=publishDraft(s,ownerId,id,input.revision,input.origin),pub=s.platform.publications[page.publication.id];pub.images={};for(const slot of slots(page).filter(Boolean)){const img=s.platform.images?.[id]?.[slot];if(!img)throw new PlatformError(422,'Reenvie as imagens antes de publicar.');pub.images[slot]=structuredClone(img)}return page}),
+    unpublish:(ownerId,id,input)=>operation(s=>{const p=unpublishDraft(s,ownerId,id,input.revision);for(const pub of Object.values(s.platform.publications||{}))if(pub.pageId===id)pub.images={};return p}),
+    publish:(ownerId,id,input)=>operation(s=>{const original=readDraft(s,ownerId,id);if(original.origin==='native')checkAddress(s,id,original.draft.publicUrl);const page=publishDraft(s,ownerId,id,input.revision,input.origin),pub=s.platform.publications[page.publication.id];pub.images={};for(const slot of slots(page).filter(Boolean)){const img=s.platform.images?.[id]?.[slot];if(!img)throw new PlatformError(422,'Reenvie as imagens antes de publicar.');pub.images[slot]=structuredClone(img)}for(const old of Object.values(s.platform.publications))if(old.pageId===id&&old.id!==pub.id)old.images={};return page}),
     publicPage:(id)=>operation(s=>{const page=s.platform?.pages?.[id],pub=s.platform?.publications?.[page?.publication?.id];if(!pub||page.trashedAt||page.editorialStatus!=='published')throw new PlatformError(404,'Página não encontrada.');const {ownerId:_owner,images:_images,...result}=pub;return result},false),
-    publicImage:(id,slot)=>operation(s=>{const pub=s.platform?.publications?.[id],page=s.platform?.pages?.[pub?.pageId],img=pub?.images?.[slot];if(!img||page?.trashedAt||page?.editorialStatus!=='published')throw new PlatformError(404,'Imagem não encontrada.');return{mime:img.mime,content:Buffer.from(img.content,'base64')}},false),
+    publicImage:(id,slot)=>operation(s=>{const pub=s.platform?.publications?.[id],page=s.platform?.pages?.[pub?.pageId],img=pub?.images?.[slot];if(!img||page?.publication?.id!==id||page?.trashedAt||page?.editorialStatus!=='published')throw new PlatformError(404,'Imagem não encontrada.');return{mime:img.mime,content:Buffer.from(img.content,'base64')}},false),
     getImage: (ownerId, id, slot) => operation((s) => { checkSlot(readDraft(s, ownerId, id),slot); const img = s.platform.images?.[id]?.[slot]; if (!img) throw new PlatformError(404, 'Imagem não encontrada.'); return { mime: img.mime, content: Buffer.from(img.content,'base64') } }, false),
-    putImage: (ownerId, id, slot, mime, content) => operation((s) => { checkSlot(readDraft(s, ownerId, id),slot); s.platform.images ??= {}; s.platform.images[id] ??= {}; const used = Object.entries(s.platform.images).filter(([pageId]) => s.platform.pages[pageId]?.ownerId === ownerId).reduce((sum,[pageId,items]) => sum + Object.entries(items).reduce((n,[key,img]) => n+(pageId===id && key===slot ? 0 : Buffer.from(img.content,'base64').length),0),0); if (used+content.length>20*1024*1024) throw new PlatformError(422,'Limite de imagens ativas atingido.'); s.platform.images[id][slot]={mime,content:content.toString('base64')}; return {mime,content} }),
+    putImage: (ownerId, id, slot, mime, content) => operation((s) => { checkSlot(readDraft(s, ownerId, id),slot); s.platform.images ??= {}; s.platform.images[id] ??= {}; const used = Object.entries(s.platform.images).filter(([pageId]) => s.platform.pages[pageId]?.ownerId === ownerId).reduce((sum,[pageId,items]) => sum + Object.entries(items).reduce((n,[key,img]) => n+(pageId===id && key===slot ? 0 : Buffer.from(img.content,'base64').length),0),0); if (used+content.length>100*1024*1024) throw new PlatformError(422,'Limite de imagens ativas atingido.'); s.platform.images[id][slot]={mime,content:content.toString('base64')}; return {mime,content} }),
     close: async () => {},
   }
 }

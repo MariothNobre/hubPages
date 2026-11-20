@@ -1,3 +1,4 @@
+import { StudioUndo } from '../components/StudioUndo'
 import { metricsRefreshMs } from '../../shared/studio-traffic.mjs'
 import { TemplateGallery } from '../components/TemplateGallery'
 import { WorkspaceLinks,WorkspaceFooter } from '../components/WorkspaceChrome'
@@ -45,6 +46,12 @@ export function StudioPage() {
   const [publishing,setPublishing]=useState(false)
   const [leaving,setLeaving]=useState(false)
   const transition=useRef(false)
+  const history=useRef(new StudioUndo())
+  const [undoCount,setUndoCount]=useState(0)
+  const [undoing,setUndoing]=useState(false)
+  const [inlineDirty,setInlineDirty]=useState(false)
+  const [mediaBusy,setMediaBusy]=useState(false)
+  const skipHistory=useRef(false)
   const [publicOrigin,setPublicOrigin]=useState('https://dev.hubpages.com.br')
   const [page, setPage] = useState<Page | null>(null)
   const [notice, setNotice] = useState('Carregando o Studio privado…')
@@ -70,7 +77,7 @@ export function StudioPage() {
   useEffect(()=>{
     if(!ready||!requestedId||current.current?.id===requestedId)return
     let active=true
-    api<Page>(`pages/${requestedId}`).then(value=>{if(!active)return;const step=stepIds.includes(Number(requestedStep))?Number(requestedStep):value.draft.step;const result={...value,draft:withLegacyRoles({...value.draft,step:step===3?2:step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current=result;saved.current=JSON.stringify(result.draft);setPage(result);setNotice('Sua página foi reaberta na etapa em que você estava.')}).catch(error=>{if(active){setNotice(error.message);setParams({},{replace:true})}})
+    api<Page>(`pages/${requestedId}`).then(value=>{if(!active)return;const step=stepIds.includes(Number(requestedStep))?Number(requestedStep):value.draft.step;history.current.clear();setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:step===3?2:step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current=result;saved.current=JSON.stringify(result.draft);setPage(result);setNotice('Sua página foi reaberta na etapa em que você estava.')}).catch(error=>{if(active){setNotice(error.message);setParams({},{replace:true})}})
     return()=>{active=false}
   },[ready,requestedId,requestedStep,setParams])
   useEffect(()=>{if(!ready||page)return;let active=true;const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;api<{metrics:Record<string,{visits:number;online:number}>}>('metrics').then(result=>{if(active)setPages(pages=>pages.map(p=>({...p,...result.metrics[p.id]})))}).catch(()=>undefined)},metricsRefreshMs);return()=>{active=false;clearInterval(timer)}},[ready,page])
@@ -80,7 +87,9 @@ export function StudioPage() {
     const task = (async () => {
       setSaving(true)
       try {
+        await history.current.settled()
         while (current.current && JSON.stringify(current.current.draft) !== saved.current) {
+          await history.current.settled()
           const snapshot = {...current.current,draft:structuredClone(current.current.draft)}
           const result = await api<Page>(`pages/${snapshot.id}`, 'PUT', { revision: snapshot.revision, draft: snapshot.draft })
           saved.current = JSON.stringify(snapshot.draft)
@@ -106,15 +115,40 @@ export function StudioPage() {
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
-  function select(value: Page) { const result={...value,draft:withLegacyRoles({...value.draft,step:value.draft.step===3?2:value.draft.step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current = result; saved.current = JSON.stringify(result.draft); setPage(result);setParams({page:result.id,step:String(result.draft.step)},{replace:true}); setNotice('Rascunho carregado.') }
+  function select(value: Page) { history.current.clear();setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:value.draft.step===3?2:value.draft.step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current = result; saved.current = JSON.stringify(result.draft); setPage(result);setParams({page:result.id,step:String(result.draft.step)},{replace:true}); setNotice('Rascunho carregado.') }
   function update(change: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) {
     if (!current.current || transition.current) return
     const patch=typeof change==='function'?change(current.current.draft):change
+    const before=current.current.draft,next={...before,...patch}
+    const meaningful=Object.keys(patch).some(key=>!['step','visitedSteps','reviewedSignature'].includes(key)&&JSON.stringify(before[key as keyof Draft])!==JSON.stringify(next[key as keyof Draft]))
+    if(meaningful&&!skipHistory.current){const oldSlots=history.current.slots(before,current.current.id),newSlots=history.current.slots(next,current.current.id);history.current.record(before,history.current.capture(before,current.current.id,[...oldSlots.keys()].filter(slot=>!newSlots.has(slot))));setUndoCount(history.current.entries.length)}
+    skipHistory.current=false
     const step=patch.step??current.current.draft.step
     current.current = {...current.current,draft:{...current.current.draft,...patch,visitedSteps:[...new Set([...(current.current.draft.visitedSteps||[]),step])]}}
     if(patch.step!==undefined)setParams({page:current.current.id,step:String(step)},{replace:true})
     setPage(current.current); setNotice('Alterações pendentes…')
   }
+  async function prepareMediaUndo(slot:string){
+    const item=current.current;if(!item)throw new Error('Abra uma página para editar.')
+    const media=await history.current.capture(item.draft,item.id,[slot])
+    return ()=>{if(current.current?.id!==item.id)return;history.current.record(current.current.draft,Promise.resolve(media));setUndoCount(history.current.entries.length);skipHistory.current=true}
+  }
+  const undo=useCallback(async()=>{
+    if(transition.current||!current.current)return
+    const entry=history.current.entries.at(-1);if(!entry)return
+    transition.current=true;setUndoing(true)
+    try{
+      if(pending.current&&!await pending.current)return
+      const media=await entry.media,item=current.current
+      current.current={...item,draft:{...structuredClone(entry.draft),step:item.draft.step,visitedSteps:item.draft.visitedSteps}}
+      setPage(current.current)
+      if(!await flush())return
+      for(const [slot,blob]of media){const r=await fetch(`/api/platform/pages/${item.id}/images/${slot}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':blob.type},body:blob});if(!r.ok)throw new Error('Falha ao restaurar a mídia. Clique em Desfazer para tentar novamente.')}
+      history.current.entries.pop();setUndoCount(history.current.entries.length);setAssetRefresh(v=>v+1);setNotice('Última alteração desfeita e rascunho salvo.')
+    }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível desfazer.')}
+    finally{transition.current=false;setUndoing(false)}
+  },[flush])
+  useEffect(()=>{const key=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey)||event.key.toLowerCase()!=='z'||event.shiftKey||event.altKey||event.isComposing)return;const target=event.target;if(target instanceof HTMLElement&&target.closest('input,textarea,[contenteditable="true"]'))return;if(current.current){event.preventDefault();if(!mediaBusy)void undo()}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[undo,mediaBusy])
   const suggestionId=page?.id,suggestionName=page?.draft.name,suggestionAutomatic=page?.draft.addressAuto===true
   useEffect(()=>{
     if(!suggestionId||!suggestionName||!suggestionAutomatic||publishing||leaving)return
@@ -137,7 +171,7 @@ export function StudioPage() {
     catch(error){setNotice(error instanceof Error?error.message:'Falha ao publicar.')}
     finally{transition.current=false;setPublishing(false)}
   }
-  async function backToPages(){if(transition.current)return;transition.current=true;setLeaving(true);try{if(pending.current&&!await pending.current)return;if(!await flush())return;current.current=null;setPage(null);setParams({},{replace:true});await refresh()}catch(error){setNotice(error instanceof Error?error.message:'Falha ao carregar páginas.')}finally{transition.current=false;setLeaving(false)}}
+  async function backToPages(){if(transition.current)return;transition.current=true;setLeaving(true);try{if(pending.current&&!await pending.current)return;if(!await flush())return;current.current=null;history.current.clear();setUndoCount(0);setInlineDirty(false);setPage(null);setParams({},{replace:true});await refresh()}catch(error){setNotice(error instanceof Error?error.message:'Falha ao carregar páginas.')}finally{transition.current=false;setLeaving(false)}}
   const addressPageId=page?.id,addressValue=page?.draft.publicUrl
   useEffect(()=>{if(!addressPageId||!addressValue)return;const controller=new AbortController();const timer=window.setTimeout(()=>{fetch(`/api/platform/pages/${addressPageId}/address-availability?url=${encodeURIComponent(addressValue)}`,{signal:controller.signal}).then(response=>{if(!controller.signal.aborted)setAddressCheck({pageId:addressPageId,url:addressValue,available:response.ok})}).catch(()=>{if(!controller.signal.aborted)setAddressCheck({pageId:addressPageId,url:addressValue,available:false})})},300);return()=>{window.clearTimeout(timer);controller.abort()}},[addressPageId,addressValue])
   const reviewPageId=page?.id,reviewPublicationId=page?.publication?.id||''
@@ -155,15 +189,15 @@ export function StudioPage() {
   const reviewed=!!reviewCurrent&&!reviewCurrent.error&&draft?.reviewedSignature===signature
   const stepReady=draft?wizardReadiness(draft,publicOrigin,reviewed||!!reviewCurrent&&!reviewCurrent.error&&!!page?.publication&&changes.length===0,page?.editorialStatus==='published'&&!!reviewCurrent&&!reviewCurrent.error,changes.length):[]
   if(draft)stepReady[4]=stepReady[4]&&addressCheck?.pageId===page?.id&&addressCheck?.url===draft.publicUrl&&addressCheck.available
-  const pageNavigation = page && draft && <div className="studio-page-navigation"><div className="wizard-header-actions"><button disabled={leaving||publishing} onClick={()=>void backToPages()}>← Minhas páginas</button><span>Crie. Personalize. Publique.</span><button disabled={publishing||leaving} onClick={()=>void flush()}>Salvar agora</button></div><WizardTimeline step={draft.step} ready={stepReady} pending={changes.length} busy={publishing||leaving} onStep={id=>update({step:id})}/></div>
+  const pageNavigation = page && draft && <div className="studio-page-navigation"><div className="wizard-header-actions"><button disabled={leaving||publishing||undoing||mediaBusy} onClick={()=>void backToPages()}>← Minhas páginas</button><span>Crie. Personalize. Publique.</span><div className="studio-save-actions"><button type="button" title="Desfazer última alteração (Ctrl+Z)" disabled={!undoCount&&!inlineDirty||publishing||leaving||undoing||mediaBusy} onClick={()=>void undo()}>↶ {undoing?'Desfazendo…':'Desfazer'}</button><button disabled={publishing||leaving||undoing||mediaBusy} onClick={()=>void flush()}>Salvar agora</button></div></div><WizardTimeline step={draft.step} ready={stepReady} pending={changes.length} busy={publishing||leaving||undoing||mediaBusy} onStep={id=>update({step:id})}/></div>
   async function changeView(value:'cards'|'list'){try{await api('preferences','PUT',{listView:value});setListView(value)}catch(error){setNotice(error instanceof Error?error.message:'Falha ao salvar exibição.')}}
   async function purgePage(){if(!purgeTarget)return;setDeleting(true);setDeleteError('');try{await api(`pages/${purgeTarget.id}/purge`,'POST',{revision:purgeTarget.revision,confirmation:'EXCLUIR'});setPurgeTarget(null);await refresh();setNotice('Página excluída permanentemente.')}catch(error){setDeleteError(error instanceof Error?error.message:'Falha ao excluir.')}finally{setDeleting(false)}}
   const input = (label: string, field: keyof Draft, type = 'text') => <label>{label}<input type={type} value={String(draft?.[field] ?? '')} onChange={(event) => update({ [field]: event.target.value })} /></label>
-  return <div className={`studio ${page ? 'is-building' : ''}`}><header><Brand /><WorkspaceLinks/>{pageNavigation}</header><main><div className="studio-heading"><div><p>HUBPAGES STUDIO</p><h1>{page ? draft?.name : 'Minhas páginas'}</h1><p>Sua ideia vira uma página pronta para vender. Comece por um modelo e personalize no seu ritmo.</p></div>{ready && <button disabled={saving||publishing||leaving} onClick={() => run(async () => { if (await flush()) select(await api<Page>('pages', 'POST', { name: 'Minha nova página', template: 'infancia_pt' })) })}>Criar minha página de vendas</button>}</div><p role="status" className="studio-notice">{notice} {saving && 'Salvando…'}</p>{!ready && <p><Link to="/conta">Entrar ou criar minha conta grátis</Link> · <Link to="/admin">Acesso do administrador existente</Link></p>}
+  return <div className={`studio ${page ? 'is-building' : ''}`} onInputCapture={e=>{if(e.target instanceof HTMLElement&&e.target.isContentEditable)setInlineDirty(true)}} onBlurCapture={e=>{if(e.target instanceof HTMLElement&&e.target.isContentEditable)setInlineDirty(false)}}><header><Brand /><WorkspaceLinks/>{pageNavigation}</header><main><div className="studio-heading"><div><p>HUBPAGES STUDIO</p><h1>{page ? draft?.name : 'Minhas páginas'}</h1><p>Sua ideia vira uma página pronta para vender. Comece por um modelo e personalize no seu ritmo.</p></div>{ready && <button disabled={saving||publishing||leaving||undoing||mediaBusy} onClick={() => run(async () => { if (await flush()) select(await api<Page>('pages', 'POST', { name: 'Minha nova página', template: 'infancia_pt' })) })}>Criar minha página de vendas</button>}</div><p role="status" className="studio-notice">{notice} {saving && 'Salvando…'}</p>{!ready && <p><Link to="/conta">Entrar ou criar minha conta grátis</Link> · <Link to="/admin">Acesso do administrador existente</Link></p>}
     {ready && !page && <>{!showTrash&&<section className="wizard-guide wizard-welcome"><span className="wizard-eyebrow">DA SUA IDEIA AO PRIMEIRO CLIQUE</span><h2>Uma oferta. Seu estilo. Um link pronto para vender.</h2><ol className="wizard-flow"><li><span className="wizard-flow-number">1</span><div><strong>Comece com um modelo</strong><p>Clique em Criar minha página de vendas para começar com uma estrutura pronta.</p></div></li><li><span className="wizard-flow-number">2</span><div><strong>Conte a sua história</strong><p>Edite na própria página e conecte seu botão de compra.</p></div></li><li><span className="wizard-flow-number">3</span><div><strong>Revise e publique</strong><p>Confira a prévia e compartilhe o link com seu público.</p></div></li></ol></section>}<div className="studio-list-heading"><h2>{showTrash?'Lixeira':'Páginas do Studio'}</h2><div className="studio-list-tools"><div className="studio-view-switch" role="group" aria-label="Modo de exibição"><button aria-pressed={listView==='cards'} onClick={()=>void changeView('cards')}>▦ Cards</button><button aria-pressed={listView==='list'} onClick={()=>void changeView('list')}>☰ Lista</button></div><button onClick={()=>setShowTrash(!showTrash)}>{showTrash?'Voltar às páginas':`Lixeira (${trashed.length})`}</button><button onClick={()=>run(refresh)}>Atualizar lista</button></div></div>{showTrash&&<p>Restaure uma página ou exclua permanentemente. A exclusão definitiva pede confirmação.</p>}{(showTrash?trashed:pages).length===0&&<p>{showTrash?'A lixeira está vazia.':'Você ainda não criou páginas no Studio.'}</p>}<StudioPageList pages={showTrash?trashed:pages} trash={showTrash} view={listView} onEdit={item=>void run(async()=>select(await api<Page>(`pages/${item.id}`)))} onDuplicate={item=>void run(async()=>{select(await api<Page>(`pages/${item.id}/duplicate`,'POST'));await refresh()})} onDelete={item=>{setDeleteError('');setDeleteTarget(item)}} onRestore={item=>void run(async()=>{await api(`pages/${item.id}/untrash`,'POST',{revision:item.revision});await refresh();setNotice('Página restaurada como rascunho.')})} onPurge={item=>{setDeleteError('');setPurgeTarget(item)}} onMetrics={setMetricTarget}/></>}
-    {page && draft && <><div className="studio-workspace" inert={publishing||leaving}><section className="studio-editor"><h2>{stepIds.indexOf(draft.step)+1}. {steps[stepIds.indexOf(draft.step)]}</h2><StepGuide key={draft.step} step={draft.step} onStep={id=>update({step:id})}/>
+    {page && draft && <><div className="studio-workspace" inert={publishing||leaving||undoing||mediaBusy}><section className="studio-editor"><h2>{stepIds.indexOf(draft.step)+1}. {steps[stepIds.indexOf(draft.step)]}</h2><StepGuide key={draft.step} step={draft.step} onStep={id=>update({step:id})}/>
       {draft.step === 1 && <>{input('Nome da página', 'name')}<h3>Modelos disponíveis</h3><p>Seu modelo: {templates.find((t)=>t.id===draft.template)?.name || draft.template}. Quer experimentar outro? Criamos um rascunho separado para você comparar.</p><TemplateGallery templates={templates} selected={draft.template} busy={saving} onChoose={template=>void run(async()=>{if(await flush())select(await api<Page>('pages','POST',{name:template.name,template:template.id}))})}/></>}
-      {(draft.step === 2 || draft.step === 3) && <StudioDesigner draft={draft} pageId={page.id} update={(change)=>{if(current.current?.id===page.id)update(change)}} flush={flush} notice={setNotice} assetChanged={()=>setAssetRefresh(value=>value+1)} />}
+      {(draft.step === 2 || draft.step === 3) && <StudioDesigner draft={draft} pageId={page.id} update={(change)=>{if(current.current?.id===page.id)update(change)}} flush={flush} notice={setNotice} assetVersion={assetRefresh} prepareMediaUndo={prepareMediaUndo} onMediaBusy={setMediaBusy} assetChanged={()=>setAssetRefresh(value=>value+1)} />}
 
       {draft.step === 4 && <CheckoutSettings draft={draft} update={update}/>}
       {draft.step === 5 && <TrackingSettings key={page.id} id={page.id} draft={draft} update={update}/>}
