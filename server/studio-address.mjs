@@ -11,3 +11,14 @@ export function legacyAddressConflict(state,url) {
   const path=new URL(url).pathname.replace(/\/$/,'')
   return Object.values(state.pages||{}).some(page=>page?.publicUrl&&new URL(page.publicUrl).pathname.replace(/\/$/,'')===path)
 }
+
+export async function suggestStudioAddress(name,origin,check) {
+  if(typeof name!=='string'||name.length>120)throw new PlatformError(422,'Nome da página inválido.')
+  const base=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,80).replace(/_+$/,'')||'minha_pagina'
+  for(let n=1;n<=1000;n++) {
+    const slug=n===1?base:`${base}_${n}`
+    try {const url=normalizeStudioAddress(`${origin}/${slug}`,origin);await check(url);return {slug,url,available:true}}
+    catch(error){if(!(error instanceof PlatformError)||![409,422].includes(error.status))throw error}
+  }
+  throw new PlatformError(409,'Escolha outro nome para encontrar um endereço disponível.')
+}

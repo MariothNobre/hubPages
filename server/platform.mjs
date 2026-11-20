@@ -58,6 +58,7 @@ export function validateDraft(input) {
     title: text(input.title, 240), description: text(input.description, 3000),
     ctaLabel: text(input.ctaLabel, 100, 'Quero saber mais'),
     checkoutUrl: https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
+    addressAuto: input.addressAuto===true,
     imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',

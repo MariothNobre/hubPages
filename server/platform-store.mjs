@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import pg from 'pg'
 import { isDeepStrictEqual } from 'node:util'
-import { normalizeStudioAddress,legacyAddressConflict } from './studio-address.mjs'
+import { normalizeStudioAddress,legacyAddressConflict,suggestStudioAddress } from './studio-address.mjs'
 import { trackingChange,trackingView,openToken } from './studio-tracking.mjs'
 import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicateDraft, restoreDraft, trashDraft, publishDraft, unpublishDraft } from './platform.mjs'
 
@@ -90,6 +90,7 @@ export async function createPlatformStore(connectionString, fallback) {
       const previousVersion = original?.revision ?? 0
       if(['create','save','duplicate','publish','unpublish','trash','untrash'].includes(action))await client.query('SELECT pg_advisory_xact_lock(702073,1)')
       const state = { platform: { schemaVersion: 1, pages: original ? { [id]: original } : {}, audit: [] } }
+      if(action==='suggestion'){const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddress(client,id,url));await client.query('COMMIT');return result}
       if(action==='availability'){const url=await checkAddress(client,id,input.url);await client.query('COMMIT');return {available:true,url}}
       if(action==='trackingRead'||action==='trackingSave'){let row=(await client.query('SELECT * FROM hubpages_studio_tracking WHERE page_id=$1 AND owner_id=$2',[id,ownerId])).rows[0];if(action==='trackingSave'){row=trackingChange(input,row,fallback?.credentialKey);await client.query('INSERT INTO hubpages_studio_tracking(page_id,owner_id,token_ciphertext,test_event_code) VALUES($1,$2,$3,$4) ON CONFLICT(page_id) DO UPDATE SET token_ciphertext=EXCLUDED.token_ciphertext,test_event_code=EXCLUDED.test_event_code',[id,ownerId,row.token_ciphertext,row.test_event_code])}await client.query('COMMIT');return trackingView(row)}
       if (action === 'read') { await client.query('COMMIT'); return readDraft(state, ownerId, id) }
@@ -157,6 +158,7 @@ export async function createPlatformStore(connectionString, fallback) {
   }
   return {
     addressOccupied:async(url)=>Boolean((await pool.query('SELECT 1 FROM hubpages_studio_addresses WHERE public_url=$1',[publicOrigin+new URL(url).pathname.replace(/\/$/,'')])).rowCount),
+    suggestion:(ownerId,id,name)=>execute(ownerId,id,'suggestion',{name}),
     availability:(ownerId,id,url)=>execute(ownerId,id,'availability',{url}),
     trackingRead:(ownerId,id)=>execute(ownerId,id,'trackingRead'),
     trackingSave:(ownerId,id,input)=>execute(ownerId,id,'trackingSave',input),
@@ -208,6 +210,7 @@ function fileStore({ read, write,publicOrigin,credentialKey }) {
   const quota = (state, ownerId) => { if (listDrafts(state, ownerId).length+listDrafts(state,ownerId,true).length >= 1000) throw new PlatformError(422, 'Limite de uso justo atingido. Contate o suporte.') }
   return {
     addressOccupied:(url)=>operation(s=>{try{checkAddress(s,'',publicOrigin+new URL(url).pathname);return false}catch(error){return error.status===409}},false),
+    suggestion:(ownerId,id,name)=>operation(async s=>{readDraft(s,ownerId,id);return suggestStudioAddress(name,publicOrigin,url=>checkAddress(s,id,url))},false),
     availability:(ownerId,id,url)=>operation(s=>{readDraft(s,ownerId,id);return {available:true,url:checkAddress(s,id,url)}},false),
     trackingRead:(ownerId,id)=>operation(s=>{readDraft(s,ownerId,id);return trackingView(s.platform.tracking?.[id])},false),
     trackingSave:(ownerId,id,input)=>operation(s=>{readDraft(s,ownerId,id);s.platform.tracking??={};s.platform.tracking[id]=trackingChange(input,s.platform.tracking[id],credentialKey);return trackingView(s.platform.tracking[id])}),
