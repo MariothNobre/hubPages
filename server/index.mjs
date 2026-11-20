@@ -1,3 +1,4 @@
+import { forwardStudioMeta } from './studio-tracking.mjs'
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
@@ -26,8 +27,9 @@ const adminEmail = (process.env.HUBPAGES_ADMIN_EMAIL ?? '').trim().toLowerCase()
 const bootstrapTokenHash = process.env.HUBPAGES_BOOTSTRAP_TOKEN_HASH ?? ''
 const sessionSecret = process.env.HUBPAGES_SESSION_SECRET ?? ''
 const customers = process.env.HUBPAGES_PLATFORM_ENABLED === 'true' ? customerAuth(await createIdentityStore(process.env.DATABASE_URL, `${dataFile}.identity.json`)) : null
-const platformStore = customers ? await createPlatformStore(process.env.DATABASE_URL, { read: loadStore, write: saveStore }) : null
 const devPublicOrigin=process.env.HUBPAGES_DEV_PUBLIC_ORIGIN||'https://dev.hubpages.com.br'
+const platformStore = customers ? await createPlatformStore(process.env.DATABASE_URL, { read: loadStore, write: saveStore,publicOrigin:devPublicOrigin,credentialKey:sessionSecret }) : null
+const pageView=({revisions,...page})=>({...page,revisionCount:page.revision})
 const isDevPublication=Boolean(platformStore)&&process.env.HUBPAGES_ENV==='development'&&allowedOrigins.has(devPublicOrigin)&&(/^https:\/\/dev\.hubpages\.com\.br$/.test(devPublicOrigin)||/^http:\/\/localhost:\d+$/.test(devPublicOrigin))
 const freePublishing=isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true'
 const sessionCookie = 'hubpages_admin'
@@ -128,6 +130,8 @@ function canAttemptLogin(ipAddress) {
   return current.count <= 8
 }
 
+const metaLimits=new Map()
+function allowMetaEvent(ip){const now=Date.now();for(const [key,item]of metaLimits)if(item.until<now)metaLimits.delete(key);let item=metaLimits.get(ip);if(!item){if(metaLimits.size>=5000)return false;item={until:now+60000,count:0};metaLimits.set(ip,item)}return ++item.count<=300}
 function hasAllowedOrigin(request) {
   return allowedOrigins.has(request.headers.origin ?? '')
 }
@@ -285,6 +289,10 @@ function analyticsSnapshot(store) {
 async function handleApi(request, response, url) {
   if(url.pathname.startsWith('/api/public/')) {
     if(!isDevPublication||request.headers.host!==new URL(devPublicOrigin).host)return sendJson(response,404,{message:'Página não encontrada.'})
+    try {
+      if(url.pathname==='/api/public/meta/events'&&request.method==='POST'){if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'});if(!allowMetaEvent(request.socket.remoteAddress))return sendJson(response,429,{message:'Aguarde.'});return sendJson(response,200,await forwardStudioMeta({store:platformStore,body:await readJsonBody(request),origin:devPublicOrigin,userAgent:request.headers['user-agent']}))}
+      if(url.pathname==='/api/public/resolve'&&request.method==='GET'){const target=new URL(url.searchParams.get('url'));if(target.origin!==devPublicOrigin)throw new PlatformError(404,'Página não encontrada.');return sendJson(response,200,await platformStore.publicResolve(target.origin+target.pathname.replace(/\/$/,'')))}
+    }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});return sendJson(response,404,{message:'Página não encontrada.'})}
     if(request.method!=='GET')return sendJson(response,405,{message:'Método não permitido.'})
     const page=url.pathname.match(/^\/api\/public\/pages\/([a-f0-9-]{36})$/)
     const image=url.pathname.match(/^\/api\/public\/publications\/([a-f0-9-]{36})\/images\/(hero|[a-f0-9-]{36})$/)
@@ -355,12 +363,15 @@ async function handleApi(request, response, url) {
       if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false, temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
-        return sendJson(response, 201, page)
+        return sendJson(response, 201, pageView(page))
       }
-      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash))?$/)
+      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|tracking))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
-      if (request.method === 'GET' && !action) return sendJson(response, 200, await platformStore.read(ownerId, id))
+      if(action==='address-availability'&&request.method==='GET')return sendJson(response,200,await platformStore.availability(ownerId,id,url.searchParams.get('url')))
+      if(action==='tracking'&&request.method==='GET')return sendJson(response,200,await platformStore.trackingRead(ownerId,id))
+      if(action==='tracking'&&request.method==='PUT')return sendJson(response,200,await platformStore.trackingSave(ownerId,id,await readJsonBody(request)))
+      if (request.method === 'GET' && !action) return sendJson(response, 200, pageView(await platformStore.read(ownerId, id)))
       let page
       if(request.method==='DELETE'&&!action)page=await platformStore.trash(ownerId,id,await readJsonBody(request))
       else if(request.method==='POST'&&action==='untrash')page=await platformStore.untrash(ownerId,id,await readJsonBody(request))
@@ -373,7 +384,7 @@ async function handleApi(request, response, url) {
         if(!freePublishing)return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
         page=await platformStore.publish(ownerId,id,{...await readJsonBody(request),origin:devPublicOrigin})
       } else return sendJson(response, 405, { message: 'Método não permitido.' })
-      return sendJson(response, 200, page)
+      return sendJson(response, 200, pageView(page))
     } catch (error) {
       if (error instanceof PlatformError) return sendJson(response, error.status, { message: error.message })
       throw error
@@ -489,6 +500,7 @@ async function handleApi(request, response, url) {
     if (testEventCode && !/^[A-Za-z0-9_-]{1,100}$/.test(testEventCode)) return sendJson(response, 422, { message: 'O código de evento de teste contém caracteres inválidos.' })
     const store = await loadStore()
     store.pages ??= {}
+    if(content.publicUrl&&platformStore&&await platformStore.addressOccupied(content.publicUrl))return sendJson(response,409,{message:'Esse endereço já está sendo usado por uma página do Studio.'})
     if (content.publicUrl && Object.entries(store.pages).some(([key, page]) => key !== adminPage[1] && page.publicUrl === content.publicUrl)) return sendJson(response, 422, { message: 'Esse endereço já está sendo usado por outra página.' })
     store.tracking ??= {}
     store.pages[adminPage[1]] = publicSalesContent(content)
@@ -529,7 +541,12 @@ createServer(async (request, response) => {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
+    if(isDevPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')){
+      response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
+      response.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
+    }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
+    if(url.pathname==='/api/public/meta/events')return await handleApi(request,response,url)
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))
       apiQueue = task.catch(() => undefined)

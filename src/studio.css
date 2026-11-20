@@ -183,3 +183,5 @@
 .customer-terms { display:flex !important; gap:12px !important; align-items:flex-start; font-weight:400 !important; line-height:1.6; }
 .customer-terms input { width:20px !important; height:20px; flex:0 0 20px; margin-top:3px; }
 @media(max-width:760px) { .studio > header,.studio-heading { align-items:start; flex-direction:column; gap:20px; } .studio-workspace { grid-template-columns:1fr; } .studio-workspace aside { position:static; display:grid; grid-template-columns:repeat(2,1fr); } .studio-editor { padding:20px; } .studio-revision { align-items:start; flex-direction:column; } .studio > main { padding:26px 16px; } }
+
+.studio-settings{max-width:880px}.studio-settings fieldset{background:#fff;border:1px solid #bdd4cc;border-radius:12px;padding:18px;margin:16px 0;color:#123e3a}.studio-settings legend{font-weight:700;padding:0 8px}.studio-settings input:not([type=checkbox]){background:#fff;color:#123e3a;border:1px solid #729c90}.studio-settings label:has(input[type=checkbox]){display:flex;align-items:center;gap:10px}.studio-settings input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}

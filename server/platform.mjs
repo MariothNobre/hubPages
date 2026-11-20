@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import { PlatformError } from './platform-error.mjs'
+import { normalizeStudioAddress } from './studio-address.mjs'
+export { PlatformError } from './platform-error.mjs'
 
-export class PlatformError extends Error {
-  constructor(status, message) { super(message); this.status = status }
-}
 const fail = (message) => { throw new PlatformError(422, message) }
 const text = (value, max, fallback = '') => {
   if (value === undefined) return fallback
@@ -37,7 +37,7 @@ function overrides(value=[]) {
 }
 export function validateDraft(input) {
   if (!input || typeof input !== 'object') fail('Rascunho inválido.')
-  const step = Number(input.step ?? 1)
+  const step = Number(input.step === 3 ? 2 : input.step ?? 1)
   if (!Number.isInteger(step) || step < 1 || step > 8) fail('Etapa inválida.')
   const blocks = input.blocks ?? []
   if (!Array.isArray(blocks) || blocks.length > 40) fail('Limite de 40 blocos por rascunho.')
@@ -45,8 +45,10 @@ export function validateDraft(input) {
   if (!/^#[a-f0-9]{6}$/i.test(color)) fail('Cor inválida.')
   const metaPixelId = text(input.metaPixelId, 30)
   const ga4Id = text(input.ga4Id, 30)
+  const metaPixelEnabled=input.metaPixelEnabled===true
   if (metaPixelId && !/^\d{5,30}$/.test(metaPixelId)) fail('ID do Meta Pixel inválido.')
   if (ga4Id && !/^G-[A-Z0-9]+$/.test(ga4Id)) fail('Measurement ID GA4 inválido.')
+  if(metaPixelEnabled&&!metaPixelId)fail('Informe o ID do Meta Pixel antes de ativar.')
   const templateTexts=input.templateTexts ?? {}
   if(!templateTexts || typeof templateTexts!=='object' || Array.isArray(templateTexts) || Object.keys(templateTexts).length>160) fail('Textos do modelo inválidos.')
   const buttons=input.templateButtons ?? {}
@@ -55,8 +57,8 @@ export function validateDraft(input) {
     name: text(input.name, 120, 'Minha página') || 'Minha página',
     title: text(input.title, 240), description: text(input.description, 3000),
     ctaLabel: text(input.ctaLabel, 100, 'Quero saber mais'),
-    checkoutUrl: https(text(input.checkoutUrl, 2000)), publicUrl: https(text(input.publicUrl, 500)),
-    imageUrl: image(input.imageUrl), metaPixelId, ga4Id, color, step,
+    checkoutUrl: https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
+    imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',
     template: ['colecao', 'infancia_pt'].includes(input.template) ? input.template : 'essencial',
@@ -137,8 +139,7 @@ export function publishDraft(state,ownerId,id,revision,origin) {
   const page=owned(state,ownerId,id)
   if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui vigência financeira e não pode usar a liberação gratuita de homologação.')
   if(page.origin!=='native')throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
-  const url=`${origin}/p/${id}`
-  if(page.draft.publicUrl&&page.draft.publicUrl.replace(/\/$/,'')!==url)throw new PlatformError(409,`Nesta homologação, use ${url} ou deixe o endereço vazio. Domínios próprios precisam de verificação antes de publicar.`)
+  const url=normalizeStudioAddress(page.draft.publicUrl,origin)
   if(!page.draft.title||!page.draft.checkoutUrl)throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
   lifecycle(page,ownerId,revision,'publish')
   const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:'dev-free',draft:structuredClone(page.draft)}

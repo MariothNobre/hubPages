@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { InfanciaAlemDasTelas } from '../pages/InfanciaAlemDasTelas'
 import { InfanciaAlemDasTelasEs } from '../pages/InfanciaAlemDasTelasEs'
-import { NotFound } from '../pages/NotFound'
+import { PublishedPage } from '../pages/PublishedPage'
 import { HubPagesHome } from '../pages/HubPagesHome'
 
 export function SalesPageRoute() {
@@ -17,5 +17,5 @@ export function SalesPageRoute() {
   if (slug === null) return <p role="status">Carregando…</p>
   if (slug === 'infancia_alem_das_telas') return <InfanciaAlemDasTelas />
   if (slug === 'infancia_alem_das_telas_es') return <InfanciaAlemDasTelasEs />
-  return location.pathname === '/' && window.location.hostname.endsWith('hubpages.com.br') ? <HubPagesHome /> : <NotFound />
+  return location.pathname === '/' && window.location.hostname.endsWith('hubpages.com.br') ? <HubPagesHome /> : <PublishedPage key={location.pathname}/>
 }
