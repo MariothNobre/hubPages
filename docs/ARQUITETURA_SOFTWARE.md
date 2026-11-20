@@ -122,3 +122,15 @@ Persistência binária em bytea foi escolhida para este DEV limitado, mantendo i
 Incremento v0.7.0-dev.3 implantado pelo merge a522323, CI 44661748566 e deploy 44661748706 com sucesso. A segunda restauração do deploy já incluiu tabelas do Studio e validou a integridade das cadeias de revisões. Rotas privadas confirmadas externamente com 401; shells Studio/prévia com noindex. Produção/Sistera saudáveis, sem mudanças. Evidências em STEP_BY_STEP HP-006 e operação do editor em GUIA_EDITOR_VISUAL_DEV.md.
 
 Upload usa referência específica da página/espaço; reutilização de URL de outro espaço é rejeitada. Atualização assíncrona do upload aplica o endereço ao UUID do bloco e usa o rascunho mais recente no cliente para preservar edições realizadas enquanto a imagem é otimizada/enviada. Publicações legadas e seus arquivos continuam usando o fluxo anterior.
+
+## Quarto incremento — edição direta e fidelidade (v0.7.0-dev.4)
+
+`InlineText` mantém DOM/cursor durante foco, persiste somente texto e aplica atualizações externas fora do foco. Sem HTML arbitrário salvo, scripts ou rich-text não confiável. `StudioDesigner` usa canvas integral e barra contextual sticky com popovers; navegação das oito etapas fica no cabeçalho. Propriedades de layout só sobrescrevem campos explicitamente presentes em layoutOverrides. Upload/resize identifica o bloco por UUID. Imagens continuam uma por espaço, sem biblioteca.
+
+`LegacySalesTemplate.tsx` é derivado do JSX aprovado por `scripts/generate-legacy-template.mjs` e runtime versionado, com SHA256 do original e geração normalizada entre Windows/Linux. Estilos/assets originais compartilhados, sem modificar suas fontes. Na prévia não há wrappers de edição; teste SSR exige o mesmo HTML inicial do componente original, além de testes de remoção de CTAs. Toolbars aparecem somente no editor. Origem deste modelo é nativa, não importação de site de terceiro.
+
+`templateRole`, `templateTexts`, `templateButtons`, `layoutOverrides`, showButton/inheritLink são campos aditivos do documento; sem nova tabela ou migração de schema. Permissões e validação são aplicadas nas APIs existentes. Cadastro de botões respeita HTTPS; URL removida com inheritLink=false fica sem destino, sem fallback indesejado. Textos de modelo preservam espaços necessários entre elementos inline. API de rascunhos limitada a 256 KB; binários não entram nesse corpo.
+
+Modelo inicial conserva as 13 seções e 16 CTAs da página original. As 12 páginas da degustação ficam no leitor original; FAQ não recebe CTA por pergunta. Papéis do seed mantêm seções agrupadas (bônus/perguntas/degustação) e cópias antigas recebem compatibilidade por evidências de título/imagem/tipo. Remover/reordenar/editar modifica apenas o rascunho da conta.
+
+Preview legado usa shell independente do CSS administrativo para preservar medidas/cores/fonte, mantendo barra de homologação externa à página e API autenticada/noindex. Nunca instancia MetaPixel ou AnalyticsTracker. A página original de produção continua com sua implementação completa. Publicador/Asaas/e-mail/MFA permanecem etapas pendentes.

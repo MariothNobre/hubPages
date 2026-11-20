@@ -31,6 +31,10 @@ function style(value = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Layout inválido.')
   return { width: number(value.width, 20, 100, 100), imageWidth: number(value.imageWidth, 10, 100, 100), padding: number(value.padding, 0, 120, 32), margin: number(value.margin, 0, 120, 16), gap: number(value.gap, 0, 80, 24), fontSize: number(value.fontSize, 14, 64, 18), headingSize: number(value.headingSize,20,80,36), buttonWidth: number(value.buttonWidth,20,100,100), buttonPadding: number(value.buttonPadding,8,40,16), columns: number(value.columns, 1, 3, 1), font: ['serif','rounded'].includes(value.font) ? value.font : 'system', align: ['left','center','right'].includes(value.align) ? value.align : 'left', animation: ['fade','rise'].includes(value.animation) ? value.animation : 'none', background: /^#[a-f0-9]{6}$/i.test(value.background ?? '') ? value.background : '#ffffff', imageFit: value.imageFit === 'cover' ? 'cover' : 'contain', imageHeight: number(value.imageHeight, 80, 800, 360) }
 }
+function overrides(value=[]) {
+  if(!Array.isArray(value)||value.length>24||value.some(key=>!['width','imageWidth','imageHeight','imageFit','padding','margin','gap','fontSize','headingSize','buttonWidth','buttonPadding','font','columns','align','animation','background'].includes(key)))fail('Ajustes de layout inválidos.')
+  return [...new Set(value)]
+}
 export function validateDraft(input) {
   if (!input || typeof input !== 'object') fail('Rascunho inválido.')
   const step = Number(input.step ?? 1)
@@ -43,6 +47,10 @@ export function validateDraft(input) {
   const ga4Id = text(input.ga4Id, 30)
   if (metaPixelId && !/^\d{5,30}$/.test(metaPixelId)) fail('ID do Meta Pixel inválido.')
   if (ga4Id && !/^G-[A-Z0-9]+$/.test(ga4Id)) fail('Measurement ID GA4 inválido.')
+  const templateTexts=input.templateTexts ?? {}
+  if(!templateTexts || typeof templateTexts!=='object' || Array.isArray(templateTexts) || Object.keys(templateTexts).length>160) fail('Textos do modelo inválidos.')
+  const buttons=input.templateButtons ?? {}
+  if(!buttons || typeof buttons!=='object' || Array.isArray(buttons) || Object.keys(buttons).some((key)=>!['header','hero','faq','sticky','preview'].includes(key))) fail('Botões do modelo inválidos.')
   return {
     name: text(input.name, 120, 'Minha página') || 'Minha página',
     title: text(input.title, 240), description: text(input.description, 3000),
@@ -52,7 +60,11 @@ export function validateDraft(input) {
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',
     template: ['colecao', 'infancia_pt'].includes(input.template) ? input.template : 'essencial',
-    blocks: blocks.map((block) => ({ id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), style: style(block?.style) })),
+    layoutCustomized: input.layoutCustomized===true,
+    layoutOverrides: overrides(input.layoutOverrides),
+    templateTexts:Object.fromEntries(Object.entries(templateTexts).map(([key,value])=>{if(typeof value!=='string'||value.length>5000)fail('Texto do modelo inválido.');return[text(key,80),value]})),
+    templateButtons:Object.fromEntries(Object.entries(buttons).map(([key,value])=>[key,{enabled:value?.enabled!==false,label:text(value?.label,100),url:https(text(value?.url,2000)),inheritLink:value?.inheritLink!==false}])),
+    blocks: blocks.map((block) => ({ id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
   }
 }
 function owned(state, ownerId, id) {

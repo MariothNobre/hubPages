@@ -59,12 +59,12 @@ function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.end(JSON.stringify(payload))
 }
 
-async function readJsonBody(request) {
+async function readJsonBody(request, limit = maxBodyBytes) {
   const chunks = []
   let size = 0
   for await (const chunk of request) {
     size += chunk.length
-    if (size > maxBodyBytes) throw new Error('PAYLOAD_TOO_LARGE')
+    if (size > limit) throw new Error('PAYLOAD_TOO_LARGE')
     chunks.push(chunk)
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
@@ -338,7 +338,7 @@ async function handleApi(request, response, url) {
       }
       if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: await platformStore.list(ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: isAdmin ? [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) : [], role: isAdmin ? 'admin' : 'customer' })
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
-        const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request)))
+        const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
         return sendJson(response, 201, page)
       }
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish))?$/)
@@ -346,9 +346,9 @@ async function handleApi(request, response, url) {
       const [, id, action] = match
       if (request.method === 'GET' && !action) return sendJson(response, 200, await platformStore.read(ownerId, id))
       let page
-      if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request))
+      if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request,256*1024))
       else if (request.method === 'POST' && action === 'duplicate') page = await platformStore.duplicate(ownerId, id)
-      else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request))
+      else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request,256*1024))
       else if (request.method === 'POST' && action === 'publish') {
         await platformStore.read(ownerId, id)
         return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
