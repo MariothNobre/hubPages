@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict'
+import { createDraft, saveDraft, readDraft, listDrafts, duplicateDraft, restoreDraft } from '../server/platform.mjs'
+const legacy = { admin: { email: 'preserved@example.test', passwordHash: 'preserved-test-hash' }, pages: { infancia_alem_das_telas: { title: 'Preservado', metaPixelEnabled: true, metaPixelId: '123456789', ctaHref: 'https://pay.hotmart.com/test?ref=preserved' } }, tracking: { infancia_alem_das_telas: { accessToken: 'synthetic-test-only' } }, analytics: { infancia_alem_das_telas: { visits: 100 } } }
+const state = structuredClone(legacy)
+const first = createDraft(state, 'owner-a', { name: 'Página privada', title: 'Oferta', blocks: [{ title: 'Benefício', body: 'Texto editável' }] })
+assert.equal(first.editorialStatus, 'draft')
+assert.equal(first.financialStatus, 'unpaid')
+assert.equal(listDrafts(state, 'owner-b').length, 0)
+assert.throws(() => readDraft(state, 'owner-b', first.id), (e) => e.status === 404)
+assert.throws(() => saveDraft(state, 'owner-b', first.id, { revision: 1, draft: first.draft }), (e) => e.status === 404)
+const edited = saveDraft(state, 'owner-a', first.id, { revision: 1, draft: { ...first.draft, title: 'Nova oferta', step: 7, checkoutUrl: 'https://pay.hotmart.com/test?ref=abc&utm_source=preserved' } })
+assert.equal(edited.revision, 2)
+assert.match(edited.draft.checkoutUrl, /ref=abc&utm_source=preserved/)
+assert.throws(() => saveDraft(state, 'owner-a', first.id, { revision: 1, draft: first.draft }), (e) => e.status === 409)
+const restored = restoreDraft(state, 'owner-a', first.id, 1, 2)
+assert.equal(restored.revision, 3)
+assert.equal(restored.draft.title, 'Oferta')
+assert.equal(restored.revisions[1].draft.title, 'Nova oferta')
+state.platform.pages[first.id].origin = 'imported_authorized'
+const copy = duplicateDraft(state, 'owner-a', first.id)
+assert.equal(copy.origin, 'imported_authorized')
+assert.equal(copy.draft.publicUrl, '')
+assert.equal(copy.financialStatus, 'unpaid')
+assert.throws(() => createDraft(state, 'owner-a', { checkoutUrl: 'javascript:alert(1)' }), (e) => e.status === 422)
+assert.throws(() => createDraft(state, 'owner-a', { metaPixelId: '<script>' }), (e) => e.status === 422)
+for (const key of Object.keys(legacy)) assert.deepStrictEqual(state[key], legacy[key])
+console.log('PASS: private drafts, owner isolation, revisions, concurrency, restore, origin taint, legacy preservation')

@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Preparar Node.js
         uses: actions/setup-node@v4
@@ -36,6 +38,13 @@ jobs:
 
       - name: Verificar lint
         run: pnpm lint
+
+      - name: Preservar legado e validar rascunhos privados
+        run: |
+          node scripts/test-legacy-preservation.mjs
+          node scripts/test-platform.mjs
+          node scripts/test-page-address.mjs
+          node scripts/test-admin.mjs
 
       - name: Verificar tipos e build
         run: pnpm build

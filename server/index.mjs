@@ -5,6 +5,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { createPostgresStore } from './postgres-store.mjs'
 import { normalizePageUrl, resolvePageAddress } from './page-address.mjs'
+import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicateDraft, restoreDraft } from './platform.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -273,6 +274,40 @@ function analyticsSnapshot(store) {
 }
 
 async function handleApi(request, response, url) {
+  if (url.pathname.startsWith('/api/platform/')) {
+    response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    if (process.env.HUBPAGES_PLATFORM_ENABLED !== 'true') return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
+    if (!hasValidSession(request)) return sendJson(response, 401, { message: 'Entre no painel para acessar o Studio privado.' })
+    if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
+    const state = await loadStore()
+    // Compatibility account: no mutation of the legacy administrator identity.
+    const ownerId = 'legacy-owner'
+    try {
+      if (url.pathname === '/api/platform/pages' && request.method === 'GET') return sendJson(response, 200, { pages: listDrafts(state, ownerId), billing: { provider: 'asaas', configured: false }, legacyPages: [...salesPageSlugs].map((slug) => ({ slug, label: salesPageLabels[slug], published: state.pages?.[slug]?.published !== false })) })
+      if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
+        if (listDrafts(state, ownerId).length >= 1000) return sendJson(response, 422, { message: 'Limite de uso justo atingido. Contate o suporte.' })
+        const page = createDraft(state, ownerId, await readJsonBody(request)); await saveStore(state)
+        return sendJson(response, 201, page)
+      }
+      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish))?$/)
+      if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
+      const [, id, action] = match
+      if (request.method === 'GET' && !action) return sendJson(response, 200, readDraft(state, ownerId, id))
+      let page
+      if (request.method === 'PUT' && !action) page = saveDraft(state, ownerId, id, await readJsonBody(request))
+      else if (request.method === 'POST' && action === 'duplicate') page = duplicateDraft(state, ownerId, id)
+      else if (request.method === 'POST' && action === 'restore') { const input = await readJsonBody(request); page = restoreDraft(state, ownerId, id, input.version, input.revision) }
+      else if (request.method === 'POST' && action === 'publish') {
+        readDraft(state, ownerId, id)
+        return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
+      } else return sendJson(response, 405, { message: 'Método não permitido.' })
+      await saveStore(state)
+      return sendJson(response, 200, page)
+    } catch (error) {
+      if (error instanceof PlatformError) return sendJson(response, error.status, { message: error.message })
+      throw error
+    }
+  }
   if (request.method === 'GET' && url.pathname === '/api/resolve-page') {
     const store = await loadStore()
     const address = url.searchParams.get('url')
@@ -419,6 +454,10 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
+    if (url.pathname === '/studio') {
+      response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+      response.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+    }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))

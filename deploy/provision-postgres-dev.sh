@@ -20,6 +20,7 @@ container="$(docker compose -p hubpages_dev -f deploy/compose.dev.yml ps -q hubp
 docker cp "$container:/data/content.json" "/opt/hubpages-backups/dev/content-$(date -u +%Y%m%dT%H%M%SZ).json"
 if [[ -n "$("${compose[@]}" ps -q hubpages-db)" ]]; then
   "${compose[@]}" exec -T hubpages-db pg_dump -U hubpages -d hubpages > "/opt/hubpages-backups/dev/postgres-$(date -u +%Y%m%dT%H%M%SZ).sql"
+  bash deploy/verify-dev-restore.sh
 fi
 "${compose[@]}" config --quiet
 "${compose[@]}" build hubpages-dev
