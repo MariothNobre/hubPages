@@ -53,3 +53,14 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Pendências: e-mail transacional/recuperação/MFA, páginas/revisões relacionais, upload/retention, publicador/domínios e Asaas. Condições são de homologação, não termos comerciais definitivos.
 - Backup/rollback: dump+restore isolado obrigatório antes do deploy DEV. Desabilitar flags ou voltar imagem anterior preserva as tabelas e contas novas; não executar DROP/TRUNCATE.
 - Próximo: validar migração e isolamento em PostgreSQL real no CI antes de mesclar em develop, então registrar evidência de publicação.
+
+## HP-004 — v0.7.0-dev.2 — Contas publicadas em DEV
+
+- UTC: 2026-11-20 02:09; BRT: 2026-11-19 23:09. Autor: Codex.
+- Implementação 7b33b72, PR #1, merge develop 49a61945ab72ef699b463c3656794c72d9330b62. CI do PR 44658134029 e CI develop 44658301004: sucesso, incluindo migração e isolamento com duas contas em PostgreSQL 17 efêmero.
+- Deploy DEV 44658301067 / job 136029899996: sucesso. Backup e restore isolado comprovados antes da atualização: `/opt/hubpages-backups/dev/verified-20261120T020541Z-2925419.dump` e `/opt/hubpages-backups/dev/verified-20261120T020639Z-2927355.dump`. Banco e aplicação healthy nos logs. Nenhuma fixture de teste aplicada na VPS.
+- Verificação externa: `/conta` 200 com noindex; `/api/customer/config` 200 com cadastro habilitado e termos versionados; `/api/customer/session` anônimo retorna authenticated=false; `/api/platform/pages` anônimo 401. Em produção `/api/customer/config` continua 404. Sistera retorna 200.
+- Acesso: https://dev.hubpages.com.br/conta para cadastro/login/perfil; https://dev.hubpages.com.br/studio para rascunhos privados. O administrador existente continua pelo `/admin`, com suas credenciais preservadas.
+- Migração aditiva inicializada na nova aplicação DEV; não houve migração de usuários antigos, redefinição de senha ou transferência de registros de produção. Cadastro e alteração de senha reais ficam disponíveis para homologação pelo responsável; testes visuais e de credenciais desta entrega usaram somente contas sintéticas locais/CI.
+- Produção continua v0.6.0/ca05749, sem merge main, deploy ou mudança DNS/proxy/firewall. Sem cobrança Asaas, envio de e-mail ou publicação pública de rascunhos.
+- Próximo lote: normalizar páginas/revisões em tabelas isoladas e implementar upload/artefatos; depois publicador/domínios e Asaas com credenciais e webhooks verificados. Recuperação por e-mail e MFA continuam pendentes. Este registro não declara o prompt mestre integralmente concluído.

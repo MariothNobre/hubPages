@@ -96,3 +96,9 @@ Rascunhos ainda usam payload.platform por compatibilidade neste estágio de DEV.
 Validação: test-customers.mjs cria contas sintéticas em diretório temporário ou banco exclusivo `hubpages_ci`; verifica list/read/update/duplicate/restore/publish cruzados (404), APIs administrativas (401), spoof de role, e-mail duplicado/reservado, logout, troca de senha e preservação do admin/páginas/pixels/contadores legados. CI inclui PostgreSQL 17 real; somente esse banco efêmero aceita fixtures. Nenhuma fixture é enviada à VPS.
 
 Ainda não configurados: confirmação de e-mail, recuperação por mensagem, MFA, gestão de todas as sessões pelo usuário, termos comerciais definitivos, cadastro público em produção e integração Asaas. A interface informa essas limitações e não simula envio de e-mail.
+
+## Estado reconciliado — contas em DEV, 2026-11-20 02:09 UTC
+
+Segundo incremento implantado pelo merge 49a6194, CI 44658301004 e deploy 44658301067 concluídos com sucesso. A migração de identidades passou no PostgreSQL 17 do CI e a aplicação DEV iniciou saudável após backup e dois restores isolados. `/conta` e a configuração de cadastro estão disponíveis em DEV; APIs privadas permanecem protegidas. Nenhuma conta sintética foi criada na VPS. Evidências e caminhos privados dos backups constam em STEP_BY_STEP HP-004.
+
+As pendências descritas nos registros anteriores devem ser lidas cronologicamente: identidade de clientes agora possui persistência relacional e controle de acesso por conta; páginas/revisões ainda requerem normalização. Produção permanece v0.6.0, com `/api/customer/config` ausente (404). E-mail transacional, MFA, publicador e Asaas não estão ativos.
