@@ -14,3 +14,5 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+
+import './editor-contract.css'

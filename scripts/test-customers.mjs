@@ -158,7 +158,7 @@ try {
     assert.equal((await request('/api/public/resolve?url='+encodeURIComponent(base+'/oferta-nova'))).status,200)
     assert.notEqual(live.draft.imageUrl,firstImage)
     assert.deepEqual(Buffer.from(await (await request(live.draft.imageUrl)).arrayBuffer()),changed)
-    assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
+    assert.equal((await request(firstImage)).status,404,'replaced publication media must not remain as a historical library')
     p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,imageUrl:''}},a)).json()
     assert.equal((await request(privateImage,'GET',undefined,a)).status,404)
     assert.equal((await request(live.draft.imageUrl)).status,200)
@@ -203,7 +203,8 @@ try {
       if(publishingTests) {
         assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_publications')).rows[0].n,3)
         await assert.rejects(pool.query('UPDATE hubpages_studio_publications SET draft=draft'),/append-only/)
-        await assert.rejects(pool.query('UPDATE hubpages_studio_publication_images SET content=content'),/append-only/)
+        const guard=await pool.connect()
+        try{await guard.query('BEGIN');await guard.query("INSERT INTO hubpages_studio_publication_images(publication_id,slot,mime,content) SELECT id,'guard-test','image/png',$1 FROM hubpages_studio_publications LIMIT 1",[imageBytes]);await assert.rejects(guard.query("UPDATE hubpages_studio_publication_images SET content=content WHERE slot='guard-test'"),/append-only/)}finally{await guard.query('ROLLBACK');guard.release()}
       }
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_images WHERE page_id=$1',[copied.id])).rows[0].n,1)
       assert.equal((await pool.query('SELECT count(*)::int AS n FROM hubpages_studio_revisions WHERE page_id=$1',[created.id])).rows[0].n,3)

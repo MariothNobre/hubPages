@@ -63,6 +63,8 @@ jobs:
           node scripts/generate-legacy-template.mjs --es
           git diff --exit-code -- src/components/LegacySalesTemplateEs.tsx server/templates/infancia-es.json server/templates/legacy-defaults.json
           node scripts/test-legacy-template-es.cjs
+          node scripts/test-editor-contract.cjs
+          node scripts/test-studio-undo.cjs
           node scripts/test-studio-wizard.mjs
           node scripts/test-visitor-session.mjs
           node scripts/test-studio-slug.mjs

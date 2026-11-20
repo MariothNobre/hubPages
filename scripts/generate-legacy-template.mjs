@@ -17,17 +17,18 @@ function walk(node){
   if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(file)==='img'){
     const attrs=node.attributes.properties.map(a=>{const key=a.name.getText(file);return `${key}:${ts.isJsxExpression(a.initializer)?a.initializer.expression.getText(file):JSON.stringify(a.initializer.text)}`}).join(',')
     const owner=inLoop(node,'bonuses')?'book.block':inLoop(node,'previewPages')?'page.block':role(node)==='preview'?'previewPages[previewIndex].block':JSON.stringify(role(node))
-    edits.push([node.pos,node.end,ts.isArrowFunction(node.parent)?`image(${owner},{${attrs}})`:`{image(${owner},{${attrs}})}`]);return
+    edits.push([node.pos,node.end,ts.isArrowFunction(node.parent)?`image(${owner},{${attrs}},${inLoop(node,'previewPages')})`:`{image(${owner},{${attrs}},${inLoop(node,'previewPages')})}`]);return
   }
   if(ts.isJsxText(node)&&node.getText(file).trim()){
     const value=source.slice(node.pos,node.end),key='t'+node.pos
-    if(['Hub','Pages'].includes(value.trim()))return
+    if(['Hub','Pages','+','×','‹','›','▻','→','✦'].includes(value.trim()))return
     const originalBlock=originalBlocks.find(b=>b.templateRole===role(node))
     let expression=`lit(${JSON.stringify(key)},${JSON.stringify(value)},${JSON.stringify(role(node))})`
     if(originalBlock?.title===value.trim())expression=`blockField(groupBlock(${JSON.stringify(role(node))}),'title',${JSON.stringify(value)})`
     else if(value.trim()==='29,90')expression=`field('priceLabel',${JSON.stringify(value.match(/^\s*/)[0])}+(content.priceLabel.startsWith('R$')?content.priceLabel.slice(2).trim():content.priceLabel))`
     else if(spanish&&value.trim()==='6.90')expression=`field('priceLabel',${JSON.stringify(value.match(/^\s*/)[0])}+content.priceLabel.replace(/^US\\$/,'').trim())`
     else if(spanish&&value.trim()==='US$ 6.90')expression=`field('priceLabel',content.priceLabel)`
+    else if(value.trim()==='R$ 29,90')expression=`field('priceLabel',content.priceLabel)`
     else if(value.trim()==='R$ 197,00')expression=`field('originalPrice',content.originalPrice)`
     edits.push([node.pos,node.end,`{${expression}}`]);return
   }
@@ -35,6 +36,7 @@ function walk(node){
     const value=node.expression.getText(file),r=role(node)
     let expression
     if(/^content\.(redLine|eyebrow|title|description)$/.test(value))expression=`field(${JSON.stringify(value.split('.')[1])},${value})`
+    if(r==='preview'&&!inLoop(node,'previewPages')&&/^(?:page|previewPages\[previewIndex\])\.(source|label|teaser|body|kicker)$/.test(value))expression='sampleField(previewPages[previewIndex],'+JSON.stringify(value.split('.').at(-1))+','+value+')'
     if(/^book\.(title|description|detail)$/.test(value))expression=`bookField(book,${JSON.stringify(value.split('.')[1])})`
     if(r==='method'&&['title','description'].includes(value))expression=`listField('method',index,${value==='title'?0:1},${value})`
     if(r==='manual'&&['title','description'].includes(value))expression=`listField('manual',Number(number)-1,${value==='title'?0:1},${value})`
@@ -52,6 +54,26 @@ for(const[start,end,value]of edits.sort((a,b)=>b[0]-a[0]))jsx=jsx.slice(0,start-
 const rootClass=spanish?'sales-v2 sales-v2--es':'sales-v2'
 jsx=jsx.replace('<div className="'+rootClass+'">',()=>'<div className="'+rootClass+'" style={draft.layoutOverrides?.includes("color")?{"--sales-teal":draft.color,"--sales-teal-dark":draft.color} as CSSProperties:undefined}>')
 jsx=jsx.replace('<a href={content.ctaHref}>{content.ctaLabel}</a>',"{buyButton('','sticky')}")
+jsx=jsx.replace(/<div className="sales-v2-logo">[\s\S]*?<\/div>/,'').replace('className="sales-v2-header"','className="sales-v2-header sales-v2-header--unbranded"').replace('className="sales-v2-logo sales-v2-logo--footer"','className="sales-v2-logo sales-v2-logo--footer" title="Feito com HubPages.com.br"')
+const actionsFile=ts.createSourceFile('actions.tsx','const view=('+jsx+')',ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),actionEdits=[]
+function actions(node){
+  if(ts.isJsxElement(node)&&node.openingElement.tagName.getText(actionsFile)==='div'&&node.openingElement.attributes.properties.some(a=>a.name?.getText(actionsFile)==='className'&&a.initializer?.text==='sales-v2-offer__books')){
+    const label=node.openingElement.attributes.properties.find(a=>a.name?.getText(actionsFile)==='aria-label')?.initializer?.text||'Galeria da coleção'
+    actionEdits.push([node.getStart(actionsFile)-12,node.end-12,'<StudioMediaGallery draft={draft} editing={editing} label='+JSON.stringify(label)+'/>']);return
+  }
+  if(ts.isJsxElement(node)&&node.openingElement.tagName.getText(actionsFile)==='button'){
+    const cls=node.openingElement.attributes.properties.find(a=>a.name?.getText(actionsFile)==='className')?.initializer?.text
+    if(cls&&(cls.startsWith('sales-v2-preview-button')||cls.startsWith('sales-v2-tasting__book'))){
+      let section='hero';for(let p=node.parent;p;p=p.parent)if(ts.isJsxElement(p)){const name=p.openingElement.attributes.properties.find(a=>a.name?.getText(actionsFile)==='className')?.initializer?.text;if(['sales-v2-hero','sales-v2-solution','sales-v2-tasting'].includes(name)){section=name.slice(9);break}}
+      const scope=cls.startsWith('sales-v2-tasting__book')?'sampleStack':'sample'+section[0].toUpperCase()+section.slice(1),aria=node.openingElement.attributes.properties.find(a=>a.name?.getText(actionsFile)==='aria-label')?.initializer?.text
+      const children=actionsFile.text.slice(node.openingElement.end,node.closingElement.pos)
+      actionEdits.push([node.getStart(actionsFile)-12,node.end-12,'{sampleButton('+JSON.stringify(scope)+','+JSON.stringify(cls)+',<>'+children+'</>,'+(aria?JSON.stringify(aria):'undefined')+')}']);return
+    }
+  }
+  ts.forEachChild(node,actions)
+}actions(actionsFile)
+for(const[start,end,value]of actionEdits.sort((a,b)=>b[0]-a[0]))jsx=jsx.slice(0,start)+value+jsx.slice(end)
+jsx=jsx.replaceAll('previewOpen &&','previewOpen && previewPages.length>0 && previewIndex<previewPages.length &&')
 const parsed=ts.createSourceFile('view.tsx','const view=('+jsx+')',ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
 let main
 function locate(node){if(ts.isJsxElement(node)&&node.openingElement.tagName.getText(parsed)==='main')main=node;ts.forEachChild(node,locate)}locate(parsed)
@@ -61,11 +83,15 @@ const start=main.openingElement.end-'const view=('.length,end=main.closingElemen
 jsx=jsx.slice(0,start)+'{sequence.map((key)=><Fragment key={key}>{renderSection(key)}</Fragment>)}'+jsx.slice(end)
 const arrays=source.slice(source.indexOf('const bonuses'),source.indexOf('export function')).replace(/const (bonuses|previewPages|methodSteps|manualParts|questions) =/g,'const original_$1 =').replace(/const original_questions = \[[\s\S]*?\n\]/,'')
 let helper=fs.readFileSync('scripts/legacy-template-runtime.txt','utf8').replace(/\r\n/g,'\n')
-if(spanish)helper=helper.replaceAll(' · incluso',' · incluido').replace("{scope!=='sticky'&&<> <span aria-hidden=\"true\">→</span></>}",'').replace('teaser:block.body,block','teaser:block.body,body:block.body,block').replace('className?:string;key?:string}', 'className?:string;key?:string;style?:CSSProperties}').replace('style:Object.keys(imageStyle).length?imageStyle:undefined','style:Object.keys(imageStyle).length?{...attrs.style,...imageStyle}:attrs.style')+'\n  const page=previewPages[previewIndex]\n'
+if(!spanish)helper=helper.replace('original_previewPages[i%original_previewPages.length].kicker',"(original_previewPages[i%original_previewPages.length] as {kicker?:string}).kicker??''")
+if(spanish)helper=helper.replace('teaser:block.body,','teaser:block.body,body:block.body,').replaceAll(' · incluso',' · incluido').replace("{scope!=='sticky'&&<> <span aria-hidden=\"true\">→</span></>}",'').replace('teaser:block.body,block','teaser:block.body,body:block.body,block').replace('className?:string;key?:string}', 'className?:string;key?:string;style?:CSSProperties}').replace('style:Object.keys(imageStyle).length?imageStyle:undefined','style:Object.keys(imageStyle).length?{...attrs.style,...imageStyle}:attrs.style')+'\n  const page=previewPages[previewIndex]\n'
 const output=`// Generated from the approved original. Source SHA256: ${createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex')}
 import { Fragment, useEffect, useRef, useState, cloneElement } from 'react'
-import type { ReactElement, CSSProperties } from 'react'
+import type { ReactElement, ReactNode, CSSProperties } from 'react'
 import { InlineText } from './InlineText'
+import { CanvasMedia } from './CanvasMedia'
+import { StudioMediaGallery } from './StudioMediaGallery'
+import { EditorAction } from './EditorAction'
 import type { CanvasEditing } from './StudioCanvas'
 import type { Draft, Block } from './studio-model'
 import { withLegacyRoles } from './legacy-template-model'
@@ -74,8 +100,8 @@ const originalBlocks=${JSON.stringify(originalBlocks)}
 export function ${spanish?'LegacySalesTemplateEs':'LegacySalesTemplate'}({draft:input,editing,onMove,onSelect,selected}:{draft:Draft;editing?:CanvasEditing;onMove?:(from:number,to:number)=>void;onSelect?:(index:number)=>void;selected?:number}) {
 ${helper}
   const sections:Record<string,()=>ReactElement<{style?:CSSProperties;className?:string}>>={${sections.map(s=>`${JSON.stringify(s.key)}:()=>(${s.jsx})`).join(',\n')}}
-  const renderSection=(key:string)=>{const block=key.startsWith('custom:')?draft.blocks.find(b=>b.id===key.slice(7)):groupBlock(key);const node:ReactElement<{style?:CSSProperties;className?:string}>|null=sections[key]?.()||(block?<section className="sales-v2-manual">{blockField(block,'title',block.title)}{blockField(block,'body',block.body)}{image(block,{src:block.imageUrl,alt:block.title})}{buyButton(undefined,block)}</section>:null);if(!node)return null;const index=block?draft.blocks.indexOf(block):-1;const styled=block?.layoutCustomized||key==='hero'&&draft.layoutCustomized?cloneElement(node,{style:customStyle(block),className:node.props.className+' has-layout-customization'}):node;if(!editing||!block||key==='hero'||key==='trust')return styled;return <div className={'legacy-edit-section '+(selected===index?'is-selected':'')} onClick={()=>onSelect?.(index)} onDragOver={e=>{if(!e.dataTransfer.types.includes('Files'))e.preventDefault()}} onDrop={e=>{const value=e.dataTransfer.getData('application/x-hubpages-block');if(/^[0-9]+$/.test(value)){e.preventDefault();onMove?.(Number(value),index)}}}><div className="canvas-block-tools"><button draggable onDragStart={e=>e.dataTransfer.setData('application/x-hubpages-block',String(index))}>⠿ Arrastar seção</button><button onClick={()=>onSelect?.(index)}>Selecionar seção</button><button disabled={neighbor(key,-1)<0} onClick={()=>onMove?.(index,neighbor(key,-1))}>Subir</button><button disabled={neighbor(key,1)<0} onClick={()=>onMove?.(index,neighbor(key,1))}>Descer</button></div>{styled}</div>}
+  const renderSection=(key:string)=>{const block=key.startsWith('custom:')?draft.blocks.find(b=>b.id===key.slice(7)):groupBlock(key);if(!editing&&(block?.enabled===false||key==='tasting'&&(draft.sampleEnabled===false||!previewPages.length)||key==='bonuses'&&!bonuses.length||key==='method'&&!methodSteps.length||key==='manual'&&!manualParts.length))return null;const node:ReactElement<{style?:CSSProperties;className?:string}>|null=sections[key]?.()||(block?<section className="sales-v2-manual">{blockField(block,'title',block.title)}{blockField(block,'body',block.body)}{image(block,{src:block.imageUrl,alt:block.title})}{buyButton(undefined,block)}</section>:null);if(!node)return null;const index=block?draft.blocks.indexOf(block):-1;const styled=block?.layoutCustomized||key==='hero'&&draft.layoutCustomized?cloneElement(node,{style:customStyle(block),className:node.props.className+' has-layout-customization'}):node;if(!editing||!block||key==='hero'||key==='trust')return styled;return <div className={'legacy-edit-section '+(selected===index?'is-selected':'')} onClick={()=>onSelect?.(index)} onDragOver={e=>{if(!e.dataTransfer.types.includes('Files'))e.preventDefault()}} onDrop={e=>{const value=e.dataTransfer.getData('application/x-hubpages-block');if(/^[0-9]+$/.test(value)){e.preventDefault();onMove?.(Number(value),index)}}}><div className="canvas-block-tools"><button draggable onDragStart={e=>e.dataTransfer.setData('application/x-hubpages-block',String(index))}>⠿ Arrastar seção</button><button onClick={()=>onSelect?.(index)}>Selecionar seção</button><button disabled={neighbor(key,-1)<0} onClick={()=>onMove?.(index,neighbor(key,-1))}>Subir</button><button disabled={neighbor(key,1)<0} onClick={()=>onMove?.(index,neighbor(key,1))}>Descer</button></div>{styled}</div>}
   return (${jsx})
 }
 `
-fs.writeFileSync(spanish?'src/components/LegacySalesTemplateEs.tsx':'src/components/LegacySalesTemplate.tsx',output)
+fs.writeFileSync(spanish?'src/components/LegacySalesTemplateEs.tsx':'src/components/LegacySalesTemplate.tsx',output.replace(/[ \t]+$/gm,''))

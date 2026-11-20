@@ -5,8 +5,9 @@ export function pendingChanges(draft,published,changedImageSlots=[]) {
   if(!published)return [{id:'initial',label:'Primeira publicação',detail:'Leve o conteúdo deste rascunho para o seu link pela primeira vez.'}]
   const changes=[]
   const add=(id,label,before,after,detail)=>{if(!equal(before,after))changes.push({id,label,detail:detail|| (snippet(after)?`Agora: ${snippet(after)}`:'Configuração atualizada.')})}
-  const fields={name:'Nome da página e rodapé',title:'Título principal',description:'Apresentação',redLine:'Faixa de destaque',eyebrow:'Chamada inicial',originalPrice:'Preço anterior',priceLabel:'Preço da oferta',ctaLabel:'Texto padrão dos botões',checkoutUrl:'Link padrão de compra',publicUrl:'Endereço da página',imageUrl:'Imagem principal',color:'Cor de destaque',locale:'Idioma',template:'Modelo'}
-  for(const [key,label]of Object.entries(fields))add(key,label,published[key],draft[key])
+  const fields={name:'Nome da página e rodapé',title:'Título principal',description:'Apresentação',redLine:'Faixa de destaque',eyebrow:'Chamada inicial',originalPrice:'Preço anterior',priceLabel:'Preço da oferta',ctaLabel:'Texto padrão dos botões',checkoutUrl:'Link padrão de compra',publicUrl:'Endereço da página',imageUrl:'Imagem principal',color:'Cor de destaque',locale:'Idioma',template:'Modelo',offerGallery:'Mídias da galeria da oferta',mediaType:'Tipo da mídia principal',sectionCounts:'Quantidade de cards',sampleEnabled:'Degustação habilitada'}
+  const defaults={mediaType:'image',sampleEnabled:true,sectionCounts:{}}
+  for(const [key,label]of Object.entries(fields))add(key,label,published[key]??defaults[key],draft[key]??defaults[key])
   add('layout','Layout da página',[published.style||{},published.layoutOverrides||[],!!published.layoutCustomized],[draft.style||{},draft.layoutOverrides||[],!!draft.layoutCustomized])
   add('pixel','Meta Pixel',[published.metaPixelId||'',!!published.metaPixelEnabled],[draft.metaPixelId||'',!!draft.metaPixelEnabled],'ID ou ativação do Pixel alterado para esta página.')
   for(const key of new Set([...Object.keys(published.templateTexts||{}),...Object.keys(draft.templateTexts||{})]))add('text:'+key,'Texto da página',published.templateTexts?.[key],draft.templateTexts?.[key])
@@ -16,12 +17,12 @@ export function pendingChanges(draft,published,changedImageSlots=[]) {
   for(const block of draft.blocks||[]) {
     const old=before.get(block.id),name=snippet(block.title)||'Seção sem título'
     if(!old){changes.push({id:'add:'+block.id,label:`Nova seção: ${name}`,detail:'Uma seção foi adicionada ao conteúdo.'});continue}
-    for(const [key,label]of Object.entries({title:'Título',body:'Texto',imageUrl:'Imagem',kind:'Tipo de seção'}))add(`${block.id}:${key}`,`${label}: ${name}`,old[key],block[key])
+    for(const [key,label]of Object.entries({title:'Título',body:'Texto',imageUrl:'Imagem',kind:'Tipo de seção',enabled:'Visibilidade da seção',mediaType:'Tipo de mídia',sampleSource:'Origem da degustação',sampleKicker:'Chamada da degustação'}))add(`${block.id}:${key}`,`${label}: ${name}`,old[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key],block[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key])
     add(block.id+':button',`Botão de compra: ${name}`,[old.buttonLabel||'',old.buttonUrl||'',old.showButton!==false,old.inheritLink!==false],[block.buttonLabel||'',block.buttonUrl||'',block.showButton!==false,block.inheritLink!==false])
     add(block.id+':layout',`Layout: ${name}`,[old.style||{},old.layoutOverrides||[],!!old.layoutCustomized],[block.style||{},block.layoutOverrides||[],!!block.layoutCustomized])
   }
   for(const [id,block]of before)if(!after.has(id))changes.push({id:'remove:'+id,label:`Seção removida: ${snippet(block.title)}`,detail:'Esta seção deixará de aparecer depois da publicação.'})
-  for(const slot of changedImageSlots){const id=slot==='hero'?'imageUrl':slot+':imageUrl';if(!changes.some(c=>c.id===id)&& (slot==='hero'?String(draft.imageUrl).includes('/images/hero'):String(after.get(slot)?.imageUrl).includes('/images/'+slot)))changes.push({id,label:slot==='hero'?'Imagem principal':`Imagem: ${snippet(after.get(slot)?.title)||'seção'}`,detail:'O arquivo de imagem foi substituído neste espaço.'})}
+  for(const slot of changedImageSlots){const media=after.get(slot)||(draft.offerGallery||[]).find(m=>m.id===slot);const id=slot==='hero'?'imageUrl':slot+':imageUrl';if(!changes.some(c=>c.id===id)&& (slot==='hero'?String(draft.imageUrl).includes('/images/hero'):String(media?.imageUrl).includes('/images/'+slot)))changes.push({id,label:slot==='hero'?'Imagem principal':`Imagem: ${snippet(media?.title)||'seção'}`,detail:'O arquivo de imagem foi substituído neste espaço.'})}
   return changes
 }
 export function reviewSignature(draft,assetVersion='') {

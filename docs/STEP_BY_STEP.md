@@ -286,3 +286,18 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Conferência externa sem sessão: Studio 200 com bundle index-BFaYyM53.js, viewId/sequence e explicação da nova contagem confirmados; texto da antiga janela de 30 minutos ausente. Métricas privadas 401; health DEV, produção e Sistera 200, customer em produção ainda 404. Leitura apenas, sem acessos de teste ou eventos Meta nas páginas reais.
 - Evidência visual local sintética em HP-023; navegador confirmou 12→13→14→15, online1 em duas abas e 0 após expiração. Tabs e servidor local encerrados. Sem alteração de produção/main, Sistera, DNS/proxy/firewall. Homologar após recarregar https://dev.hubpages.com.br/studio .
 - Documentação final skip-ci, sem novo deploy. Regras de acesso/online e limites de atualização em docs/GUIA_STUDIO_UNIFICADO_DEV.md.
+
+
+## HP-025 — v0.7.0-dev.13 — Contrato de edição e mídias
+
+- 2026-11-20. Branch codex/feature/editor-template-contract-dev. Escopo DEV, com PT/ES e recursos compartilhados para futuros templates. Sem alteração de produção/main, Sistera, DNS ou proxy.
+- Editor sem navegação de checkout; controles individuais de visibilidade, preços corrigidos nas quatro posições, FAQ sem rotação do título, cabeçalho sem logo e rodapé com tooltip sem link.
+- Cards configuráveis, autor/degustação opcionais, origem/título/descrição editáveis no leitor, troca centralizada que mantém o modal aberto. Pilha com três mídias separadas na edição e coleção com até seis mídias e composição expandida na prévia.
+- Imagens/fotos/vídeos por slot, MP4/WebM com Range, uma mídia atual sem biblioteca. Migração 007 amplia tipos e permite limpeza estritamente dos binários antigos da própria página, preservando documentos e revisões append-only. Publicação atual permanece intacta até republicar.
+- Desfazer no cabeçalho e Ctrl+Z/Cmd+Z: restaura texto, layout, links, quantidades, visibilidade, ordem, mídias e blocos removidos. Até 50 ações e 100 MB temporários na memória do navegador. Não cria biblioteca online nem altera a publicação automaticamente.
+- Contrato obrigatório: docs/DIRETRIZES_TEMPLATES_E_EDITOR.md. Guia: docs/GUIA_EDITOR_VISUAL_DEV.md. Evidências sintéticas locais: docs/evidence/hp025.
+- Validação em andamento: regressões, CI PostgreSQL, merge develop e deploy DEV com backups/restaurações verificadas.
+
+- QA local sintético: controles das seis capas visíveis em grade no editor e composição expandida na prévia; três mídias independentes na pilha confirmadas no DOM; quatro preços editáveis, FAQ expandida com título sem transform, autor desabilitado ausente na prévia e logo de rodapé sem link. Modal manteve troca de mídia e textos editados. Catálogo recebeu quatro capturas atuais do modelo padrão.
+- Desfazer: texto restaurado, bloco excluído restaurado e Ctrl+Z confirmado; após foto substituir vídeo, botão Desfazer recuperou video/webm de 554058 bytes idêntico ao fixture original (comparação binária pela API local). Fixture CC0 usada somente localmente, sem commit/deploy. Histórico limitado em RAM validado por teste. Duas abas antigas de QA causaram conflito de revisão corretamente recusado; repetição em sessão única passou.
+- Navegador resetado e tabs de QA fechadas; servidor sintético encerrado. Nenhuma fixture, login de teste ou evento Meta foi enviado às páginas reais.

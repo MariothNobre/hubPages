@@ -1,3 +1,4 @@
+import { detectMedia,maxMediaBytes,sendMedia } from './media.mjs'
 import { visitorHash } from './workspace-model.mjs'
 import { forwardStudioMeta } from './studio-tracking.mjs'
 import { createHmac, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
@@ -317,7 +318,7 @@ async function handleApi(request, response, url) {
     if(!id||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))return sendJson(response,404,{message:'Página não encontrada.'})
     try {
       if(page)return sendJson(response,200,await platformStore.publicPage(id))
-      const result=await platformStore.publicImage(id,image[2]);response.writeHead(200,{'Content-Type':result.mime,'Cache-Control':'no-store'});return response.end(result.content)
+      const result=await platformStore.publicImage(id,image[2]);return sendMedia(request,response,result)
     }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});throw error}
   }
   if (url.pathname.startsWith('/api/customer/')) {
@@ -385,14 +386,15 @@ async function handleApi(request, response, url) {
         if (request.method === 'PUT') {
           await platformStore.read(ownerId, id)
           const chunks = []; let size = 0
-          for await (const chunk of request) { size += chunk.length; if (size > 2 * 1024 * 1024) return sendJson(response, 413, { message: 'Envie uma imagem de até 2 MB.' }); chunks.push(chunk) }
+          for await (const chunk of request) { size += chunk.length; if (size > maxMediaBytes) return sendJson(response, 413, { message: 'Envie imagem de até 2 MB ou vídeo de até 25 MB.' }); chunks.push(chunk) }
           const content = Buffer.concat(chunks)
-          const mime = content.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) ? 'image/png' : content.subarray(0,3).equals(Buffer.from([255,216,255])) ? 'image/jpeg' : content.toString('ascii',0,4)==='RIFF' && content.toString('ascii',8,12)==='WEBP' ? 'image/webp' : ''
-          if (!mime) return sendJson(response, 422, { message: 'Formato inválido. Use PNG, JPEG ou WebP.' })
+          const mime=detectMedia(content)
+          if(mime.startsWith('image/')&&content.length>2*1024*1024)return sendJson(response,413,{message:'A imagem otimizada deve ter até 2 MB.'})
+          if (!mime) return sendJson(response, 422, { message: 'Formato inválido. Use PNG, JPEG, WebP, MP4 ou WebM.' })
           await platformStore.putImage(ownerId,id,slot,mime,content)
-          return sendJson(response,200,{ url: url.pathname })
+          return sendJson(response,200,{ url: url.pathname,mediaType:mime.startsWith('video/')?'video':'image' })
         }
-        if (request.method === 'GET') { const image = await platformStore.getImage(ownerId,id,slot); response.writeHead(200,{ 'Content-Type': image.mime, 'Cache-Control': 'private, no-store' }); return response.end(image.content) }
+        if (request.method === 'GET') { const image = await platformStore.getImage(ownerId,id,slot);return sendMedia(request,response,image) }
         return sendJson(response,405,{message:'Método não permitido.'})
       }
       if(url.pathname==='/api/platform/trash'&&request.method==='GET')return sendJson(response,200,{pages:await platformStore.list(ownerId,true)})

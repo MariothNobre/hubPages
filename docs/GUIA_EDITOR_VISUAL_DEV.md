@@ -3,8 +3,8 @@
 Ambiente: https://dev.hubpages.com.br/studio. Produção não recebe estas alterações.
 
 1. Entre pela sua conta em `/conta` ou autentique o administrador existente em `/admin` e abra o Studio. Se houver duas sessões simultâneas, o Studio usa a conta de cliente; encerre essa sessão para trabalhar como administrador.
-2. Clique em **Criar página grátis**. O primeiro modelo é **Infância Além das Telas**, baseado na página portuguesa existente. A etapa Modelo oferece também Essencial e Coleção. Usar outro modelo cria um novo rascunho, preservando o anterior.
-3. As sete etapas aparecem em cards conectados no cabeçalho, junto de **Minhas páginas** e **Salvar agora**. Na etapa **Conteúdo**, clique diretamente em títulos, parágrafos, preços ou rótulos dos botões e escreva no próprio layout. A coluna lateral de propriedades foi removida; a logo oficial permanece preservada.
+2. Clique em **Criar minha página de vendas**. O primeiro modelo é **Infância Além das Telas**, baseado na página portuguesa existente. O catálogo oferece atualmente este modelo; novas opções seguirão o contrato de templates.
+3. As sete etapas aparecem em cards conectados no cabeçalho, junto de **Minhas páginas** e **Salvar agora**. Na etapa **Conteúdo**, clique diretamente em títulos, parágrafos, preços ou rótulos dos botões e escreva no próprio layout. A coluna lateral de propriedades foi removida; a marca HubPages fica apenas no rodapé das páginas de vendas, sem link.
 4. Arraste a seção pela alça **Arrastar** até outra seção para alterar a ordem. Os botões subir/descer oferecem o mesmo recurso, inclusive no celular.
 5. Em **Adicionar recurso**, insira texto/imagem, botão, separador, espaço, pergunta, oferta ou degustação. Linhas de duas/três colunas adicionam blocos lado a lado. Ajuste a largura de cada bloco para organizar novas linhas; no celular as colunas se empilham.
 6. Selecione o elemento e abra **Layout e estilo** na barra contextual flutuante para dimensões, margens, espaço interno, gap, fontes, alinhamento e fundo. A alça da imagem permite redimensionar por arraste; os controles numéricos/de faixa oferecem ajuste pelo teclado. Os ajustes explícitos preservam os demais estilos originais.
@@ -45,3 +45,16 @@ O modelo Infância Além das Telas reutiliza a estrutura e os estilos da página
 25. O painel, editor, conta e administração usam a paleta HubPages: azul-petróleo nos comandos principais e textos, coral nos destaques e superfícies claras. Verde/vermelho continuam sinalizando sucesso/atenção. Cores do conteúdo/template não são substituídas por este tema; a página de vendas e a prévia preservam suas configurações próprias.
 
 26. A timeline usa laranja/coral na etapa atual, tons quentes claros nas etapas prontas e uma linha de progresso laranja. Ao passar o mouse, cards ganham elevação e sombra; botões têm feedback de hover/pressionamento. Nos atalhos dos guias, texto e seta têm alinhamento próprio e área mínima de 44 px, sem cortar o rótulo. Com movimento reduzido ativado no dispositivo, deslocamentos e transições são desabilitados. Cores dos templates/prévias permanecem próprias.
+
+
+## Cards, mídias e Desfazer — HP-025
+
+Em **Conteúdo → Cards e recursos**, escolha as quantidades de cards do método, conteúdo, bônus e degustação. Ligue/desligue o autor e a degustação. Cada botão tem seu próprio controle **Exibido / Oculto**.
+
+A coleção aceita até **6 mídias**. Todos os espaços aparecem separadamente na edição, com **Trocar imagem / vídeo** centralizado; na prévia as capas aparecem distribuídas ao redor da principal. As três imagens da pilha de degustação também têm controles independentes.
+
+O leitor permite editar origem, título e descrição de cada página, além da chamada adicional do modelo espanhol. Substituir a mídia mantém o leitor aberto. Fotos otimizadas até 2 MB; vídeos MP4/WebM até 25 MB. Sem biblioteca de versões na VPS: a publicação atual é preservada até republicar.
+
+Use **↶ Desfazer**, junto de Salvar agora, para recuperar a última alteração do rascunho — inclusive bloco removido ou imagem/vídeo substituído. Ctrl+Z/Cmd+Z funciona fora dos campos; dentro do texto o navegador desfaz a digitação. São até 50 ações da sessão, com até 100 MB temporários na memória da aba, descartados ao recarregar/fechar/trocar de página. Desfazer salva o rascunho, sem publicar.
+
+Diretrizes para todos os futuros modelos: [Contrato dos templates](DIRETRIZES_TEMPLATES_E_EDITOR.md).
