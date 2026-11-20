@@ -13,8 +13,10 @@ const directory=await mkdtemp(join(tmpdir(),'hubpages-workspace-')),file=join(di
 const defaults=JSON.parse(await readFile('server/templates/legacy-defaults.json','utf8'))
 const legacy={admin:{name:'Admin preservado',email:'admin@example.test',passwordHash:`scrypt$${salt.toString('base64url')}$${scryptSync(password,salt,64).toString('base64url')}`},pages:structuredClone(defaults),tracking:{infancia_alem_das_telas:{accessToken:'synthetic-local-only',testEventCode:'TEST1'}},analytics:{infancia_alem_das_telas:{visits:55},infancia_alem_das_telas_es:{visits:12}}}
 legacy.pages.infancia_alem_das_telas.metaPixelId='123456789';legacy.pages.infancia_alem_das_telas.metaPixelEnabled=true
+legacy.pages.infancia_alem_das_telas_es.published=false
 await writeFile(file,JSON.stringify(legacy))
-const env={...process.env,DATABASE_URL:database,DATA_FILE:file,STATIC_DIR:resolve('dist'),PORT:'4198',APP_ORIGINS:base,HUBPAGES_PLATFORM_ENABLED:'true',HUBPAGES_CUSTOMER_SIGNUP_ENABLED:'true',HUBPAGES_ENV:'development',HUBPAGES_DEV_FREE_PUBLISH_ENABLED:'true',HUBPAGES_STUDIO_UNIFIED_ENABLED:'true',HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ADMIN_EMAIL:legacy.admin.email,HUBPAGES_SESSION_SECRET:'workspace-local-test-key'}
+await writeFile(join(directory,'index.html'),'<!doctype html><html><body>Isolated Studio test shell</body></html>')
+const env={...process.env,DATABASE_URL:database,DATA_FILE:file,STATIC_DIR:process.env.HUBPAGES_WORKSPACE_PREVIEW==='true'?resolve('dist'):directory,PORT:'4198',APP_ORIGINS:base,HUBPAGES_PLATFORM_ENABLED:'true',HUBPAGES_CUSTOMER_SIGNUP_ENABLED:'true',HUBPAGES_ENV:'development',HUBPAGES_DEV_FREE_PUBLISH_ENABLED:'true',HUBPAGES_STUDIO_UNIFIED_ENABLED:'true',HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ADMIN_EMAIL:legacy.admin.email,HUBPAGES_SESSION_SECRET:'workspace-local-test-key'}
 let child,logs=''
 async function start(){child=spawn(process.execPath,['server/index.mjs'],{env,stdio:['ignore','pipe','pipe']});child.stdout.on('data',v=>logs+=v);child.stderr.on('data',v=>logs+=v);await new Promise((done,reject)=>{child.stdout.once('data',done);child.once('exit',code=>reject(Error('Server exit '+code+' '+logs)))})}
 async function stop(){if(!child)return;await new Promise(done=>{child.once('exit',done);child.kill()});child=null}
@@ -28,6 +30,10 @@ try{
   let pt=list.pages.find(p=>p.legacySlug==='infancia_alem_das_telas'),es=list.pages.find(p=>p.legacySlug.endsWith('_es'))
   assert.equal(pt.visits,55);assert.equal(es.visits,12);assert.equal(pt.online,0);assert.ok(pt.coverUrl)
   pt=await data('/api/platform/pages/'+pt.id,'GET',undefined,admin);es=await data('/api/platform/pages/'+es.id,'GET',undefined,admin)
+  assert.equal(es.editorialStatus,'draft','legacy unpublished state is preserved')
+  assert.equal((await request('/api/public/resolve?url='+encodeURIComponent(base+'/infancia_alem_das_telas_es'))).status,404)
+  es=await data('/api/platform/pages/'+es.id+'/publish','POST',{revision:es.revision},admin)
+  assert.equal((await request('/infancia_alem_das_telas_es')).status,200,'native publication must not be blocked by stale unpublished legacy source')
   assert.equal(pt.draft.title,defaults.infancia_alem_das_telas.title);assert.equal(es.draft.template,'infancia_es');assert.equal(es.draft.priceLabel,'US$ 6.90')
   assert.equal((await data('/api/platform/pages/'+pt.id+'/tracking','GET',undefined,admin)).metaConversionsApiConfigured,true)
   assert.equal((await data('/api/platform/pages/'+es.id+'/tracking','GET',undefined,admin)).metaConversionsApiConfigured,true)
