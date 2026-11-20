@@ -1,6 +1,6 @@
 # Studio unificado — DEV
 
-Implementação de 20/11/2026, versão prevista v0.7.0-dev.11. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
+Implementação de 20/11/2026, versão v0.7.0-dev.11 publicada em DEV. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
 
 ## Criar, editar e publicar
 
