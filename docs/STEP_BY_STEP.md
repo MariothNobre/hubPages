@@ -171,3 +171,12 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - addressAuto opcional no JSON de draft: acompanha renomeação enquanto automático, congela após edição manual. Botão retoma sugestão. Rascunhos com URL existente preservados; sem URL recebem sugestão ao abrir. Requisições canceladas/obsoletas não sobrescrevem entrada manual nem outra página em edição. Seleção de idioma removida da UI; locale e páginas ES legadas preservados.
 - Testes locais: lint/build, legado/HTML fiel, regressões de publicação/endereço/isolamento de contas; helper cobre acentos, reservas, ocupação e erros reais; API testa acesso indevido e alternativa disponível. QA em conta sintética local confirmou Outro site meu → outro_site_meu; edição meu_link_personalizado permaneceu após renomear; botão retomou novo_nome_preservando_link; idioma ausente. Screenshot: C:/Users/proce/Documents/Codex/hubpages-link-sugerido-dev.jpg. Instância local encerrada, sem fixtures remotas.
 - Próximo: CI PostgreSQL real, merge develop e deploy DEV com restores; nenhum deploy em produção autorizado.
+
+
+## HP-014 — v0.7.0-dev.7 — Sugestão de link entregue em DEV
+
+- 2026-11-20 11:52 UTC / 08:52 BRT. Commit 9f111ec356331637f1c783a7095cdbab2bf7447e, PR #6, merge develop e71bd3e5156fe337e63b1729ee97144e038a3a48. CI PR 44730674837 / job 136269311924 e CI develop 44730833641: sucesso, incluindo PostgreSQL 17 e regressões de publicação/endereço/contas.
+- Deploy DEV 44730833657 / job 136269846060: sucesso. App/banco healthy e restores íntegros antes/depois: /opt/hubpages-backups/dev/verified-20261120T115031Z-3550963.dump e /opt/hubpages-backups/dev/verified-20261120T115121Z-3552940.dump. Sem mudança de schema, fixtures remotas ou credenciais.
+- Verificação externa somente leitura: Studio 200/noindex com novo bundle index-BH8J9zFk.js, contendo campo de slug e API de sugestão; health DEV/produção/Sistera 200; API customer continua 404 em produção. Remoção do seletor de idioma comprovada no fonte/QA local; textos ES do legado continuam no bundle deliberadamente. Sem autenticação remota ou edição das páginas existentes.
+- Homologar em https://dev.hubpages.com.br/studio após recarregar. Nome da página sugere o trecho final disponível; domínio fixo de DEV; personalização manual preservada em renomeações. Endereços atuais e locale existentes preservados. Captura local descrita em HP-013.
+- Tag v0.7.0-dev.7 aponta ao merge implantado. Evidência documental em commit skip-ci, sem novo deploy. Produção/main, Sistera, DNS e proxy preservados.
