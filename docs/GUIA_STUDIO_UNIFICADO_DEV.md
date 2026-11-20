@@ -1,6 +1,6 @@
 # Studio unificado — DEV
 
-Implementação de 20/11/2026, versão v0.7.0-dev.11 publicada em DEV. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
+Implementação de 20/11/2026; atualização de contadores v0.7.0-dev.12. Escopo: `dev.hubpages.com.br`. Não publicar em main/produção sem nova aprovação.
 
 ## Criar, editar e publicar
 
@@ -16,8 +16,10 @@ Implementação de 20/11/2026, versão v0.7.0-dev.11 publicada em DEV. Escopo: `
 ## Minhas páginas e métricas
 
 - Cards: duas colunas no desktop e uma no celular; capas atuais, status, acessos, online e ações. Lista: linhas com ações agrupadas. A preferência pertence à conta e é gravada no PostgreSQL.
-- **Ver métricas**: totais, online, últimos 30 dias, gráficos por dia/hora, horários de maior/menor acesso e mapa semanal, no horário de Brasília. Atualiza a cada 15 segundos enquanto a tela está visível.
-- Uma visita por navegador a cada 30 minutos; online são navegadores com aba visível e heartbeat nos últimos 45 segundos. Várias abas do mesmo navegador contam uma pessoa online. Ausência de heartbeat expira a presença; ocultar/fechar a aba remove sua presença.
+- **Ver métricas**: totais, online, últimos 30 dias, gráficos por dia/hora, horários de maior/menor acesso e mapa semanal, no horário de Brasília. Atualiza a cada 5 segundos enquanto o painel está visível.
+- Cada abertura, retorno à página ou atualização (F5) registra um novo acesso, inclusive do mesmo visitante. Não há janela de 30 minutos. Heartbeats e alternância entre abas não acrescentam acessos. O ID de cada carregamento evita apenas contar novamente o reenvio de uma mesma requisição, inclusive o replay de efeitos do React; não deduplica visitantes.
+- Online são navegadores com a página aberta e heartbeat nos últimos 90 segundos, inclusive em aba em segundo plano. Várias abas do mesmo navegador contam uma pessoa online. O tracker envia presença a cada 15 segundos. Navegar para fora/fechar envia saída quando o navegador permite; interrupção abrupta ou suspensão sem sinal expira em até 90 segundos, mais a atualização do painel. Eventos têm sequência para impedir que um heartbeat atrasado reative uma aba fechada.
+- A nova regra vale para acessos recebidos após a atualização. Totais e agregados anteriores são mantidos; acessos descartados pelo antigo intervalo não podem ser recuperados retroativamente.
 - Medição apenas da URL publicada. Admin, editor e prévias não montam o tracker e seus Referers são rejeitados pela API. Identificadores são hashes no banco; não se grava IP na tabela de métricas. Não é medição antifraude/bots avançada.
 - Totais antigos PT/ES são preservados. O sistema anterior não guardava horários/dias: o detalhamento começa nesta atualização e não reconstrói histórico inexistente.
 
@@ -30,7 +32,7 @@ Implementação de 20/11/2026, versão v0.7.0-dev.11 publicada em DEV. Escopo: `
 ## Migração e operação
 
 1. Executar CI: lint, geração determinística, fidelidade HTML PT e ES, regressões, teste workspace em arquivo e em schema PostgreSQL exclusivo por execução dentro de `hubpages_ci`. O teste nunca remove schemas existentes e nunca pode apontar ao banco da aplicação.
-2. Deploy develop usa o fluxo restrito DEV, com dump/restauração isolada antes e depois. A migração SQL 005 é aditiva: preferências, vínculos de legado, agregados horários, deduplicação, presença e tombstones de exclusão.
+2. Deploy develop usa o fluxo restrito DEV, com dump/restauração isolada antes e depois. A migração SQL 005 é aditiva: preferências, vínculos de legado, agregados horários, presença e tombstones de exclusão. A 006 acrescenta recibos de carregamento e sequência/estado de presença. Recibos técnicos são retidos por 7 dias; os totais agregados são preservados. A antiga tabela de deduplicação por visitante permanece para compatibilidade, sem limitar novos acessos.
 3. `HUBPAGES_STUDIO_UNIFIED_ENABLED=true` somente no Compose DEV. A adoção inicial ocorre em transação e uma vez por slug: copia conteúdo dinâmico, URL equivalente no domínio DEV, status, Pixel, token cifrado, código de teste e total anterior. Conteúdo estático vem dos renderizadores derivados dos originais; os originais PT/ES, CSS e ativos existentes permanecem congelados.
 4. O vínculo desativa o resolvedor/editor legado para essas páginas. Os snapshots Studio passam a responder na URL existente; uma página excluída/movida não pode ressurgir pelo fallback legado. Tombstone preservado após exclusão impede reimportação no restart.
 5. A fonte antiga permanece preservada para auditoria, exceto se o usuário confirmar exclusão permanente da própria página. Não editar essa cópia antiga: ela não acompanha mudanças posteriores no Studio.
