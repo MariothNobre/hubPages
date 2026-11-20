@@ -13,7 +13,7 @@
 .studio:not(.private-preview) input::placeholder,.studio:not(.private-preview) textarea::placeholder{color:#597780;opacity:1}
 .studio:not(.private-preview) .studio-notice{background:#e7f2f6;border-left-color:#df8063}
 .studio:not(.private-preview) :is(.studio-grid article>span,.wizard-header-actions>span,.wizard-progress,.wizard-legend,.review-device-hint,.review-device-info>span,.direct-editor-hint){color:var(--hp-muted)}
-.studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary,.wizard-timeline button[aria-current=step],.wizard-timeline button[aria-current=step]:hover,.studio-viewports [aria-pressed=true]){background:var(--hp-primary);color:#fff;border-color:var(--hp-primary)}
+.studio:not(.private-preview) :is(.wizard-timeline button[aria-current=step],.wizard-timeline button[aria-current=step]:hover,.studio-viewports [aria-pressed=true]){background:var(--hp-primary);color:#fff;border-color:var(--hp-primary)}
 .studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary):hover{background:var(--hp-hover);color:#fff}
 .studio:not(.private-preview) .wizard-timeline .is-complete button:not([aria-current]){background:#eaf5f3;border-color:#b3d7ce;color:#205b55}
 .studio:not(.private-preview) .wizard-step-index{color:var(--hp-muted);border-color:#b5cfd7;background:#fff}
@@ -67,3 +67,42 @@
 .admin-page .analytics-grid span,.admin-page .analytics-grid p{color:#4c6c77!important}
 .admin-page .form-error{color:#9e2937!important;background:#ffedf0}
 .admin-page .form-success{color:#225d4d!important;background:#e7f4ed}
+
+/* Warm brand accents and application-only microinteractions. */
+.studio:not(.private-preview) .wizard-timeline button{background:linear-gradient(140deg,#fffdf9,#fff6f0);border-color:#e5cab8}
+.studio:not(.private-preview) .wizard-timeline .is-complete button:not([aria-current]){background:linear-gradient(135deg,#fff6ed,#ffe8d8);border-color:#e3b99b;color:#79472f}
+.studio:not(.private-preview) .wizard-timeline .is-complete .wizard-step-index{background:#fffaf6;border-color:#dba887;color:#8f482e}
+.studio:not(.private-preview) .wizard-timeline button[aria-current=step],.studio:not(.private-preview) .wizard-timeline button[aria-current=step]:hover{background:linear-gradient(125deg,#f0a27e,#df8063);color:#082b33;border-color:#c36b4f;box-shadow:0 5px 16px #df806333}
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-index{background:#fff6ec;color:#082b33;border-color:#ffffffb3}
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-hint{color:#183e45}
+.studio:not(.private-preview) .wizard-timeline li:after{background:#efd7c6}
+.studio:not(.private-preview) .wizard-timeline li.is-complete:after{background:linear-gradient(90deg,#df8063,#edb18c)}
+.studio:not(.private-preview) .wizard-progress progress{appearance:none;accent-color:#df8063;background:#f5e4d8;overflow:hidden;border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-webkit-progress-bar{background:#f5e4d8;border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-webkit-progress-value{background:linear-gradient(90deg,#df8063,#efad83);border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-moz-progress-bar{background:#df8063;border-radius:20px}
+.studio:not(.private-preview) .wizard-legend>span:first-child{color:#985035}
+.studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary),.admin-page :is(.login-card button,.content-form>.form-actions button){background:#df8063;border-color:#c36b4f;color:#082b33}
+.studio:not(.private-preview) .wizard-flow li{min-width:0}
+.studio:not(.private-preview) .wizard-flow li>div{min-width:0;flex:1}
+.studio:not(.private-preview) .wizard-flow button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:100%;margin:12px 0 0;padding:9px 13px;border:1px solid #e3b99b;border-radius:10px;background:#fff1e7;color:#81452e;font-size:.76rem;font-weight:750;line-height:1.45;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.studio:not(.private-preview) .wizard-flow button>.wizard-shortcut-arrow{display:inline-block;flex:none;margin-left:2px;transition:transform .18s ease}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)),.admin-page button{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.studio:not(.private-preview) .wizard-step-index{transition:transform .2s ease,background-color .2s ease}
+@media(hover:hover) and (pointer:fine){
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):not(:disabled):hover,.admin-page button:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 5px 12px #b75b3c1c}
+  .studio:not(.private-preview) .wizard-timeline button:not(:disabled):hover{transform:translateY(-4px);box-shadow:0 8px 18px #bf654e24;border-color:#c77855}
+  .studio:not(.private-preview) .wizard-timeline button:not(:disabled):hover .wizard-step-index{transform:rotate(-6deg) scale(1.08)}
+  .studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary):not(:disabled):hover,.admin-page :is(.login-card button,.content-form>.form-actions button):not(:disabled):hover{background:#ec9879;color:#082b33}
+  .studio:not(.private-preview) .wizard-flow button:not(:disabled):hover{background:#ffe0cb;border-color:#c77855;color:#713b27}
+  .studio:not(.private-preview) .wizard-flow button:not(:disabled):hover>.wizard-shortcut-arrow{transform:translateX(3px)}
+}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):not(:disabled):active,.admin-page button:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 3px #a4543720}
+@media(prefers-reduced-motion:reduce){
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)),.studio:not(.private-preview) .wizard-step-index,.studio:not(.private-preview) .wizard-flow button>span,.admin-page button{transition:none!important;animation:none!important}
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):is(:hover,:active),.studio:not(.private-preview) .wizard-timeline button:hover .wizard-step-index,.studio:not(.private-preview) .wizard-flow button:hover>.wizard-shortcut-arrow,.admin-page button:is(:hover,:active){transform:none!important}
+}
+
+.studio:not(.private-preview) .wizard-flow button>.wizard-shortcut-label{min-width:0;flex:1;white-space:normal;overflow-wrap:normal}
+
+.studio:not(.private-preview) .studio-page-navigation .wizard-timeline{padding:16px 10px}
