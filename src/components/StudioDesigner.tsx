@@ -4,7 +4,7 @@ import { StudioCanvas } from './StudioCanvas'
 import { blankBlock, movePageBlocks } from './studio-model'
 
 type Update = (value: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) => void
-export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft: Draft; pageId: string; update: Update; flush: () => Promise<boolean>; notice: (value: string) => void }) {
+export function StudioDesigner({ draft, pageId, update, flush, notice,assetChanged }: { draft: Draft; pageId: string; update: Update; flush: () => Promise<boolean>; notice: (value: string) => void;assetChanged?:()=>void }) {
   const [selected,setSelected]=useState(-1)
   const [kind,setKind]=useState('section')
   const [panel,setPanel]=useState<'layout'|'link'|'add'|null>(null)
@@ -40,7 +40,7 @@ export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft
       const response=await fetch(`/api/platform/pages/${pageId}/images/${slot}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'image/webp'},body:blob})
       const result=await response.json(); if(!response.ok) throw new Error(result.message)
       update((latest)=>slot==='hero' ? {imageUrl:result.url} : {blocks:latest.blocks.map((b)=>b.id===slot ? {...b,imageUrl:result.url} : b)})
-      await flush(); setImageVersion((v) => v+1); notice('Imagem atualizada neste espaço. Nenhuma biblioteca pessoal foi criada.')
+      await flush(); setImageVersion((v) => v+1); assetChanged?.(); notice('Imagem atualizada. Confira o resultado na sua página.')
     } catch(error) { notice(error instanceof Error ? error.message : 'Falha ao enviar imagem.') }
     finally { setUploading(false); if(fileInput.current) fileInput.current.value='' }
   }

@@ -1,3 +1,4 @@
+import { pendingChanges } from '../shared/studio-wizard.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdtemp, writeFile, readFile } from 'node:fs/promises'
@@ -102,6 +103,7 @@ try {
     let p=await (await request('/api/platform/pages','POST',{name:'Publicação sintética',template:'infancia_pt'},a)).json()
     const root=`/api/platform/pages/${p.id}`,publicPath=`/api/public/pages/${p.id}`,privateImage=`${root}/images/hero`
     assert.equal((await request(publicPath)).status,404)
+    assert.equal((await request(root+'/publication-review','GET',undefined,b)).status,404)
     assert.equal((await request(root+'/publish','POST',{revision:p.revision},a)).status,422)
     const putImage=bytes=>fetch(`${base}${privateImage}`,{method:'PUT',headers:{Origin:base,Cookie:a,'Content-Type':'image/png'},body:bytes})
     assert.equal((await putImage(imageBytes)).status,200)
@@ -129,16 +131,25 @@ try {
     assert.equal(live.ownerId,undefined)
     assert.equal(JSON.stringify(live).includes('synthetic-private-token'),false)
     assert.equal((await request('/api/public/meta/events','POST',{publicationId:live.id,eventId:'22222222-2222-4222-8222-222222222222',eventSourceUrl:base+'/oferta-teste'})).status,200)
+    let review=await (await request(root+'/publication-review','GET',undefined,a)).json()
+    assert.equal(pendingChanges(p.draft,review.publishedDraft,review.changedImageSlots).length,0)
+    p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,step:8}},a)).json()
+    review=await (await request(root+'/publication-review','GET',undefined,a)).json()
+    assert.equal(pendingChanges(p.draft,review.publishedDraft,review.changedImageSlots).length,0,'step navigation must not require publication')
     const firstImage=live.draft.imageUrl
     assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
     const changed=Buffer.concat([imageBytes,Buffer.from('synthetic-new-version')])
     assert.equal((await putImage(changed)).status,200)
+    review=await (await request(root+'/publication-review','GET',undefined,a)).json()
+    assert.deepEqual(review.changedImageSlots,['hero']);assert.equal(pendingChanges(p.draft,review.publishedDraft,review.changedImageSlots).length,1)
     p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,title:'Novo título ainda em rascunho',publicUrl:base+'/oferta-nova'}},a)).json()
     assert.notEqual((await (await request(publicPath)).json()).draft.title,p.draft.title)
     assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
     p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
     live=await (await request(publicPath)).json()
     assert.equal(live.draft.title,p.draft.title)
+    review=await (await request(root+'/publication-review','GET',undefined,a)).json()
+    assert.equal(pendingChanges(p.draft,review.publishedDraft,review.changedImageSlots).length,0,'publishing must clear the badge')
     assert.equal((await request('/api/public/resolve?url='+encodeURIComponent(base+'/oferta-teste'))).status,404)
     assert.equal((await request('/api/public/resolve?url='+encodeURIComponent(base+'/oferta-nova'))).status,200)
     assert.notEqual(live.draft.imageUrl,firstImage)
