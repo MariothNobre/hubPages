@@ -41,3 +41,15 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Status: primeiro incremento publicado em DEV. Produção continua em ca05749/v0.6.0, sem merge, tag de release de produção ou alteração DNS/proxy/firewall.
 - Acesso para homologação: https://dev.hubpages.com.br/admin, depois link HubPages Studio, ou https://dev.hubpages.com.br/studio após autenticar.
 - Próximos critérios de aceite: clientes/tenants reais com IDOR E2E, uploads e artefatos versionados, domínio verificado, Asaas sandbox+webhook e vigência real. Asaas está aprovado, mas não integrado nem anunciado como ativo.
+
+## HP-003 — v0.7.0-dev.2 — Identidades e contas de homologação
+
+- UTC: 2026-11-20 02:05; BRT: 2026-11-19 23:05. Autor: Codex. Branch codex/feature/contas-isoladas-dev.
+- Arquivos: migration 001-customer-identity.sql, identity-store.mjs, customer-auth.mjs, index.mjs; CustomerAccountPage.tsx, StudioPage.tsx, App.tsx, studio.css; Compose DEV, CI, test-customers.mjs.
+- Desenvolvido/testado localmente: cadastro/login/logout/perfil de cliente, aceite versionado, conta UUID isolada, revogação de sessões ao mudar senha, proprietário de rascunho derivado de sessão e acesso legado mantido. Nenhuma redefinição de senha/admin existente.
+- Teste integrado com duas contas sintéticas: list/read/update/duplicate/restore/publish cruzados recusados, role spoof ignorado, clientes sem acesso ao admin; dados legados idênticos após operações. Lint/build e regressão anterior passaram. Inspeção visual localhost: login da Conta B, Studio vazio sem dados da Conta A e perfil próprios confirmados.
+- Banco: tabelas novas aditivas com FKs/índices e migração versionada transacional; sem alteração do estado legado. A aplicação real da migração em DEV ainda depende do CI PostgreSQL e do pipeline de restore/deploy.
+- Produção: sem merge/main, sem deploy, sem DNS/proxy/firewall alterados. Cadastro de clientes liberado somente no DEV após publicação.
+- Pendências: e-mail transacional/recuperação/MFA, páginas/revisões relacionais, upload/retention, publicador/domínios e Asaas. Condições são de homologação, não termos comerciais definitivos.
+- Backup/rollback: dump+restore isolado obrigatório antes do deploy DEV. Desabilitar flags ou voltar imagem anterior preserva as tabelas e contas novas; não executar DROP/TRUNCATE.
+- Próximo: validar migração e isolamento em PostgreSQL real no CI antes de mesclar em develop, então registrar evidência de publicação.

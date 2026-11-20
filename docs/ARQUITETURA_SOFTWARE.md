@@ -78,3 +78,21 @@ Pendente: auditoria privada integral de registros/contagens, E2E no DEV com admi
 Studio publicado exclusivamente em DEV pelo merge 43abda5, Actions 44653421519 (sucesso). Restaurar backup foi efetivamente executado e validado duas vezes em PostgreSQL efêmero. Caminhos, manifestos e evidências em STEP_BY_STEP HP-002. Gates privados confirmados externamente (401); noindex confirmado no shell do Studio; produção continua sem a API nova (404). Healths DEV/produção/Sistera saudáveis. Não houve migração destrutiva nem reset de credenciais.
 
 Pendência de escala: o primeiro incremento usa JSONB compartilhado e serialização por processo, exclusivamente para homologação do administrador. Antes de disponibilizar contas públicas, mover somente os novos recursos para tabelas relacionais aditivas com índices/transactions/tenantId, mantendo o adaptador legado e sem migrar dados existentes por fixtures.
+
+## Segundo incremento — contas isoladas (v0.7.0-dev.2)
+
+Migração aditiva `server/migrations/001-customer-identity.sql`, executada somente quando a flag de plataforma está habilitada: `hubpages_accounts`, `hubpages_users`, `hubpages_customer_sessions` e `hubpages_schema_migrations`. Execução transacional com advisory lock; nenhum UPDATE/DELETE em hubpages_state e nenhum usuário/admin padrão criado. O script de backup/restore do DEV precede a inicialização da nova imagem.
+
+Cadastro de homologação por `/conta`, flag independente `HUBPAGES_CUSTOMER_SIGNUP_ENABLED=true` somente no Compose DEV; nome/e-mail/senha, confirmação no frontend e aceite obrigatório da versão `homologacao-2026-11-19`. Condições acessíveis em `/condicoes-homologacao`, marcadas como provisórias para testes sem cobrança; termos comerciais definitivos exigem revisão antes do lançamento.
+
+APIs `/api/customer/{config,register,login,session,logout,profile}`. E-mails normalizados, unicidade no banco, conta e usuário UUID próprios criados na mesma transação, senha scrypt, sessão aleatória de 256 bits cujo SHA256 é armazenado. Cookie `hubpages_customer` HttpOnly/Secure/SameSite=Strict, 8h, separado do cookie administrativo. Perfil exige senha atual; troca de senha invalida todas as sessões da conta. Cadastro/login têm limitação de tentativas. Contas suspensas não resolvem sessões no PostgreSQL.
+
+Proprietário do Studio resolvido exclusivamente pela sessão do servidor: accountId do cliente, ou legacy-owner para admin legado. Campos role/accountId enviados no cadastro ou rascunho não concedem privilégio. Clientes não recebem a lista de páginas legadas, nem acessam APIs administrativas. Todos os endpoints de rascunhos passam pelo mesmo controle de propriedade, inclusive duplicação/restauração/publicação.
+
+Se houver simultaneamente sessão de cliente e admin no mesmo navegador, o Studio usa a conta do cliente; encerrar a sessão de cliente devolve o acesso de compatibilidade do admin. Nenhum cookie administrativo é apagado automaticamente. O painel administrativo continua autenticando apenas pelo cookie antigo.
+
+Rascunhos ainda usam payload.platform por compatibilidade neste estágio de DEV. O isolamento é aplicado no backend e testado ponta a ponta com dois clientes, mas normalização relacional de páginas/revisões e autorização de múltiplos membros por conta continuam pendentes antes da abertura comercial. Não anunciar como RBAC multiusuário completo.
+
+Validação: test-customers.mjs cria contas sintéticas em diretório temporário ou banco exclusivo `hubpages_ci`; verifica list/read/update/duplicate/restore/publish cruzados (404), APIs administrativas (401), spoof de role, e-mail duplicado/reservado, logout, troca de senha e preservação do admin/páginas/pixels/contadores legados. CI inclui PostgreSQL 17 real; somente esse banco efêmero aceita fixtures. Nenhuma fixture é enviada à VPS.
+
+Ainda não configurados: confirmação de e-mail, recuperação por mensagem, MFA, gestão de todas as sessões pelo usuário, termos comerciais definitivos, cadastro público em produção e integração Asaas. A interface informa essas limitações e não simula envio de e-mail.
