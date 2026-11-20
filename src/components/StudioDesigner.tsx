@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Draft, Layout } from './studio-model'
 import { StudioCanvas } from './StudioCanvas'
-import { blankBlock, moveBlock } from './studio-model'
+import { blankBlock, movePageBlocks } from './studio-model'
 
 type Update = (value: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) => void
 export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft: Draft; pageId: string; update: Update; flush: () => Promise<boolean>; notice: (value: string) => void }) {
@@ -61,6 +61,6 @@ export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft
     </div>
     <input className="direct-image-input" ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" aria-label="Enviar imagem para o elemento selecionado" onChange={(e)=>void upload(imageTarget.current,e.target.files?.[0])}/>
     <p className="direct-editor-hint">Clique no texto e escreva diretamente. Selecione uma imagem ou botão para ajustar. As alterações são salvas automaticamente.</p>
-    <StudioCanvas key={`${pageId}-${imageVersion}`} draft={draft} selected={selected} onSelect={(index)=>{setSelected(index);setKind('section')}} onMove={(from,to)=>{update((latest)=>({blocks:moveBlock(latest.blocks,from,to)}));setSelected(to)}} editing={{text:editText,select:(index,element)=>{setSelected(index);setKind(element)},image:chooseImage,resize:(index,value)=>{const id=draft.blocks[index]?.id;update((latest)=>index<0?{layoutCustomized:true,layoutOverrides:[...new Set([...(latest.layoutOverrides||[]),...Object.keys(value)])],style:{...latest.style,...value}}:{blocks:latest.blocks.map((b)=>b.id===id?{...b,layoutCustomized:true,layoutOverrides:[...new Set([...(b.layoutOverrides||[]),...Object.keys(value)])],style:{...b.style,...value}}:b)})}}}/>
+    <StudioCanvas key={`${pageId}-${imageVersion}`} draft={draft} selected={selected} onSelect={(index)=>{setSelected(index);setKind('section')}} onMove={(from,to)=>{const moved=draft.blocks[from]?.id;const blocks=movePageBlocks(draft,from,to);update({blocks});setSelected(blocks.findIndex(b=>b.id===moved))}} editing={{text:editText,select:(index,element)=>{setSelected(index);setKind(element)},image:chooseImage,resize:(index,value)=>{const id=draft.blocks[index]?.id;update((latest)=>index<0?{layoutCustomized:true,layoutOverrides:[...new Set([...(latest.layoutOverrides||[]),...Object.keys(value)])],style:{...latest.style,...value}}:{blocks:latest.blocks.map((b)=>b.id===id?{...b,layoutCustomized:true,layoutOverrides:[...new Set([...(b.layoutOverrides||[]),...Object.keys(value)])],style:{...b.style,...value}}:b)})}}}/>
   </div>
 }

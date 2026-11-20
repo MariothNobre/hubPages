@@ -53,3 +53,5 @@
   useEffect(()=>{if(!previewOpen)return;const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setPreviewOpen(false);if(e.key==='ArrowRight')setPreviewIndex(v=>(v+1)%previewPages.length);if(e.key==='ArrowLeft')setPreviewIndex(v=>(v-1+previewPages.length)%previewPages.length)};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[previewOpen,previewPages.length])
   const rootKey=(block:Block)=>block.kind==='sample'?'tasting':block.kind==='bonus'?'bonuses':block.kind==='faq'?'faq':block.templateRole||`custom:${block.id}`
   const sequence=['hero','trust',...new Set(draft.blocks.map(rootKey))]
+
+  const neighbor=(key:string,direction:number)=>{const at=sequence.indexOf(key);const candidate=sequence[at+direction];return candidate?indexOf(candidate.startsWith('custom:')?draft.blocks.find(b=>b.id===candidate.slice(7)):groupBlock(candidate)): -1}
