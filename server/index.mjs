@@ -365,9 +365,10 @@ async function handleApi(request, response, url) {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
         return sendJson(response, 201, pageView(page))
       }
-      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|tracking))?$/)
+      const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
+      if(action==='publication-review'&&request.method==='GET')return sendJson(response,200,await platformStore.review(ownerId,id))
       if(action==='address-suggestion'&&request.method==='GET')return sendJson(response,200,await platformStore.suggestion(ownerId,id,url.searchParams.get('name')))
       if(action==='address-availability'&&request.method==='GET')return sendJson(response,200,await platformStore.availability(ownerId,id,url.searchParams.get('url')))
       if(action==='tracking'&&request.method==='GET')return sendJson(response,200,await platformStore.trackingRead(ownerId,id))
