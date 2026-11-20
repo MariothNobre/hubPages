@@ -1,3 +1,4 @@
+import { metricsRefreshMs } from '../../shared/studio-traffic.mjs'
 import { TemplateGallery } from '../components/TemplateGallery'
 import { WorkspaceLinks,WorkspaceFooter } from '../components/WorkspaceChrome'
 import { StudioPageList,type StudioSummary } from '../components/StudioPageList'
@@ -72,7 +73,7 @@ export function StudioPage() {
     api<Page>(`pages/${requestedId}`).then(value=>{if(!active)return;const step=stepIds.includes(Number(requestedStep))?Number(requestedStep):value.draft.step;const result={...value,draft:withLegacyRoles({...value.draft,step:step===3?2:step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current=result;saved.current=JSON.stringify(result.draft);setPage(result);setNotice('Sua página foi reaberta na etapa em que você estava.')}).catch(error=>{if(active){setNotice(error.message);setParams({},{replace:true})}})
     return()=>{active=false}
   },[ready,requestedId,requestedStep,setParams])
-  useEffect(()=>{if(!ready||page)return;let active=true;const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;api<{metrics:Record<string,{visits:number;online:number}>}>('metrics').then(result=>{if(active)setPages(pages=>pages.map(p=>({...p,...result.metrics[p.id]})))}).catch(()=>undefined)},15000);return()=>{active=false;clearInterval(timer)}},[ready,page])
+  useEffect(()=>{if(!ready||page)return;let active=true;const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;api<{metrics:Record<string,{visits:number;online:number}>}>('metrics').then(result=>{if(active)setPages(pages=>pages.map(p=>({...p,...result.metrics[p.id]})))}).catch(()=>undefined)},metricsRefreshMs);return()=>{active=false;clearInterval(timer)}},[ready,page])
   const flush = useCallback((): Promise<boolean> => {
     if (pending.current) return pending.current
     if (!current.current || JSON.stringify(current.current.draft) === saved.current) return Promise.resolve(true)

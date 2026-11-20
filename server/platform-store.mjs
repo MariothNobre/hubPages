@@ -77,6 +77,7 @@ export async function createPlatformStore(connectionString, fallback) {
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=3')).rowCount) await migration.query(await readFile(new URL('./migrations/003-dev-publications.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=4')).rowCount)await migration.query(await readFile(new URL('./migrations/004-studio-address-tracking.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=5')).rowCount)await migration.query(await readFile(new URL('./migrations/005-studio-workspace.sql',import.meta.url),'utf8'))
+    if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=6')).rowCount)await migration.query(await readFile(new URL('./migrations/006-traffic-pageviews.sql',import.meta.url),'utf8'))
     await migration.query('COMMIT')
   } catch (error) { await migration.query('ROLLBACK'); throw error }
   finally { migration.release() }

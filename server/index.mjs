@@ -1,6 +1,6 @@
 import { visitorHash } from './workspace-model.mjs'
 import { forwardStudioMeta } from './studio-tracking.mjs'
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
+import { createHmac, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
@@ -262,7 +262,7 @@ async function handleAnalyticsVisit(request, response, body) {
   const metricUrl = new URL(request.headers.referer)
   if(unifiedStudio&&await platformStore.legacyManaged(pageSlug)){
     if(metricUrl.origin!==devPublicOrigin||metricUrl.origin!==request.headers.origin)return sendJson(response,403,{message:'Origem da métrica não autorizada.'})
-    try{const url=metricUrl.origin+sourcePath,pub=await platformStore.publicResolve(url);return sendJson(response,202,await platformStore.track({publicationId:pub.id,url,visitor:visitorHash(visitorId,sessionSecret),tabId:visitorId,isNewVisit:body.isNewVisit===true,active:true}))}
+    try{const url=metricUrl.origin+sourcePath,pub=await platformStore.publicResolve(url);return sendJson(response,202,await platformStore.track({publicationId:pub.id,url,visitor:visitorHash(visitorId,sessionSecret),tabId:visitorId,isNewVisit:body.isNewVisit===true,active:true,viewId:randomUUID(),sequence:0}))}
     catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});throw error}
   }
   if (metricPage?.published === false || sourcePath === '/admin' || metricUrl.origin !== request.headers.origin || resolvePageAddress(metricStore, metricUrl, salesPageSlugs, process.env.HUBPAGES_ENV === 'development' ? 'https://dev.hubpages.com.br' : '') !== pageSlug) return sendJson(response, 403, { message: 'Somente páginas de vendas publicadas podem registrar métricas.' })
@@ -302,8 +302,10 @@ async function handleApi(request, response, url) {
         if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
         const body=await readJsonBody(request);if(!allowMetaEvent('traffic:'+request.socket.remoteAddress+':'+String(body.visitorId).slice(0,40)))return sendJson(response,429,{message:'Aguarde antes de tentar novamente.'});const source=new URL(body.url),referer=new URL(request.headers.referer||'about:blank')
         if(source.origin!==devPublicOrigin||referer.origin!==source.origin||referer.pathname!==source.pathname||!/^([a-f0-9-]{36})$/.test(body.publicationId||'')||!/^([a-f0-9-]{36})$/.test(body.tabId||''))throw new PlatformError(403,'Somente a página publicada registra visitas.')
+        if(body.viewId!==undefined&&!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(body.viewId))throw new PlatformError(422,'Identificador do acesso inválido.')
+        if(body.sequence!==undefined&&(!Number.isSafeInteger(body.sequence)||body.sequence<0))throw new PlatformError(422,'Sequência de presença inválida.')
         const canonical=source.origin+source.pathname.replace(/\/$/,'')
-        return sendJson(response,202,await platformStore.track({publicationId:body.publicationId,url:canonical,visitor:visitorHash(body.visitorId,sessionSecret),tabId:body.tabId,isNewVisit:body.isNewVisit===true,active:body.active!==false}))
+        return sendJson(response,202,await platformStore.track({publicationId:body.publicationId,url:canonical,visitor:visitorHash(body.visitorId,sessionSecret),tabId:body.tabId,isNewVisit:body.isNewVisit===true,active:body.active!==false,viewId:body.viewId||randomUUID(),sequence:body.sequence??0}))
       }
       if(url.pathname==='/api/public/meta/events'&&request.method==='POST'){if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'});if(!allowMetaEvent(request.socket.remoteAddress))return sendJson(response,429,{message:'Aguarde.'});return sendJson(response,200,await forwardStudioMeta({store:platformStore,body:await readJsonBody(request),origin:devPublicOrigin,userAgent:request.headers['user-agent']}))}
       if(url.pathname==='/api/public/resolve'&&request.method==='GET'){const target=new URL(url.searchParams.get('url'));if(target.origin!==devPublicOrigin)throw new PlatformError(404,'Página não encontrada.');return sendJson(response,200,await platformStore.publicResolve(target.origin+target.pathname.replace(/\/$/,'')))}
