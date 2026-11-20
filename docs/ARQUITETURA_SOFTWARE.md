@@ -187,3 +187,14 @@ Shared/studio-wizard.mjs é puro e compartilhado entre cliente e servidor (COPY 
 GET privado /api/platform/pages/:id/publication-review valida ownerId e retorna snapshot próprio, publishedAt, slots alterados e versão dos ativos, sem binários ou credenciais. Arquivo alterado sob mesma URL é detectado por comparação de conteúdo com o binário publicado. A lista de páginas usa a mesma regra de diferenças. O editor mantém baseline em memória e calcula diffs locais ao escrever; consulta baseline somente na abertura, nova publicação ou troca de ativo, evitando leitura de imagens a cada autosave. Erros de comparação não são apresentados como ausência de pendências.
 
 Confirmação de revisão usa reviewedSignature opcional no JSON: checksum leve do conteúdo/versão dos ativos, apenas UX, sem função de autenticação ou gate comercial. Mudanças relevantes invalidam confirmação. Regras de publicar/despublicar, cobrança temporária, snapshots, endereço e propriedade continuam do servidor. Endereço só fica pronto no progresso após consulta de disponibilidade. Rastreamento desativado é opcional e não impede avanço. Sem migração SQL, reescrita de páginas antigas ou dados novos em produção.
+
+
+## Nono incremento — viewport de revisão e paleta do sistema (v0.7.0-dev.9)
+
+ResponsiveReview incorpora StudioPreviewPage autenticado, com viewport próprio por dispositivo. Resolve media queries em relação a 1280/768/375 px, sem depender da largura externa do Studio. ResizeObserver apenas ajusta a escala visual para caber no painel; iframe mantém dimensões reais e rolagem interna. Conteúdo/layout público e CSS legado não foram reescritos para simular dispositivos.
+
+Modo embedded só omite a barra privada duplicada quando está dentro de frame. Carrega draft pela API com ownership antes de aceitar postMessage do parent; ponte valida origem exata, janela emissora e pageId. Parent só aceita ready/erro do próprio iframe. Atualizações carregam draft, sem credenciais Meta, sem publicação e sem instanciar trackers. Degustação e teclado executam no window interno. Navegação por links externos/outros caminhos abre aba própria.
+
+CSP/X-Frame-Options permitem apenas SAMEORIGIN/frame-ancestors self no GET de preview/:id?embedded=1; standalone/admin/API continuam com proteção original de enquadramento. Sandbox não permite navegação superior; popups de links do usuário escapam para sua aba normal. Cookies e APIs permanecem same-origin e autenticados.
+
+Tema separado system-theme.css, importado após estilos-base, usa tokens hp próprios e seletores restritos a Studio/conta/admin. Exclui private-preview e botões do canvas/conteúdo, sem substituir variáveis de venda. Paleta azul-petróleo/coral e superfícies claras com estados semânticos preservados. Pares de texto medidos entre 4.80:1 e 11.42:1; não equivale a auditoria WCAG integral. Brand, páginas PT/ES, ativos e CSS legado congelados permanecem idênticos. Não altera login, senha, perfil, pixels, dados ou cobrança.
