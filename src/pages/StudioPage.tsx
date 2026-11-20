@@ -67,9 +67,9 @@ export function StudioPage() {
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
   function select(result: Page) { current.current = result; saved.current = JSON.stringify(result.draft); setPage(result); setNotice('Rascunho carregado.') }
-  function update(change: Partial<Draft>) {
+  function update(change: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) {
     if (!current.current) return
-    current.current = { ...current.current, draft: { ...current.current.draft, ...change } }
+    current.current = { ...current.current, draft: { ...current.current.draft, ...(typeof change==='function' ? change(current.current.draft) : change) } }
     setPage(current.current); setNotice('Alterações pendentes…')
   }
   async function run(action: () => Promise<void>) { try { await action() } catch (error) { setNotice(error instanceof Error ? error.message : 'Falha na operação.') } }

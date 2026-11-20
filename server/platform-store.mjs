@@ -7,11 +7,11 @@ import { PlatformError, listDrafts, readDraft, createDraft, saveDraft, duplicate
 const core = ['id', 'ownerId', 'origin', 'editorialStatus', 'financialStatus', 'createdAt', 'updatedAt', 'revision', 'draft', 'revisions']
 const imagePrefix = (id) => `/api/platform/pages/${id}/images/`
 function checkImages(page) {
-  for (const url of [page.draft.imageUrl, ...page.draft.blocks.map((b) => b.imageUrl)]) {
-    if (url.startsWith('/api/') && !url.startsWith(imagePrefix(page.id))) throw new PlatformError(422, 'Use imagens desta página ou envie uma nova imagem.')
+  for (const [url,slot] of [[page.draft.imageUrl,'hero'], ...page.draft.blocks.map((b) => [b.imageUrl,b.id])]) {
+    if (url.startsWith('/api/') && url !== imagePrefix(page.id)+slot) throw new PlatformError(422, 'Use a imagem deste espaço ou envie uma nova imagem.')
   }
 }
-function slots(page) { return [page.draft.imageUrl.endsWith('/hero') ? 'hero' : '', ...page.draft.blocks.filter((b) => b.imageUrl === imagePrefix(page.id) + b.id).map((b) => b.id)] }
+function slots(page) { return [page.draft.imageUrl === imagePrefix(page.id)+'hero' ? 'hero' : '', ...page.draft.blocks.filter((b) => b.imageUrl === imagePrefix(page.id) + b.id).map((b) => b.id)] }
 function checkSlot(page, slot) { if (slot !== 'hero' && !page.draft.blocks.some((b) => b.id === slot)) throw new PlatformError(404, 'Espaço de imagem não encontrado.') }
 function copyImages(page, originalId) {
   const replace = (url) => url.replace(imagePrefix(originalId), imagePrefix(page.id))

@@ -4,7 +4,7 @@ import { StudioCanvas } from './StudioCanvas'
 import { blankBlock, moveBlock } from './studio-model'
 import type { Draft, Layout } from './studio-model'
 
-export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft: Draft; pageId: string; update: (value: Partial<Draft>) => void; flush: () => Promise<boolean>; notice: (value: string) => void }) {
+export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft: Draft; pageId: string; update: (value: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) => void; flush: () => Promise<boolean>; notice: (value: string) => void }) {
   const [selected,setSelected] = useState(-1)
   const [uploading,setUploading] = useState(false)
   const [imageVersion,setImageVersion] = useState(0)
@@ -18,6 +18,7 @@ export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft
     if (!file || uploading) return
     if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size>10*1024*1024) { notice('Escolha PNG, JPEG ou WebP de até 10 MB para otimização.'); return }
     setUploading(true)
+    const slot=block?.id || 'hero'
     try {
       if (!await flush()) return
       const bitmap = await createImageBitmap(file)
@@ -27,10 +28,9 @@ export function StudioDesigner({ draft, pageId, update, flush, notice }: { draft
       canvas.getContext('2d')!.drawImage(bitmap,0,0,canvas.width,canvas.height); bitmap.close()
       const blob = await new Promise<Blob>((resolve,reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Não foi possível preparar a imagem.')),'image/webp',.86))
       if (blob.size>2*1024*1024) throw new Error('A imagem otimizada precisa ter até 2 MB.')
-      const slot=block?.id || 'hero'
       const response=await fetch(`/api/platform/pages/${pageId}/images/${slot}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'image/webp'},body:blob})
       const result=await response.json(); if(!response.ok) throw new Error(result.message)
-      if(block) changeBlock({imageUrl:result.url}); else update({imageUrl:result.url})
+      update((latest)=>slot==='hero' ? {imageUrl:result.url} : {blocks:latest.blocks.map((b)=>b.id===slot ? {...b,imageUrl:result.url} : b)})
       await flush(); setImageVersion((v) => v+1); notice('Imagem atualizada neste espaço. Nenhuma biblioteca pessoal foi criada.')
     } catch(error) { notice(error instanceof Error ? error.message : 'Falha ao enviar imagem.') }
     finally { setUploading(false); if(fileInput.current) fileInput.current.value='' }
