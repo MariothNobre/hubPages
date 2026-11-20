@@ -198,3 +198,10 @@ Modo embedded só omite a barra privada duplicada quando está dentro de frame. 
 CSP/X-Frame-Options permitem apenas SAMEORIGIN/frame-ancestors self no GET de preview/:id?embedded=1; standalone/admin/API continuam com proteção original de enquadramento. Sandbox não permite navegação superior; popups de links do usuário escapam para sua aba normal. Cookies e APIs permanecem same-origin e autenticados.
 
 Tema separado system-theme.css, importado após estilos-base, usa tokens hp próprios e seletores restritos a Studio/conta/admin. Exclui private-preview e botões do canvas/conteúdo, sem substituir variáveis de venda. Paleta azul-petróleo/coral e superfícies claras com estados semânticos preservados. Pares de texto medidos entre 4.80:1 e 11.42:1; não equivale a auditoria WCAG integral. Brand, páginas PT/ES, ativos e CSS legado congelados permanecem idênticos. Não altera login, senha, perfil, pixels, dados ou cobrança.
+
+
+## Décimo incremento — laranja e microinterações (v0.7.0-dev.10)
+
+Tema do sistema passa a usar coral/laranja na etapa atual, tons pêssego nas etapas prontas, linha/progresso e comandos principais. Microinterações de hover são restritas a mouse com ponteiro fino: elevação/sombra e ícone discreto nos cards, feedback nos botões e seta dos atalhos. Movimento reduzido remove transições/deslocamentos e controles desabilitados não recebem hover animado. CSS continua excluindo conteúdo/canvas e prévias.
+
+Atalhos dos guias têm spans separados para texto/seta, alinhamento flexível e área mínima de 44 px, com foco e navegação por teclado preservados. A timeline recebeu padding para acomodar o badge e as sombras. Alterações só em apresentação: nenhuma rota, regra de publicação, banco, integração ou credencial foi alterada.

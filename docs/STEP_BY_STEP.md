@@ -233,3 +233,12 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Atalhos dos guias: label e seta em spans separados, inline-flex, gap/padding consistentes, quebra de texto e mínimo de 44 px de altura. Setas se deslocam 3 px em hover sem mexer no texto. Navegação por teclado/foco preservada. Padding da timeline ampliado para não cortar badge/sombra durante a elevação.
 - QA local: card atual com gradiente laranja e hover matrix translateY(-4px); comandos coral com texto #082b33; atalho com 44 px, scrollWidth=clientWidth=143, sem corte; clique e Enter abriram Conteúdo. Em viewport 390px documento 375, atalhos ajustados sem overflow. Viewport resetado e instância sintética encerrada. Capturas C:/Users/proce/Documents/Codex/hubpages-cards-laranja-dev.jpg e hubpages-atalhos-guias-dev.jpg. Sem fixtures remotas.
 - Contrastes medidos: coral #df8063/texto #082b33 = 5.28:1; pêssego/texto principal = 9.20:1; card claro/texto #79472f = 7.09:1. Build e legado preservados; testes de backend sem mudança funcional. Próximo: CI, merge develop e deploy DEV com restauração verificada. Produção/Sistera/DNS/proxy preservados.
+
+
+## HP-020 — v0.7.0-dev.10 — Cards e atalhos entregues em DEV
+
+- 2026-11-20 13:20 BRT (16:20 UTC). Commit a673f8a9bf78960c8ed907cf7fc59947d1c5432c, PR #9, merge develop 4daa90e44844b3bf65429c2529e8fd2b1a912e7a. CI PR 44745429298 / job 136319380376 e CI develop 44772089955 / job 136412109648: sucesso.
+- Deploy exclusivamente DEV 44772089824 / job 136412109676: sucesso. App/banco healthy; restaurações isoladas com cadeias e publicações íntegras: /opt/hubpages-backups/dev/verified-20261120T161854Z-3833039.dump e /opt/hubpages-backups/dev/verified-20261120T162016Z-3835466.dump. Nenhuma migração ou alteração de dados/credenciais.
+- Verificação externa somente leitura: Studio 200/noindex com index-OkYIU6xn.js e index-DnDWZSyU.css; labels/setas dos atalhos, coral, hover e reduced-motion confirmados nos assets. Health DEV/produção/Sistera 200; API customer em produção continua 404. Sem autenticação remota, fixture ou evento Meta enviado.
+- QA local documentado em HP-019: cards com laranja e hover, atalhos 44 px sem texto cortado, clique/Enter e viewport móvel sem overflow. Capturas locais fora do Git. Acesso para homologar após recarregar: https://dev.hubpages.com.br/studio .
+- Tag v0.7.0-dev.10 aponta ao merge implantado. Evidência documental skip-ci sem novo deploy. Produção/main, Sistera, DNS/proxy/firewall e páginas de vendas preservados.
