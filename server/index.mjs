@@ -599,7 +599,7 @@ createServer(async (request, response) => {
       apiQueue = task.catch(() => undefined)
       return await task
     }
-    if (salesPageSlugs.has(url.pathname.replace(/^\/|\/$/g, ''))) {
+    if (salesPageSlugs.has(url.pathname.replace(/^\/|\/$/g, '')) && !(unifiedStudio&&await platformStore.legacyManaged(url.pathname.replace(/^\/|\/$/g,'')))) {
       const store = await loadStore()
       if (store.pages?.[url.pathname.replace(/^\/|\/$/g, '')]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
     }
