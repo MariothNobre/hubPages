@@ -18,4 +18,6 @@ const configured={...draft,templateButtons:{header:{enabled:false}},blocks:draft
 const reduced=renderToStaticMarkup(React.createElement(LegacySalesTemplate,{draft:configured}))
 const count=s=>(s.match(/<a(?:\s|>)/g)||[]).length
 assert.equal(count(reduced),count(original)-2)
+const added={...draft,blocks:draft.blocks.map(b=>b.templateRole==='author'||b.templateRole==='faq-0'?{...b,showButton:true}:b)}
+assert.equal(count(renderToStaticMarkup(React.createElement(LegacySalesTemplate,{draft:added}))),count(original)+2)
 console.log(`PASS: ${count(original)} original CTA positions preserved; per-button removal works without changing other sections`)

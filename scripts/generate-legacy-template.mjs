@@ -51,6 +51,7 @@ const parsed=ts.createSourceFile('view.tsx','const view=('+jsx+')',ts.ScriptTarg
 let main
 function locate(node){if(ts.isJsxElement(node)&&node.openingElement.tagName.getText(parsed)==='main')main=node;ts.forEachChild(node,locate)}locate(parsed)
 const sections=main.children.filter(ts.isJsxElement).map(n=>({key:n.openingElement.attributes.properties.find(a=>a.name?.getText(parsed)==='className').initializer.text.replace('sales-v2-',''),jsx:n.getText(parsed)}))
+for(const section of sections){if(section.key==='faq')section.jsx=section.jsx.replace('{blockField(questions[index].block,"body",answer)}</p>',()=>'{blockField(questions[index].block,"body",answer)}</p>{questions[index].block.showButton===true&&buyButton(undefined,questions[index].block)}');if(section.key==='author')section.jsx=section.jsx.replace('</section>',()=>"{groupBlock('author')?.showButton===true&&buyButton(undefined,groupBlock('author'))}</section>")}
 const start=main.openingElement.end-'const view=('.length,end=main.closingElement.pos-'const view=('.length
 jsx=jsx.slice(0,start)+'{sequence.map((key)=><Fragment key={key}>{renderSection(key)}</Fragment>)}'+jsx.slice(end)
 const arrays=source.slice(source.indexOf('const bonuses'),source.indexOf('export function')).replace(/const (bonuses|previewPages|methodSteps|manualParts|questions) =/g,'const original_$1 =').replace(/const original_questions = \[[\s\S]*?\n\]/,'')
