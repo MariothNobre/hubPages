@@ -81,7 +81,7 @@ export function StudioPage() {
   useEffect(()=>{
     if(!ready||!requestedId||current.current?.id===requestedId)return
     let active=true
-    api<Page>(`pages/${requestedId}`).then(value=>{if(!active)return;const step=stepIds.includes(Number(requestedStep))?Number(requestedStep):value.draft.step;history.current.clear();failedSave.current=null;setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:step===3?2:step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current=result;saved.current=JSON.stringify(result.draft);setPage(result);setNotice('Sua página foi reaberta na etapa em que você estava.')}).catch(error=>{if(active){setNotice(error.message);setParams({},{replace:true})}})
+    api<Page>(`pages/${requestedId}`).then(value=>{if(!active)return;const step=stepIds.includes(Number(requestedStep))?Number(requestedStep):value.draft.step;history.current.clear();failedSave.current=null;setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:step===3?2:step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};suggested.current=result.draft.publicUrl?result.id+':'+result.draft.name:'';current.current=result;saved.current=JSON.stringify(result.draft);setPage(result);setNotice('Sua página foi reaberta na etapa em que você estava.')}).catch(error=>{if(active){setNotice(error.message);setParams({},{replace:true})}})
     return()=>{active=false}
   },[ready,requestedId,requestedStep,setParams])
   useEffect(()=>{if(!ready||page)return;let active=true;const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;api<{metrics:Record<string,{visits:number;online:number}>}>('metrics').then(result=>{if(active)setPages(pages=>pages.map(p=>({...p,...result.metrics[p.id]})))}).catch(()=>undefined)},metricsRefreshMs);return()=>{active=false;clearInterval(timer)}},[ready,page])
@@ -122,7 +122,7 @@ export function StudioPage() {
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
-  function select(value: Page) { history.current.clear();failedSave.current=null;setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:value.draft.step===3?2:value.draft.step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};current.current = result; saved.current = JSON.stringify(result.draft); setPage(result);setParams({page:result.id,step:String(result.draft.step)},{replace:true}); setNotice('Rascunho carregado.') }
+  function select(value: Page) { history.current.clear();failedSave.current=null;setUndoCount(0);const result={...value,draft:withLegacyRoles({...value.draft,step:value.draft.step===3?2:value.draft.step,addressAuto:value.draft.publicUrl?value.draft.addressAuto:true})};suggested.current=result.draft.publicUrl?result.id+':'+result.draft.name:'';current.current = result; saved.current = JSON.stringify(result.draft); setPage(result);setParams({page:result.id,step:String(result.draft.step)},{replace:true}); setNotice('Rascunho carregado.') }
   function update(change: Partial<Draft> | ((draft: Draft) => Partial<Draft>)) {
     if (!current.current || transition.current) return
     const patch=typeof change==='function'?change(current.current.draft):change
