@@ -1,3 +1,4 @@
+import { ContextNotice } from './components/ContextNotice'
 import { Route, Routes } from 'react-router-dom'
 import { SalesPageRoute } from './components/SalesPageRoute'
 import { AdminAccess } from './pages/AdminAccess'
@@ -10,7 +11,8 @@ import { CustomerAccountPage, HomologationTermsPage } from './pages/CustomerAcco
 
 export default function App() {
   return (
-    <Routes>
+    <><ContextNotice/><Routes>
+      <Route path="/entrar" element={<AdminAccess publicLogin/>} />
       <Route path="/admin" element={<AdminAccess />} />
       <Route path="/perfil" element={<WorkspaceProfile/>}/>
       <Route path="/studio/modelos/:id" element={<TemplatePreviewPage/>}/>
@@ -20,7 +22,7 @@ export default function App() {
       <Route path="/conta" element={<CustomerAccountPage />} />
       <Route path="/condicoes-homologacao" element={<HomologationTermsPage />} />
       <Route path="*" element={<SalesPageRoute />} />
-    </Routes>
+    </Routes></>
   )
 }
 

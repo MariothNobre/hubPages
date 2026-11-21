@@ -1,8 +1,9 @@
+import { PresentationVideo } from './PresentationVideo'
 import { useRef,type CSSProperties } from 'react'
 import type { CanvasEditing } from './StudioCanvas'
 export function CanvasMedia({src,title,type='image',index=-1,editing,thumbnail=false,attributes={}}:{src:string;title:string;type?:'image'|'video';index?:number;editing?:CanvasEditing;thumbnail?:boolean;attributes?:{className?:string;style?:CSSProperties;alt?:string}}){
   const resize=useRef<{x:number;y:number;width:number;height:number;parent:number}|null>(null)
-  const media=src?(type==='video'?<video key={src+':'+(editing?.mediaVersion||0)} src={src} className={attributes.className} style={attributes.style} aria-label={title} controls={!thumbnail} playsInline preload="metadata"/>:<img key={src+':'+(editing?.mediaVersion||0)} {...attributes} src={src} alt={attributes.alt??title}/>):null
+  const media=src?(type==='video'?<PresentationVideo key={src+':'+(editing?.mediaVersion||0)} src={src} className={attributes.className} style={attributes.style} title={title} thumbnail={thumbnail}/>:<img key={src+':'+(editing?.mediaVersion||0)} {...attributes} src={src} alt={attributes.alt??title}/>):null
   if(!editing||thumbnail)return media
   return <div className="legacy-inline-image canvas-media-edit" data-media-index={index} onClick={e=>{e.stopPropagation();editing.select(index,'image')}} onDragOver={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation()}}} onDrop={e=>{if(e.dataTransfer.files.length){e.preventDefault();e.stopPropagation();editing.image(index,e.dataTransfer.files[0])}}}>
     {media||<p className="canvas-image-empty">Insira imagem, foto ou vídeo</p>}

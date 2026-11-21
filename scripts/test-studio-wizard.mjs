@@ -20,3 +20,5 @@ assert.equal(reviewSignature(draft),reviewSignature({...draft,visitedSteps:[1,2,
 assert.equal(pendingChanges({...draft,visitedSteps:[2]},published).length,0)
 assert.equal(wizardReadiness({...draft,checkoutUrl:'',publicUrl:''},'https://dev.hubpages.com.br',false,false,1)[2],false)
 console.log('PASS: meaningful pending changes, navigation ignored, image replacement, reversal, review invalidation and honest progress states')
+
+assert.equal(pendingChanges({...draft,checkoutUrl:'https://zapper.chat',templateButtons:{hero:{url:'https://zapper.chat',enabled:true}}},{...published,checkoutUrl:'https://zapper.chat/',templateButtons:{hero:{url:'https://zapper.chat/',enabled:true}}}).length,0,'canonical URL slash is not an unpublished change')

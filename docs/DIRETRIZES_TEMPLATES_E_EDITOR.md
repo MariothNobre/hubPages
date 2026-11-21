@@ -34,3 +34,12 @@ Aplicável a todos os novos templates e às derivações do modelo Infância em 
 4. Validar persistência, propriedade, publicação atômica, Range e limpeza de binários em arquivo e PostgreSQL isolado (`test-workspace.mjs`). Validar desfazer com mídia e exclusão em `test-studio-undo.cjs` e no navegador.
 5. Conferir desktop/celular, FAQ, três mídias da pilha, seis da galeria, troca dentro do leitor e prévia privada. Versionar evidências sem tokens nem conteúdo privado.
 6. Executar lint, build, geração determinística e preservação das páginas legadas. Implementar/deploy em develop/DEV; produção só após aprovação específica.
+
+
+## Refinamentos obrigatórios do fluxo — HP-027
+
+Todo template deve oferecer duplicação por bloco com identificador próprio e estrutura nativa preservada, controles locais de layout/quantidades e cores dos controles do Studio separadas das cores da página de vendas. Cópias usam textos próprios e IDs HTML distintos. A origem das cópias aceita somente papéis conhecidos; referências recursivas são rejeitadas.
+
+Vídeos de apresentação usam autoplay/loop com som habilitado e um botão de interação se o navegador bloquear a reprodução. Não silenciar automaticamente para contornar a escolha do usuário. Miniaturas permanecem sem autoplay.
+
+A publicação exige assinatura de revisão atual, validada no servidor junto da versão das mídias. A assinatura ignora navegação entre etapas e metadados da própria conferência. A comparação da publicação trata URLs canônicas como equivalentes.

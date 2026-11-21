@@ -1,3 +1,4 @@
+import { StudioStructure } from './StudioStructure'
 import { StudioMediaGallery } from './StudioMediaGallery'
 import { CanvasMedia } from './CanvasMedia'
 import { EditorAction } from './EditorAction'
@@ -10,6 +11,11 @@ import type { Layout, Block, Draft } from './studio-model'
 const LegacySalesTemplate=lazy(()=>import('./LegacySalesTemplate').then(m=>({default:m.LegacySalesTemplate})))
 const LegacySalesTemplateEs=lazy(()=>import('./LegacySalesTemplateEs').then(m=>({default:m.LegacySalesTemplateEs})))
 export interface CanvasEditing {
+  undo?:()=>void;undoAvailable?:boolean;undoBusy?:boolean
+  duplicate?:(index:number)=>void
+  configure?:(index:number)=>void
+  notice?:(message:string)=>void
+  update?:(value:Partial<Draft>|((draft:Draft)=>Partial<Draft>))=>void
   mediaVersion?:number
   button:(index:number,scope:string,enabled:boolean)=>void
   text: (index:number,field:string,value:string)=>void
@@ -52,7 +58,7 @@ export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = 
       {picture(-1,draft.imageUrl,draft.title,draft.style)}
     </section>
     <div className="canvas-block-grid">{draft.blocks.map((block,index) => !editing&&block.enabled===false?null:<div key={block.id || index} style={{width:`${block.style?.width ?? 100}%`}} className={`canvas-block ${selected===index ? 'is-selected' : ''} animation-${block.style?.animation ?? 'none'}`} data-block-id={block.id} onDragOver={(e) => { if (onMove && !e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={(e) => drop(e,index)}>
-      {onSelect && <div className="canvas-block-tools"><button type="button" draggable onDragStart={(e) => { e.dataTransfer.setData('application/x-hubpages-block',String(index)); e.dataTransfer.effectAllowed='move' }} aria-label={`Arrastar seção ${index+1}`}>⠿ Arrastar</button><button type="button" onClick={() => onSelect(index)}>Editar seção {index+1}</button><button type="button" disabled={index===0} onClick={() => onMove?.(index,index-1)} aria-label="Mover seção para cima">↑</button><button type="button" disabled={index===draft.blocks.length-1} onClick={() => onMove?.(index,index+1)} aria-label="Mover seção para baixo">↓</button></div>}
+      {onSelect && <div className="canvas-block-tools"><button type="button" draggable onDragStart={(e) => { e.dataTransfer.setData('application/x-hubpages-block',String(index)); e.dataTransfer.effectAllowed='move' }} aria-label={`Arrastar seção ${index+1}`}>⠿ Arrastar</button><button type="button" onClick={() => onSelect(index)}>Editar seção {index+1}</button>{editing?.duplicate&&<button type="button" onClick={()=>editing.duplicate?.(index)}>Duplicar bloco</button>}{editing?.update&&<details className="block-settings"><summary>Configurar bloco</summary><StudioStructure draft={draft} scope={block.sourceRole||block.templateRole||block.kind} targetId={block.id} update={editing.update} notice={editing.notice||(()=>{})}/></details>}<button type="button" disabled={index===0} onClick={() => onMove?.(index,index-1)} aria-label="Mover seção para cima">↑</button><button type="button" disabled={index===draft.blocks.length-1} onClick={() => onMove?.(index,index+1)} aria-label="Mover seção para baixo">↓</button></div>}
       <section className={`canvas-section kind-${block.kind ?? 'content'}`} style={{...layout(block.style),width:'100%'}} onClick={() => onSelect?.(index)}>
         {block.kind==='divider' ? <hr /> : block.kind==='spacer' ? <div style={{minHeight:block.style?.padding ?? 32}} aria-label="Espaçamento" /> : <>
           {block.kind==='offer'?<StudioMediaGallery draft={draft} editing={editing} label="Galeria da coleção"/>:(block.imageUrl||editing&&selected===index)&&picture(index,block.imageUrl,block.title,block.style)}

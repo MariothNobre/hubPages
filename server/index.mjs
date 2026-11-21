@@ -38,6 +38,7 @@ if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true'
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
+const revokedAdminSessions=new Map(Object.entries((await loadStore()).revokedAdminSessions||{}).filter(([,expires])=>expires>Date.now()/1000))
 const sessionDurationSeconds = 60 * 60 * 8
 const maxBodyBytes = 64 * 1024
 const loginAttempts = new Map()
@@ -95,7 +96,7 @@ function signSession(expiresAt) {
 function hasValidSession(request) {
   if (!sessionSecret) return false
   const token = parseCookies(request)[sessionCookie]
-  if (!token) return false
+  if (!token||revokedAdminSessions.has(createHmac('sha256',sessionSecret).update(token).digest('hex'))) return false
   const parts = token.split('.')
   if (parts.length !== 3) return false
   const payload = `${parts[0]}.${parts[1]}`
@@ -118,9 +119,9 @@ function hashSecret(secret) {
   return `scrypt$${salt.toString('base64url')}$${digest.toString('base64url')}`
 }
 
-function sessionResponse(response) {
+function sessionResponse(response,extraCookies=[]) {
   const expiresAt = Math.floor(Date.now() / 1000) + sessionDurationSeconds
-  return sendJson(response, 200, { authenticated: true }, { 'Set-Cookie': `${sessionCookie}=${encodeURIComponent(signSession(expiresAt))}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${sessionDurationSeconds}` })
+  return sendJson(response, 200, { authenticated: true }, { 'Set-Cookie': [`${sessionCookie}=${encodeURIComponent(signSession(expiresAt))}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${sessionDurationSeconds}`,...extraCookies] })
 }
 
 function canAttemptLogin(ipAddress) {
@@ -352,8 +353,17 @@ async function handleApi(request, response, url) {
   if (url.pathname.startsWith('/api/platform/')) {
     response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
     if (process.env.HUBPAGES_PLATFORM_ENABLED !== 'true') return sendJson(response, 404, { message: 'Módulo indisponível neste ambiente.' })
+    if(url.pathname==='/api/platform/login'&&request.method==='POST'){
+      if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+      const key='studio-login:'+request.socket.remoteAddress
+      if(!canAttemptLogin(key))return sendJson(response,429,{message:'Muitas tentativas. Aguarde antes de tentar novamente.'})
+      const body=await readJsonBody(request),state=await loadStore()
+      if(typeof body.email==='string'&&body.email.trim().toLowerCase()===(state.admin?.email||adminEmail)&&typeof body.password==='string'&&state.admin?.passwordHash&&verifyEncodedSecret(body.password,state.admin.passwordHash)){loginAttempts.delete(key);const clear=customers?await customers.logout(parseCookies(request)[customerCookie]):'';return sessionResponse(response,[clear].filter(Boolean))}
+      try{if(!customers)throw new PlatformError(401,'E-mail ou senha inválido.');const result=await customers.login(body);loginAttempts.delete(key);return sendJson(response,200,{authenticated:true,user:result.user},{'Set-Cookie':[result.cookie,`${sessionCookie}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`]})}catch(error){if(error.status)return sendJson(response,error.status,{message:'E-mail ou senha inválido.'});throw error}
+    }
     if(url.pathname==='/api/platform/logout'&&request.method==='POST'){
       if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+      if(hasValidSession(request)){const token=parseCookies(request)[sessionCookie],key=createHmac('sha256',sessionSecret).update(token).digest('hex'),expires=Number(token.split('.')[0]);const state=await loadStore();state.revokedAdminSessions=Object.fromEntries([...revokedAdminSessions,[key,expires]].filter(([,at])=>at>Date.now()/1000));await saveStore(state);revokedAdminSessions.set(key,expires)}
       const cookie=customers?await customers.logout(parseCookies(request)[customerCookie]):''
       return sendJson(response,200,{authenticated:false},{'Set-Cookie':[cookie,`${sessionCookie}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`].filter(Boolean)})
     }
@@ -365,7 +375,7 @@ async function handleApi(request, response, url) {
     // Compatibility account: no mutation of the legacy administrator identity.
     const ownerId = customer?.accountId ?? 'legacy-owner'
     try {
-      if(url.pathname==='/api/platform/preferences'&&['GET','PUT'].includes(request.method))return sendJson(response,200,await platformStore.preferences(ownerId,request.method==='PUT'?(await readJsonBody(request)).listView:undefined))
+      if(url.pathname==='/api/platform/preferences'&&['GET','PUT'].includes(request.method))return sendJson(response,200,await platformStore.preferences(ownerId,request.method==='PUT'?(await readJsonBody(request)):undefined))
       if(url.pathname==='/api/platform/profile'){
         if(request.method==='GET')return sendJson(response,200,{role:isAdmin?'admin':'customer',...(customer?await customers.readProfile(parseCookies(request)[customerCookie]):{name:state.admin?.name||'',email:state.admin?.email||adminEmail})})
         if(request.method==='PUT'){
@@ -427,7 +437,7 @@ async function handleApi(request, response, url) {
       else if (request.method === 'POST' && action === 'publish') {
         await platformStore.read(ownerId, id)
         if(!freePublishing)return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
-        page=await platformStore.publish(ownerId,id,{...await readJsonBody(request),origin:devPublicOrigin})
+        page=await platformStore.publish(ownerId,id,{...await readJsonBody(request),origin:devPublicOrigin,requireReview:true})
       } else return sendJson(response, 405, { message: 'Método não permitido.' })
       return sendJson(response, 200, pageView(page))
     } catch (error) {
@@ -508,7 +518,8 @@ async function handleApi(request, response, url) {
     const validPassword = typeof body.password === 'string' && verifyEncodedSecret(body.password, store.admin.passwordHash)
     if (!validEmail || !validPassword) return sendJson(response, 401, { message: 'E-mail ou senha inválido.' })
     loginAttempts.delete(ipAddress)
-    return sessionResponse(response)
+    const clear=customers?await customers.logout(parseCookies(request)[customerCookie]):''
+    return sessionResponse(response,[clear].filter(Boolean))
   }
 
   if (request.method === 'DELETE' && url.pathname === '/api/admin/session') {
