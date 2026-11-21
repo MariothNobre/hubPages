@@ -15,7 +15,7 @@ export function adoptedPage(slug,content,visits,origin) {
   const page=createDraft(state,'legacy-owner',input)
   page.legacySlug=slug;page.legacyVisits=Math.max(0,Number(visits)||0)
   let publication
-  if(source.published!==false){publication={id:randomUUID(),pageId:page.id,ownerId:page.ownerId,revision:page.revision,draft:structuredClone(page.draft),publishedAt:page.updatedAt,url:page.draft.publicUrl,mode:'dev-free'};const {draft:_draft,...metadata}=publication;page.publication=metadata;page.editorialStatus='published'}
+  if(source.published!==false){publication={id:randomUUID(),pageId:page.id,ownerId:page.ownerId,revision:page.revision,draft:structuredClone(page.draft),publishedAt:page.updatedAt,url:page.draft.publicUrl,mode:origin==='https://hubpages.com.br'?'temporary-free':'dev-free'};const {draft:_draft,...metadata}=publication;page.publication=metadata;page.editorialStatus='published'}
   return {page,publication,audit:state.platform.audit}
 }
 export function visitorHash(visitor,secret){if(typeof visitor!=='string'||!/^[a-f0-9-]{36}$/.test(visitor))throw new PlatformError(422,'Identificador de visita inválido.');return createHash('sha256').update(secret+'|'+visitor).digest('hex')}

@@ -28,3 +28,7 @@
 .studio:not(.private-preview) .wizard-timeline li.is-current>button{background:linear-gradient(135deg,#efa382,#df8063);border-color:#d37455;color:#082b33}.studio:not(.private-preview) .wizard-timeline li.is-current .wizard-step-hint{color:#173b39}
 
 .studio .canvas-media-edit>.canvas-media-replace{background:#fff1e7!important;border-color:#efb28f!important;color:#914325!important}.studio .canvas-media-edit>.canvas-media-replace:hover{background:#ffe4d1!important}
+
+/* Published pages share the success palette used by the up-to-date notice. */
+.studio:not(.private-preview) button.studio-publish{background:#e0f2e6!important;border-color:#a7d8b5!important;color:#216044!important}.studio:not(.private-preview) button.studio-publish:hover{background:#ccebd8!important;border-color:#8bc49e!important}
+.studio:not(.private-preview) .wizard-launch.is-published{background:#edf7f3;border-color:#bfdcd0}.wizard-launch>div:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0}.wizard-launch>div:first-child .studio-address-link{display:block;max-width:100%;overflow-wrap:anywhere}.wizard-launch>div:first-child>button{display:block;margin-top:0}
