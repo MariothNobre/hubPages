@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.8.0-dev.1] - 2026-11-21 (somente DEV)
+
+- Modelo 01 renomeado Aurora no catálogo, com paleta Original e mais cinco combinações: Oceano, Lavanda, Bosque, Solar e Rosé.
+- Card com amostras de cores e fluxo em duas etapas: escolha de paleta, prévia completa e aplicação à página atual sem substituir conteúdo.
+- Tema individual por rascunho, com persistência, prévia, duplicação, desfazer, pendências e revisão antes de publicar. Original preservado nas páginas existentes; sem migração de banco.
+
 ## [0.7.1] - 2026-11-21
 
 - Checkout: autosave aguarda URL completa sem popups repetidos; links padrão e individuais mantêm foco e digitação durante salvamento. Validação HTTPS da API preservada.

@@ -72,6 +72,7 @@ jobs:
           node scripts/test-editor-contract.cjs
           node scripts/test-studio-undo.cjs
           node scripts/test-checkout-links.mjs
+          node scripts/test-template-themes.mjs
           node scripts/test-studio-wizard.mjs
           node scripts/test-visitor-session.mjs
           node scripts/test-studio-slug.mjs

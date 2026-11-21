@@ -1,3 +1,5 @@
+import { themeVariables,templateTheme } from '../../shared/template-themes.mjs'
+import '../template-themes.css'
 import { StudioStructure } from './StudioStructure'
 import { StudioMediaGallery } from './StudioMediaGallery'
 import { CanvasMedia } from './CanvasMedia'
@@ -48,8 +50,8 @@ export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = 
     return href && interactive ? <a className="canvas-buy" style={style} href={href} target="_blank" rel="noopener noreferrer">{label}</a> : <button className="canvas-buy" style={style} type="button" disabled>{label}</button>
   }
   const drop = (event: DragEvent, index: number) => { if (!onMove || event.dataTransfer.files.length) return; event.preventDefault(); const value=event.dataTransfer.getData('application/x-hubpages-block'); if (/^\d+$/.test(value)) onMove(Number(value),index) }
-  if(draft.template==='infancia_es')return <Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplateEs draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense>
-  if(draft.template==='infancia_pt')return <Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplate draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense>
+  if(draft.template==='infancia_es')return <div className="aurora-theme" data-color-theme={templateTheme(draft.colorTheme).id} style={themeVariables(draft.colorTheme) as CSSProperties}><Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplateEs draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense></div>
+  if(draft.template==='infancia_pt')return <div className="aurora-theme" data-color-theme={templateTheme(draft.colorTheme).id} style={themeVariables(draft.colorTheme) as CSSProperties}><Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplate draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense></div>
   return <div className={`studio-canvas template-${draft.template} ${editing?'is-inline-editing':''}`} style={{ '--draft-color': draft.color } as CSSProperties} lang={draft.locale}>
     {(draft.redLine||editing) && <div className="canvas-redline">{text(-1,'redLine',draft.redLine||'','Editar faixa de destaque','span','',false,300)}</div>}
     <header className="canvas-header">{buy(undefined,-1,'header')}</header>

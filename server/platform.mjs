@@ -1,3 +1,4 @@
+import { isTemplateTheme } from '../shared/template-themes.mjs'
 import { randomUUID } from 'node:crypto'
 import { PlatformError } from './platform-error.mjs'
 import { normalizeStudioAddress } from './studio-address.mjs'
@@ -42,6 +43,7 @@ export function validateDraft(input) {
   const blocks = input.blocks ?? []
   if (!Array.isArray(blocks) || blocks.length > 40) fail('Limite de 40 blocos por rascunho.')
   if(blocks.some(b=>b?.sourceRole&&!['pain','solution','method','manual','possibilities','offer','author','final'].includes(b.sourceRole)))fail('Origem do bloco duplicado inválida.')
+  if(input.colorTheme!==undefined&&!isTemplateTheme(input.colorTheme)) fail('Tema de cores inválido.')
   const color = text(input.color, 7, '#15534f')
   if (!/^#[a-f0-9]{6}$/i.test(color)) fail('Cor inválida.')
   const metaPixelId = text(input.metaPixelId, 30)
@@ -66,6 +68,7 @@ export function validateDraft(input) {
     checkoutUrl: /^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(input.checkoutUrl||'')?text(input.checkoutUrl,2000):https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
     visitedSteps:Array.isArray(input.visitedSteps)?[...new Set(input.visitedSteps.filter(id=>[1,2,4,5,6,7,8].includes(id)))].slice(0,7):[],
     addressAuto: input.addressAuto===true, reviewedSignature:text(input.reviewedSignature,20),
+    ...(input.colorTheme===undefined?{}:{colorTheme:input.colorTheme}),
     imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',

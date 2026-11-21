@@ -46,3 +46,8 @@ A publicação exige assinatura de revisão atual, validada no servidor junto da
 
 
 Todo campo de checkout deve usar CheckoutLinkInput e o preflight compartilhado checkoutLinkProblem: orientação discreta durante digitação, sem popup automático por URL incompleta, buffer de foco para preservar cursor e validação HTTPS estrita antes de persistir. Links incompletos ficam no editor aberto até serem corrigidos.
+
+
+## Temas de cores por modelo — Aurora
+
+Registrar paletas com IDs estáveis em shared/template-themes.mjs. Persistir somente a escolha na própria página; seleção exploratória na janela não altera o rascunho. Usar o mesmo renderizador na prévia/edição/publicação, preservar o original quando ausente e incluir a escolha na revisão e nas pendências. Não usar filtros sobre fotografias para simular paletas. Manter textos e mídias ao trocar apenas cores. Novos modelos devem registrar suas próprias paletas compatíveis, respeitar contraste e reduced-motion e validar IDs na API.

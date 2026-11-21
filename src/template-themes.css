@@ -1,0 +1,19 @@
+/* Only native Studio pages opt into palettes. Original stays byte-for-byte styled as before. */
+.aurora-theme{display:contents}
+.aurora-theme:not([data-color-theme=original])>.sales-v2{
+ --sales-ink:var(--theme-ink);--sales-teal:var(--theme-primary);--sales-teal-dark:var(--theme-dark);--sales-coral:var(--theme-accent);--sales-honey:var(--theme-gold);--sales-cream:var(--theme-paper);--sales-sage:var(--theme-soft);--sales-sky:var(--theme-soft);
+ --aurora-muted:color-mix(in srgb,var(--theme-ink) 78%,var(--theme-paper));
+}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-hero{background:radial-gradient(circle at 83% 22%,color-mix(in srgb,var(--theme-gold) 35%,transparent),transparent 30%),var(--theme-hero)}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-lead,.sales-v2-price>span,.sales-v2-price em,.sales-v2-microcopy,.sales-v2-pain__body>p,.sales-v2-center-heading>p:not(.sales-v2-kicker),.sales-v2-method__grid p,.sales-v2-manual__grid p,.sales-v2-faq details p,.sales-v2-final>p:not(.sales-v2-kicker)){color:var(--aurora-muted)}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-method,.sales-v2-possibilities){background:var(--theme-soft)}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-offer,.sales-v2-faq,.sales-v2-manual,.sales-v2-preview__header){background:var(--theme-paper)}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-manual__grid article,.sales-v2-method__grid article,.sales-v2-section-cta--light){background:color-mix(in srgb,var(--theme-paper) 60%,white)}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-method__grid article:nth-child(even){background:color-mix(in srgb,var(--theme-primary) 12%,var(--theme-paper))}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-solution__copy>p:not(.sales-v2-kicker),.sales-v2-bonuses .sales-v2-center-heading>p:not(.sales-v2-kicker),.sales-v2-bonus-copy p,.sales-v2-author p,.sales-v2-author small){color:#f4f1f8}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-solution .sales-v2-kicker,.sales-v2-bonuses .sales-v2-kicker,.sales-v2-bonus-copy>span,.sales-v2-bonus-copy>strong){color:var(--theme-gold)}
+.aurora-theme:not([data-color-theme=original]) :is(.sales-v2-tasting__copy>p:not(.sales-v2-kicker),.sales-v2-tasting__copy>small,.sales-v2> .red-line){color:white}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-footer{background:var(--theme-dark);color:#eeeaf1}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-preview__body{background:var(--theme-soft)}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-stamp{box-shadow:0 8px 0 color-mix(in srgb,var(--theme-gold) 65%,var(--theme-dark))}
+.aurora-theme:not([data-color-theme=original]) .sales-v2-button{box-shadow:0 12px 28px color-mix(in srgb,var(--theme-accent) 24%,transparent)}
