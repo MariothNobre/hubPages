@@ -1,0 +1,70 @@
+  const draft=withLegacyRoles(input)
+  const content={...draft,redLine:draft.redLine||'',eyebrow:draft.eyebrow||'',ctaHref:draft.checkoutUrl,priceLabel:draft.priceLabel||'R$ 29,90',originalPrice:draft.originalPrice||'R$ 197,00'}
+  const [previewOpen,setPreviewOpen]=useState(false)
+  const [previewIndex,setPreviewIndex]=useState(0)
+  const previewTouchStart=useRef<number|null>(null)
+  const groupBlock=(role:string)=>draft.blocks.find(b=>role==='bonuses'?b.kind==='bonus':role==='tasting'?b.kind==='sample':role==='faq'?b.kind==='faq':b.templateRole===role)
+  const indexOf=(block?:Block)=>block?draft.blocks.indexOf(block):-1
+  const roleIndex=(role:string)=>indexOf(groupBlock(role))
+  const field=(key:string,value:string)=>editing?<InlineText value={value} className={'editor-field-'+key} label={({priceLabel:'Editar preço da oferta',originalPrice:'Editar preço anterior'} as Record<string,string>)[key]||`Editar ${key}`} max={key==='description'?3000:300} multiline={key==='description'} onSelect={()=>editing.select(-1,key)} onChange={value=>editing.text(-1,key,value)}/>:value
+  const blockField=(block:Block|undefined,key:string,value:string)=>editing?<InlineText value={key==='title'?block?.title??value:value} label={`Editar ${key} da seção ${indexOf(block)+1}`} multiline={key==='body'} max={key==='title'?240:5000} onSelect={()=>editing.select(indexOf(block),key)} onChange={value=>editing.text(indexOf(block),key,value)}/>:key==='title'?block?.title??value:value
+  const lit=(key:string,fallback:string,role:string)=>{
+    const block=groupBlock(role),source=originalBlocks.find(b=>b.templateRole===block?.templateRole)
+    let value=draft.templateTexts?.[key]
+    if(value===undefined){value=fallback;if(role==='bonuses')value=value.replace(/\b5(?=\s*(?:bônus|bonos))/g,String(bonuses.length));if(role==='tasting'||role==='preview')value=value.replace(/\b12\b/g,String(previewPages.length));if(block&&source&&block.body!==source.body){const p=source.body.split('\n\n').findIndex(s=>s.includes(fallback.trim()));const original=source.body.split('\n\n')[p],actual=block.body.split('\n\n')[p]||'';if(p>=0){if(original.trim()===fallback.trim())value=actual;else if(original.startsWith(fallback.trim()))value=actual;else if(!actual.includes(fallback.trim()))value=''}}}
+    return editing?<InlineText value={value} label={`Editar texto ${key}`} onSelect={()=>editing.select(roleIndex(role),'text')} onChange={value=>editing.text(roleIndex(role),`templateText:${key}`,value)}/>:value
+  }
+  const bonuses=draft.blocks.filter(b=>b.kind==='bonus'&&(editing||b.enabled!==false)).slice(0,draft.sectionCounts?.bonus).map((block,i)=>({...original_bonuses[i%original_bonuses.length],image:block.imageUrl,title:block.title,description:block.body.split('\n')[0],detail:(block.body.split('\n').slice(1).join('\n')||'').replace(/ · incluso$/,''),number:String(i+1).padStart(2,'0'),block}))
+  const previewPages=draft.blocks.filter(b=>b.kind==='sample'&&(editing||b.enabled!==false)).slice(0,draft.sectionCounts?.sample).map((block,i)=>({...original_previewPages[i%original_previewPages.length],image:block.imageUrl,label:block.title,teaser:block.body,source:block.sampleSource??original_previewPages[i%original_previewPages.length].source,kicker:block.sampleKicker??original_previewPages[i%original_previewPages.length].kicker,block}))
+  const parseList=(role:string,fallback:string[][])=>{const body=groupBlock(role)?.body;if(!body)return fallback;return body.split('\n\n').map(p=>{const [title,...rest]=p.split(' — ');return[title,rest.join(' — ')]})}
+  const methodSteps=parseList('method',original_methodSteps).slice(0,draft.sectionCounts?.method)
+  const manualParts=parseList('manual',original_manualParts.map(([,title,body])=>[title,body])).slice(0,draft.sectionCounts?.manual).map(([title,body],i)=>[String(i+1).padStart(2,'0'),title,body])
+  const questions=draft.blocks.filter(b=>b.kind==='faq').map(block=>Object.assign([block.title,block.body],{block}))
+  const bookField=(book:typeof bonuses[number],key:string)=>{
+    const value=key==='title'?book.title:key==='description'?book.description:book.detail
+    return editing?<InlineText value={value} label={`Editar ${key} do bônus ${book.number}`} onSelect={()=>editing.select(indexOf(book.block),key)} onChange={value=>editing.text(indexOf(book.block),key==='title'?'title':key==='description'?'bodyLine:0':'bodyLine:1',key==='detail'?value+' · incluso':value)}/>:value
+  }
+  const listField=(role:string,index:number,part:number,value:string)=>editing?<InlineText value={value} label={`Editar ${role} ${index+1} ${part===0?'título':'texto'}`} multiline={part===1} onSelect={()=>editing.select(roleIndex(role),'text')} onChange={value=>editing.text(roleIndex(role),`listPart:${index}:${part}`,value)}/>:value
+  const customStyle=(block?:Block):CSSProperties=>{const s=block?.style||draft.style||{},keys=block?.layoutOverrides||draft.layoutOverrides||[];const result:Record<string,string|number|undefined>={};for(const key of keys){if(key==='width')result.width=`${s.width||100}%`;if(key==='padding')result.padding=s.padding;if(key==='margin'){result.marginTop=s.margin;result.marginBottom=s.margin}if(key==='gap')result.gap=s.gap;if(key==='animation'){result.animationName=s.animation==='fade'?'studio-fade':s.animation==='rise'?'studio-rise':'none';result.animationDuration='.65s'};if(key==='fontSize')result.fontSize=s.fontSize;if(key==='headingSize')result['--legacy-heading-size']=`${s.headingSize}px`;if(key==='columns')result['--legacy-columns']=s.columns;if(key==='align')result.textAlign=s.align;if(key==='background')result.background=s.background;if(key==='font')result['--legacy-font-family']=result.fontFamily=s.font==='serif'?'Georgia,serif':s.font==='rounded'?'Verdana,sans-serif':undefined}return result as CSSProperties}
+
+  const image=(owner:string|Block|undefined,attrs:{src:string;alt:string;className?:string;key?:string;style?:CSSProperties},thumbnail=false)=>{
+    let block=typeof owner==='object'?owner:groupBlock(owner||'hero')
+    if(owner==='tasting'){const original=originalBlocks.find(b=>b.imageUrl===attrs.src);block=draft.blocks.find(b=>b.templateRole===original?.templateRole)}
+    const index=indexOf(block),src=block?block.imageUrl:owner==='hero'?draft.imageUrl:attrs.src
+    if(!src&&!editing)return null
+    const {key,...attributes}=attrs
+    const values=block?.style||draft.style,keys=block?.layoutOverrides||draft.layoutOverrides||[],imageStyle:CSSProperties={...attrs.style}
+    if(keys.includes('imageWidth'))imageStyle.width=String(values?.imageWidth||100)+'%'
+    if(keys.includes('imageHeight'))imageStyle.height=values?.imageHeight
+    if(keys.includes('imageFit'))imageStyle.objectFit=values?.imageFit
+    return <CanvasMedia key={key} src={src} title={attrs.alt} type={block?block.mediaType||'image':owner==='hero'?draft.mediaType:'image'} index={index} editing={editing} thumbnail={thumbnail} attributes={{...attributes,style:Object.keys(imageStyle).length?imageStyle:undefined}}/>
+  }
+  const sampleField=(entry:typeof previewPages[number],key:'source'|'label'|'teaser'|'kicker'|'body',value:string)=>{
+    const field=key==='source'?'sampleSource':key==='kicker'?'sampleKicker':key==='label'?'title':'body'
+    return editing?<InlineText value={value} multiline={field==='body'} label={({sampleSource:'Editar origem da página de degustação',sampleKicker:'Editar chamada da página de degustação',title:'Editar título da página de degustação',body:'Editar descrição da página de degustação'})[field]} onSelect={()=>editing.select(indexOf(entry.block),field)} onChange={value=>editing.text(indexOf(entry.block),field,value)}/>:value
+  }
+  const buyButton=(className='sales-v2-button',owner:string|Block='hero')=>{
+    const block=owner==='preview'&&previewPages[previewIndex]?.block.showButton===true?previewPages[previewIndex].block:typeof owner==='object'?owner:!['header','hero','faq','sticky','preview'].includes(owner)?groupBlock(owner):undefined
+    const scope=typeof owner==='string'?owner:'',config=block?undefined:draft.templateButtons?.[scope]
+    const enabled=block?block.showButton!==false:config?.enabled!==false
+    if(!editing&&!enabled)return null
+    const label=block?.buttonLabel||config?.label||draft.ctaLabel
+    const href=block?(block.inheritLink===false?block.buttonUrl:block.buttonUrl||draft.checkoutUrl):config?.inheritLink===false?config.url:config?.url||draft.checkoutUrl
+    const index=indexOf(block),buttonKeys=block?.layoutOverrides||draft.layoutOverrides||[],buttonValues=block?.style||draft.style,buttonStyle:CSSProperties={}
+    if(buttonKeys.includes('buttonWidth'))buttonStyle.width=String(buttonValues?.buttonWidth||100)+'%'
+    if(buttonKeys.includes('buttonPadding'))buttonStyle.padding=buttonValues?.buttonPadding
+    if(editing)return <EditorAction editing={editing} index={index} scope={block?'block':scope} enabled={enabled} className={className} style={buttonStyle} label={<InlineText value={label} label={`Editar botão ${scope||index+1}`} max={100} onSelect={()=>editing.select(index,block?'buttonLabel':`button:${scope}`)} onChange={value=>editing.text(index,block?'buttonLabel':`buttonLabel:${scope}`,value)}/>}/>
+    return <a style={Object.keys(buttonStyle).length?buttonStyle:undefined} className={className||undefined} href={href||undefined} aria-disabled={!href||Boolean(editing)} onClick={e=>{if(editing||!href)e.preventDefault()}}>{label}{scope!=='sticky'&&<> <span aria-hidden="true">→</span></>}</a>
+  }
+  const openPreview=()=>{if(previewPages.length){setPreviewIndex(0);setPreviewOpen(true)}}
+  useEffect(()=>{if(!previewOpen||!previewPages.length)return;const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setPreviewOpen(false);if(e.key==='ArrowRight')setPreviewIndex(v=>(v+1)%previewPages.length);if(e.key==='ArrowLeft')setPreviewIndex(v=>(v-1+previewPages.length)%previewPages.length)};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[previewOpen,previewPages.length])
+  const sampleButton=(scope:string,className:string,label:ReactNode,ariaLabel?:string)=>{
+    const enabled=draft.templateButtons?.[scope]?.enabled!==false
+    if(!editing&&(!enabled||draft.sampleEnabled===false||!previewPages.length))return null
+    if(editing)return <EditorAction editing={editing} scope={scope} enabled={enabled} className={className} label={label} onActivate={openPreview}/>
+    return <button className={className} type="button" onClick={openPreview} aria-label={ariaLabel}>{label}</button>
+  }
+  const rootKey=(block:Block)=>block.kind==='sample'?'tasting':block.kind==='bonus'?'bonuses':block.kind==='faq'?'faq':block.templateRole||`custom:${block.id}`
+  const sequence=['hero','trust',...new Set(draft.blocks.map(rootKey))]
+
+  const neighbor=(key:string,direction:number)=>{const at=sequence.indexOf(key);const candidate=sequence[at+direction];return candidate?indexOf(candidate.startsWith('custom:')?draft.blocks.find(b=>b.id===candidate.slice(7)):groupBlock(candidate)): -1}

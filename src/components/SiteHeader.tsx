@@ -21,7 +21,7 @@ export function SiteHeader({ navigation = [], compact = false }: SiteHeaderProps
             ))}
           </nav>
         )}
-        <Link className="header-login" to="/admin">
+        <Link className="header-login" to="/entrar">
           Entrar
         </Link>
         <Link className="header-action" to="/infancia_alem_das_telas">

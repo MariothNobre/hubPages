@@ -1,0 +1,360 @@
+{
+  "name": "Infância Além das Telas",
+  "title": "Seu filho merece uma infância cheia de memórias, não apenas de telas.",
+  "description": "Descubra uma jornada prática de 30 dias para estabelecer limites com mais clareza, encontrar alternativas ao celular e criar novos momentos de conexão em família.",
+  "redLine": "Oferta especial: coleção completa de R$ 197,00 por R$ 29,90",
+  "eyebrow": "Método prático para famílias com crianças de 3 a 10 anos",
+  "ctaLabel": "Quero a coleção completa",
+  "priceLabel": "R$ 29,90",
+  "originalPrice": "R$ 197,00",
+  "imageUrl": "/assets/books/infancia-alem-das-telas.webp",
+  "color": "#15534f",
+  "locale": "pt-BR",
+  "blocks": [
+    {
+      "kind": "content",
+      "title": "O celular virou a primeira opção de diversão do seu filho?",
+      "body": "Desligar a TV, guardar o tablet ou interromper um jogo pode terminar em choro, insistência e discussões. Depois ainda fica a pergunta: “o que eu ofereço no lugar?”\n\nComo criar limites sem transformar tudo em briga?\nComo despertar interesse por outras atividades?\nComo construir uma rotina que a família consiga manter?\nComo aproveitar melhor o pouco tempo disponível?\n\nSeu filho não precisa deixar de gostar de tecnologia. Ele também precisa descobrir quantas coisas interessantes existem além dela.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "pain",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "Não é apenas sobre reduzir telas. É sobre recuperar possibilidades.",
+      "body": "Infância Além das Telas transforma orientação em ação: ajuda você a observar a rotina, estabelecer combinados, atravessar momentos de resistência e oferecer experiências que devolvem espaço à curiosidade, ao movimento e à convivência.\n\nLimites com clareza · Alternativas por idade · Ferramentas práticas · Mais conexão",
+      "imageUrl": "/assets/books/infancia-alem-das-telas.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "solution",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "30 dias. Cinco movimentos. Um novo olhar para a rotina.",
+      "body": "Observar — Entenda uma situação real antes de tentar mudar tudo.\n\nCombinar — Crie limites claros, previsíveis e adequados à idade.\n\nPreparar — Organize o ambiente e tenha alternativas ao alcance.\n\nExperimentar — Coloque uma pequena ação em prática com presença.\n\nRevisar — Perceba o que ajudou, adapte e continue.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "method",
+      "showButton": true
+    },
+    {
+      "kind": "sample",
+      "title": "A infância em um mundo conectado",
+      "body": "Uma pergunta essencial: que lugar as telas ocupam na rotina da sua família?",
+      "imageUrl": "/assets/samples/01-mundo-conectado.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-0",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Conhecendo a rotina da família",
+      "body": "Antes de mudar, observe: horários, hábitos e oportunidades começam a aparecer.",
+      "imageUrl": "/assets/samples/02-rotina-familia.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-1",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Quando a criança não quer desligar",
+      "body": "Um caminho prático para atravessar a resistência sem transformar tudo em confronto.",
+      "imageUrl": "/assets/samples/03-nao-quer-desligar.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-2",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "A Caixa dos Assuntos Surpresa",
+      "body": "Uma brincadeira simples que abre conversas, imaginação e conexão.",
+      "imageUrl": "/assets/samples/04-caixa-assuntos.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-3",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "A Roda das Pequenas Descobertas",
+      "body": "Olhar de novo para o cotidiano pode revelar coisas que passavam despercebidas.",
+      "imageUrl": "/assets/samples/05-roda-descobertas.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-4",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Super-Heróis do Cuidado",
+      "body": "Transforme pequenos gestos de ajuda em missões que envolvem toda a família.",
+      "imageUrl": "/assets/samples/06-super-herois-cuidado.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-5",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Oficina de Fantoches",
+      "body": "Papel, imaginação e personagens capazes de contar o que as palavras ainda não contam.",
+      "imageUrl": "/assets/samples/07-oficina-fantoches.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-6",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Máscaras das Emoções",
+      "body": "Uma atividade visual para reconhecer, representar e conversar sobre sentimentos.",
+      "imageUrl": "/assets/samples/08-mascaras-emocoes.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-7",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Circuito do Equilíbrio",
+      "body": "Movimento, adaptação e participação: cada criança encontra seu próprio percurso.",
+      "imageUrl": "/assets/samples/09-circuito-equilibrio.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-8",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "O Jogo do Semáforo",
+      "body": "Corpo em movimento e sinais simples para brincar com atenção e autocontrole.",
+      "imageUrl": "/assets/samples/10-jogo-semaforo.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-9",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Dia 10 — Uma Reflexão Especial",
+      "body": "Uma pequena missão para criar espaço de conversa durante um momento possível.",
+      "imageUrl": "/assets/samples/11-reflexao-especial.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-10",
+      "showButton": false
+    },
+    {
+      "kind": "sample",
+      "title": "Cartões das Emoções",
+      "body": "Um recurso ilustrado para a criança identificar e nomear como está se sentindo.",
+      "imageUrl": "/assets/samples/12-cartoes-emocoes.webp",
+      "style": {
+        "background": "#fff3d9"
+      },
+      "templateRole": "sample-11",
+      "showButton": false
+    },
+    {
+      "kind": "content",
+      "title": "300 páginas para entender, agir e continuar.",
+      "body": "Compreendendo a infância digital — Entenda o contexto das telas e observe o que elas ocupam na rotina.\n\nConhecendo a sua família — Mapeie horários, dificuldades, necessidades e oportunidades de mudança.\n\nEstratégias de reconexão — Encontre respostas práticas para situações recorrentes do dia a dia.\n\nOrientações por idade — Adapte a abordagem para crianças de 3–5, 6–7 e 8–10 anos.\n\nMétodo Reconexão — Siga 30 experiências familiares com objetivos e registros.\n\nContinuidade e ferramentas — Revise combinados e preserve as conquistas depois dos 30 dias.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "manual",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "100 Brincadeiras Fora das Telas",
+      "body": "100 propostas organizadas por tempo, ambiente, materiais e faixa etária.\n190 páginas · incluso",
+      "imageUrl": "/assets/books/100-brincadeiras.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-0",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Calendário da Reconexão — 30 Dias",
+      "body": "Missões diárias, registros e pequenas atitudes para levar a reconexão à rotina.\n96 páginas · incluso",
+      "imageUrl": "/assets/books/calendario-reconexao.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-1",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Acordo Familiar de Uso de Telas",
+      "body": "Modelos e ferramentas visuais para regras claras e combinados em família.\n112 páginas · incluso",
+      "imageUrl": "/assets/books/acordo-familiar.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-2",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "SOS! Meu Filho Não Quer Desligar",
+      "body": "Orientações, frases possíveis e estratégias para os momentos de transição.\n128 páginas · incluso",
+      "imageUrl": "/assets/books/sos-desligar.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-3",
+      "showButton": true
+    },
+    {
+      "kind": "bonus",
+      "title": "Família Presente",
+      "body": "Hábitos digitais dos adultos, 12 rituais de conexão e ferramentas práticas.\n128 páginas · incluso",
+      "imageUrl": "/assets/books/familia-presente.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "bonus-4",
+      "showButton": true
+    },
+    {
+      "kind": "content",
+      "title": "Mais ideias para brincar. Mais clareza para combinar. Mais presença para viver.",
+      "body": "Crianças inventando brincadeiras\nConversas com mais clareza\nRefeições com atenção compartilhada\nMomentos tranquilos antes de dormir\nProjetos criativos em família\nAlternativas para dias corridos",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "possibilities",
+      "showButton": true
+    },
+    {
+      "kind": "offer",
+      "title": "Uma biblioteca prática para a sua família.",
+      "body": "Manual principal com 300 páginas\nMétodo Reconexão de 30 Dias\nCinco ebooks complementares\n954 páginas na coleção completa\nFerramentas, modelos, registros e atividades\n\nColeção digital · manual principal + 5 bônus",
+      "imageUrl": "/assets/books/infancia-alem-das-telas.webp",
+      "style": {
+        "background": "#e6f0e6"
+      },
+      "templateRole": "offer",
+      "showButton": true
+    },
+    {
+      "kind": "author",
+      "title": "Marioth Nobre",
+      "body": "Pai de três filhos e autor da coleção Infância Além das Telas.\n\nMarioth reúne sua experiência como consultor especializado em processos e negócios à vivência cotidiana da paternidade. A coleção nasce desse encontro: organização prática, observação da rotina e o propósito de ajudar outras famílias a equilibrar tecnologia e convivência.\n\nEditora HubPages · Edição nº 01 · 2026",
+      "imageUrl": "/assets/author/marioth-nobre.webp",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "author",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "Para qual idade o material é indicado?",
+      "body": "Para pais, mães e responsáveis por crianças de 3 a 10 anos, com orientações e adaptações por faixa etária.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-0",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "Preciso retirar todas as telas da vida do meu filho?",
+      "body": "Não. A proposta é construir uma relação mais equilibrada com a tecnologia e abrir espaço para brincadeiras, descanso, movimento e convivência.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-1",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "Preciso ler as 300 páginas antes de começar?",
+      "body": "Não. O manual pode ser lido em sequência ou consultado conforme a necessidade. O plano de 30 dias e as ferramentas são fáceis de localizar.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-2",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "O que recebo nesta oferta?",
+      "body": "O manual principal e os cinco bônus digitais apresentados nesta página: uma coleção com 954 páginas no total.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-3",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "Os materiais são digitais?",
+      "body": "Sim. A coleção é entregue em formato digital, com navegação interna e ferramentas para usar em dispositivos compatíveis.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-4",
+      "showButton": false
+    },
+    {
+      "kind": "faq",
+      "title": "Posso adaptar as atividades?",
+      "body": "Sim. As propostas podem ser ajustadas ao tempo, ao ambiente, aos interesses e aos apoios necessários para cada criança.",
+      "imageUrl": "",
+      "style": {
+        "background": "#ffffff"
+      },
+      "templateRole": "faq-5",
+      "showButton": false
+    },
+    {
+      "kind": "offer",
+      "title": "A infância não espera. Os momentos em família começam agora.",
+      "body": "Comece com uma conversa, uma brincadeira, um combinado ou alguns minutos de atenção compartilhada.\n\n“A infância passa depressa demais para ser vivida através de uma tela.”",
+      "imageUrl": "",
+      "style": {
+        "background": "#e6f0e6"
+      },
+      "templateRole": "final",
+      "showButton": true
+    }
+  ],
+  "style": {
+    "headingSize": 48,
+    "background": "#fffaf0"
+  }
+}

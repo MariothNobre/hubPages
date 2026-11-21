@@ -1,0 +1,110 @@
+/* HubPages application chrome only. Sales canvases and private previews retain their own palette. */
+:is(.studio:not(.private-preview),.admin-page){--hp-ink:#123f4b;--hp-primary:#064955;--hp-hover:#033b46;--hp-coral:#df8063;--hp-muted:#4c6c77;--hp-bg:#f3f8fa;--hp-soft:#eaf4f7;--hp-line:#cbdde3;color:var(--hp-ink);background:var(--hp-bg)}
+:is(.studio:not(.private-preview),.admin-page) .brand>span{color:#123f4b}
+:is(.studio:not(.private-preview),.admin-page) .brand>strong{color:#064955}
+:is(.studio:not(.private-preview),.admin-page) .brand>i{background:#df8063;box-shadow:0 0 0 5px #df806322}
+.studio:not(.private-preview)>header{background:#fff;border-color:var(--hp-line)}
+.studio:not(.private-preview) :is(.studio-heading,.studio-editor,.studio-grid,.studio-notice,.wizard-journey,.wizard-guide,.wizard-changes,.wizard-launch,.studio-settings,.review-device,.direct-toolbar,.direct-popover){color:var(--hp-ink)}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)){color:var(--hp-primary);border-color:#b6cfd7;background:#fff}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):hover{background:#eaf4f7;border-color:#648b98}
+.studio:not(.private-preview) :is(button,input,textarea,select,a):focus-visible{outline:3px solid #bd6047;outline-offset:3px}
+.studio:not(.private-preview) :is(.studio-editor,.studio-grid article,.direct-toolbar,.direct-popover,.studio-settings fieldset){border-color:var(--hp-line);background:#fff}
+.studio:not(.private-preview) :is(.studio-editor input,.studio-editor textarea,.studio-editor select):not(:where(.sales-v2 *,.studio-canvas *)){color:var(--hp-ink);border-color:#7798a3;background:#fff;accent-color:var(--hp-primary)}
+.studio:not(.private-preview) input::placeholder,.studio:not(.private-preview) textarea::placeholder{color:#597780;opacity:1}
+.studio:not(.private-preview) .studio-notice{background:#e7f2f6;border-left-color:#df8063}
+.studio:not(.private-preview) :is(.studio-grid article>span,.wizard-header-actions>span,.wizard-progress,.wizard-legend,.review-device-hint,.review-device-info>span,.direct-editor-hint){color:var(--hp-muted)}
+.studio:not(.private-preview) .studio-viewports [aria-pressed=true]{background:var(--hp-primary);color:#fff;border-color:var(--hp-primary)}
+.studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary):hover{background:var(--hp-hover);color:#fff}
+.studio:not(.private-preview) .wizard-timeline .is-complete button:not([aria-current]){background:#eaf5f3;border-color:#b3d7ce;color:#205b55}
+.studio:not(.private-preview) .wizard-step-index{color:var(--hp-muted);border-color:#b5cfd7;background:#fff}
+.studio:not(.private-preview) .is-complete .wizard-step-index{background:#d8eee7;color:#215b4d;border-color:#a5cebf}
+.studio:not(.private-preview) .wizard-timeline [aria-current] .wizard-step-index{background:#ffffff20;color:#fff;border-color:#ffffff80}
+.studio:not(.private-preview) .wizard-timeline [aria-current] .wizard-step-hint{color:#e0f0f3}
+.studio:not(.private-preview) .wizard-progress progress{accent-color:#064955}
+.studio:not(.private-preview) .wizard-guide{background:linear-gradient(120deg,#edf6f9,#fff7f1);border-color:#d2e1e6}
+.studio:not(.private-preview) :is(.wizard-eyebrow,.wizard-progress>span:first-child,.wizard-legend>span:first-child){color:#245c6d}
+.studio:not(.private-preview) :is(.wizard-guide p,.wizard-flow p,.wizard-publication-status p,.wizard-review-confirm p,.wizard-environment-note,.wizard-launch-checks p){color:#4c6c77}
+.studio:not(.private-preview) .wizard-flow li{background:#ffffffda;border-color:#d2e1e6}
+.studio:not(.private-preview) .wizard-flow li:after{color:#b55c43}
+.studio:not(.private-preview) .wizard-flow-number{background:#ffede3;color:#9e452d}
+.studio:not(.private-preview) .wizard-flow strong{color:var(--hp-ink)}
+.studio:not(.private-preview) .wizard-review-confirm{background:#edf6f9;border-color:#c6dce5}
+.studio:not(.private-preview) .wizard-changes{background:#edf7f3;border-color:#bfdcd0}
+.studio:not(.private-preview) .wizard-changes.has-changes{background:#fff7ef;border-color:#edcebc}
+.studio:not(.private-preview) .has-changes .wizard-changes-heading>span{background:#ffe6d6;color:#9f472f}
+.studio:not(.private-preview) .wizard-changes p{color:#526c75}
+.studio:not(.private-preview) .wizard-changes li{border-color:#e5d5c9}
+.studio:not(.private-preview) :is(.wizard-launch,.wizard-launch-checks,.studio-editor fieldset){border-color:var(--hp-line)}
+.studio:not(.private-preview) :is(.studio-address-field>span,.review-device-info){background:#eaf4f7;color:#315e6c;border-color:#c6dce4}
+.studio:not(.private-preview) .studio-danger{color:#a62e3a;border-color:#e4b7bd}
+.studio:not(.private-preview) .studio-danger:hover{background:#fff0f2;border-color:#c77a83}
+.studio:not(.private-preview) .studio-pending-publication{color:#9e452d}
+.studio:not(.private-preview) .review-device-screen{border-color:#a8c4cf;box-shadow:0 8px 24px #06495512}
+.studio:not(.private-preview) .studio-delete-dialog{color:#123f4b;border-color:#cbdde3;background:#fff}
+/* Existing administration and account forms share the same readable application theme. */
+.admin-page :is(.admin-header,.form-actions){border-color:#cadde4}
+.admin-page :is(.login-card,.editor-card){background:#fff;border-color:#d2e0e6;box-shadow:0 16px 48px #0649550c}
+.admin-page :is(.admin-status,.admin-header>a:last-child,.login-card>p:not(.section-kicker),.editor-card p,.login-card small,.form-actions a){color:#4c6c77}
+.admin-page :is(.login-card label,.content-form label,.tracking-settings>label:not(.tracking-toggle),.tracking-toggle strong){color:#123f4b}
+.admin-page :is(input,textarea,select){color:#123f4b;background:#fff;border:1px solid #7798a3;accent-color:#064955}
+.admin-page :is(input,textarea)::placeholder{color:#597780;opacity:1}
+.admin-page :is(input,textarea,select):focus{border-color:#064955;box-shadow:0 0 0 3px #06495514}
+.admin-page :is(button,a,input,textarea,select):focus-visible{outline:3px solid #bd6047;outline-offset:3px}
+.admin-page :is(.login-card button,.content-form button,.page-selector button.is-active){background:#064955;color:#fff}
+.admin-page :is(.login-card button,.content-form button):hover{background:#033b46}
+.admin-page :is(.logout-button,.page-selector){background:#edf5f8;color:#245566;border-color:#c1d6df}
+.admin-page .page-selector button:not(.is-active){color:#315e6c}
+.admin-page .section-kicker{color:#9e452d}
+.admin-page .tracking-settings{background:#edf6f9;color:#123f4b;border-color:#bbd3de;box-shadow:none}
+.admin-page .tracking-settings legend{color:#123f4b;background:#fff}
+.admin-page .tracking-settings :is(input[type=text],input[type=password]){background:#fff;color:#123f4b;border-color:#7798a3}
+.admin-page :is(.tracking-toggle small,.tracking-help){color:#4c6c77!important}
+.admin-page .tracking-divider{background:#c8dce4}
+.admin-page .tracking-toggle--danger strong{color:#a62e3a}
+.admin-page .analytics-grid article{background:#edf6f9;border-color:#c9dce4}
+.admin-page .analytics-grid article.is-current{border-color:#6d9eae;box-shadow:inset 0 0 0 1px #9bbdca}
+.admin-page .analytics-grid :is(h2,strong){color:#123f4b}
+.admin-page .analytics-grid span,.admin-page .analytics-grid p{color:#4c6c77!important}
+.admin-page .form-error{color:#9e2937!important;background:#ffedf0}
+.admin-page .form-success{color:#225d4d!important;background:#e7f4ed}
+
+/* Warm brand accents and application-only microinteractions. */
+.studio:not(.private-preview) .wizard-timeline button{background:linear-gradient(140deg,#fffdf9,#fff6f0);border-color:#e5cab8}
+.studio:not(.private-preview) .wizard-timeline .is-complete button:not([aria-current]){background:linear-gradient(135deg,#fff6ed,#ffe8d8);border-color:#e3b99b;color:#79472f}
+.studio:not(.private-preview) .wizard-timeline .is-complete .wizard-step-index{background:#fffaf6;border-color:#dba887;color:#8f482e}
+.studio:not(.private-preview) .wizard-timeline button[aria-current=step],.studio:not(.private-preview) .wizard-timeline button[aria-current=step]:hover{background:linear-gradient(125deg,#f0a27e,#df8063);color:#082b33;border-color:#c36b4f;box-shadow:0 5px 16px #df806333}
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-index{background:#fff6ec;color:#082b33;border-color:#ffffffb3}
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] .wizard-step-hint{color:#082b33}
+.studio:not(.private-preview) .wizard-timeline li:after{background:#efd7c6}
+.studio:not(.private-preview) .wizard-timeline li.is-complete:after{background:linear-gradient(90deg,#df8063,#edb18c)}
+.studio:not(.private-preview) .wizard-progress progress{appearance:none;accent-color:#df8063;background:#f5e4d8;overflow:hidden;border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-webkit-progress-bar{background:#f5e4d8;border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-webkit-progress-value{background:linear-gradient(90deg,#df8063,#efad83);border-radius:20px}
+.studio:not(.private-preview) .wizard-progress progress::-moz-progress-bar{background:#df8063;border-radius:20px}
+.studio:not(.private-preview) .wizard-legend>span:first-child{color:#985035}
+.studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary),.admin-page :is(.login-card button,.content-form>.form-actions button){background:#df8063;border-color:#c36b4f;color:#082b33}
+.studio:not(.private-preview) .wizard-flow li{min-width:0}
+.studio:not(.private-preview) .wizard-flow li>div{min-width:0;flex:1}
+.studio:not(.private-preview) .wizard-flow button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:100%;margin:12px 0 0;padding:9px 13px;border:1px solid #e3b99b;border-radius:10px;background:#fff1e7;color:#81452e;font-size:.76rem;font-weight:750;line-height:1.45;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.studio:not(.private-preview) .wizard-flow button>.wizard-shortcut-arrow{display:inline-block;flex:none;margin-left:2px;transition:transform .18s ease}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)),.admin-page button{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.studio:not(.private-preview) .wizard-step-index{transition:transform .2s ease,background-color .2s ease}
+@media(hover:hover) and (pointer:fine){
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):not(:disabled):hover,.admin-page button:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 5px 12px #b75b3c1c}
+  .studio:not(.private-preview) .wizard-timeline button:not(:disabled):hover{transform:translateY(-4px);box-shadow:0 8px 18px #bf654e24;border-color:#c77855}
+  .studio:not(.private-preview) .wizard-timeline button:not(:disabled):hover .wizard-step-index{transform:rotate(-6deg) scale(1.08)}
+  .studio:not(.private-preview) :is(.studio-heading>button,.wizard-primary):not(:disabled):hover,.admin-page :is(.login-card button,.content-form>.form-actions button):not(:disabled):hover{background:#ec9879;color:#082b33}
+  .studio:not(.private-preview) .wizard-flow button:not(:disabled):hover{background:#ffe0cb;border-color:#c77855;color:#713b27}
+  .studio:not(.private-preview) .wizard-flow button:not(:disabled):hover>.wizard-shortcut-arrow{transform:translateX(3px)}
+}
+.studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):not(:disabled):active,.admin-page button:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 3px #a4543720}
+@media(prefers-reduced-motion:reduce){
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)),.studio:not(.private-preview) .wizard-step-index,.studio:not(.private-preview) .wizard-flow button>span,.admin-page button{transition:none!important;animation:none!important}
+  .studio:not(.private-preview) button:not(:where(.sales-v2 *,.studio-canvas *)):is(:hover,:active),.studio:not(.private-preview) .wizard-timeline button:hover .wizard-step-index,.studio:not(.private-preview) .wizard-flow button:hover>.wizard-shortcut-arrow,.admin-page button:is(:hover,:active){transform:none!important}
+}
+
+.studio:not(.private-preview) .wizard-flow button>.wizard-shortcut-label{min-width:0;flex:1;white-space:normal;overflow-wrap:normal}
+
+.studio:not(.private-preview) .studio-page-navigation .wizard-timeline{padding:16px 10px}
+
+.studio:not(.private-preview) .wizard-timeline [aria-current=step] :is(.wizard-step-name,.wizard-step-hint,.wizard-step-status){color:#082b33}

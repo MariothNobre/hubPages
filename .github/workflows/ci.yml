@@ -17,9 +17,25 @@ jobs:
   validar:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_DB: hubpages_ci
+          POSTGRES_USER: hubpages
+          POSTGRES_PASSWORD: ci-only-isolated-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hubpages -d hubpages_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Preparar Node.js
         uses: actions/setup-node@v4
@@ -34,8 +50,47 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
+      - name: Validar scripts de publicação
+        run: |
+          bash -n deploy/provision-postgres-prod.sh
+          bash -n deploy/verify-prod-restore.sh
+          bash -n deploy/provision-postgres-dev.sh
+
       - name: Verificar lint
         run: pnpm lint
+
+      - name: Preservar legado e validar rascunhos privados
+        run: |
+          node scripts/test-legacy-preservation.mjs
+          node scripts/generate-legacy-template.mjs
+          git diff --exit-code -- src/components/LegacySalesTemplate.tsx
+          node scripts/test-legacy-template.cjs
+          node scripts/generate-es-studio.mjs
+          node scripts/generate-legacy-template.mjs --es
+          git diff --exit-code -- src/components/LegacySalesTemplateEs.tsx server/templates/infancia-es.json server/templates/legacy-defaults.json
+          node scripts/test-legacy-template-es.cjs
+          node scripts/test-editor-contract.cjs
+          node scripts/test-studio-undo.cjs
+          node scripts/test-studio-wizard.mjs
+          node scripts/test-visitor-session.mjs
+          node scripts/test-studio-slug.mjs
+          node scripts/test-studio-tracking.mjs
+          node scripts/test-platform.mjs
+          node scripts/test-page-address.mjs
+          node scripts/test-admin.mjs
+          node scripts/test-customers.mjs
+          HUBPAGES_TEST_PUBLICATION=true node scripts/test-customers.mjs
+          node scripts/test-workspace.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs
+
+      - name: Validar contas e migração no PostgreSQL isolado
+        env:
+          HUBPAGES_TEST_DATABASE_URL: postgres://hubpages:ci-only-isolated-password@127.0.0.1:5432/hubpages_ci
+          HUBPAGES_TEST_PUBLICATION: 'true'
+        run: |
+          node scripts/test-customers.mjs
+          node scripts/test-workspace.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs
 
       - name: Verificar tipos e build
         run: pnpm build

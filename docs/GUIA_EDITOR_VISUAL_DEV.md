@@ -1,0 +1,63 @@
+# Editor visual — homologação DEV
+
+Ambiente: https://dev.hubpages.com.br/studio. Produção não recebe estas alterações.
+
+1. Entre pela sua conta em `/conta` ou autentique o administrador existente em `/admin` e abra o Studio. Se houver duas sessões simultâneas, o Studio usa a conta de cliente; encerre essa sessão para trabalhar como administrador.
+2. Clique em **Criar minha página de vendas**. O primeiro modelo é **Infância Além das Telas**, baseado na página portuguesa existente. O catálogo oferece atualmente este modelo; novas opções seguirão o contrato de templates.
+3. As sete etapas aparecem em cards conectados no cabeçalho, junto de **Minhas páginas** e do estado do salvamento automático. Na etapa **Conteúdo**, clique diretamente em títulos, parágrafos, preços ou rótulos dos botões e escreva no próprio layout. A coluna lateral de propriedades foi removida; a marca HubPages fica apenas no rodapé das páginas de vendas, sem link.
+4. Arraste a seção pela alça **Arrastar** até outra seção para alterar a ordem. Os botões subir/descer oferecem o mesmo recurso, inclusive no celular.
+5. Em **Adicionar recurso**, insira texto/imagem, botão, separador, espaço, pergunta, oferta ou degustação. Linhas de duas/três colunas adicionam blocos lado a lado. Ajuste a largura de cada bloco para organizar novas linhas; no celular as colunas se empilham.
+6. Selecione o elemento e abra **Layout e estilo** na barra contextual flutuante para dimensões, margens, espaço interno, gap, fontes, alinhamento e fundo. A alça da imagem permite redimensionar por arraste; os controles numéricos/de faixa oferecem ajuste pelo teclado. Os ajustes explícitos preservam os demais estilos originais.
+7. Arraste PNG/JPEG/WebP para o espaço de imagem ou selecione um arquivo. A imagem é otimizada e substitui a anterior daquele espaço. Sem biblioteca pessoal: um arquivo ativo por espaço. Remover a imagem ou bloco libera seu binário ativo. Os ativos originais da página legada são preservados.
+8. Para degustação, adicione um ou mais blocos **Degustação** em qualquer modelo. Cada bloco representa uma página: escolha imagem, título e legenda. Na prévia, **Ver degustação** abre o leitor sem sair da página, com anterior/próxima/teclado e CTA. O primeiro modelo já inclui 12 páginas.
+9. Configure **Checkout** para o destino padrão. Clique no texto de um botão para editar seu rótulo; **Link do botão** configura seu HTTPS, permite escolher **Usar checkout padrão** ou **Remover link**. **Remover botão de venda** oculta somente aquele botão; selecione sua seção e use **Adicionar botão de venda** para reativá-lo. **Adicionar > Botão** cria um bloco novo. Botões do cabeçalho, hero, FAQ, faixa móvel e degustação têm configurações independentes. Na aba Checkout, use o link padrão ou configure um botão específico. Aplicar link padrão a todos redefine também os botões com link individual.
+10. Na etapa **Revisão**, escolha **Computador**, **Tablet**, **Celular** ou **Abrir minha página em prévia**. A prévia exige autenticação/propriedade; não é URL pública. Botões configurados abrem seus destinos em nova aba e podem levar a um checkout real. Não finalize uma compra durante a homologação sem intenção de comprar.
+11. As alterações salvam automaticamente. Aguarde a indicação de salvamento antes de trocar de dispositivo. Em conflito de versões, recarregue o rascunho antes de editar novamente. O histórico de restauração foi retirado da interface; revisões técnicas permanecem preservadas no banco.
+
+Imagens enviadas e substituídas não possuem arquivo binário histórico: restaurar uma versão não recupera a imagem antiga. Reenvie a imagem desejada quando necessário. Isso se aplica aos uploads novos; arquivos públicos legados permanecem disponíveis.
+
+Publicação paga continua pendente da integração Asaas. Por autorização do responsável, modelos nativos podem ser publicados gratuitamente e temporariamente no DEV. Não há registro de pagamento nem vigência financeira de 30 dias nessa liberação.
+
+12. No cartão, **Excluir página** abre uma confirmação. Confirmar move para **Lixeira**; cancelar mantém a página. Se estiver publicada, ela sai do ar. O conteúdo, as imagens atuais e o histórico permanecem preservados. Não há exclusão definitiva neste recurso.
+13. Em **Lixeira**, use **Restaurar página** para voltar como **Rascunho**. A restauração não republica automaticamente. Páginas excluídas continuam contando na política de uso justo e armazenamento, pois seus dados são recuperáveis.
+14. Na etapa **Publicação**, configure título, checkout e o nome final do link obrigatório na etapa Endereço e clique **Publicar página**. O cartão passa para **Publicada** e oferece **Visitar página publicada**. A URL utiliza exatamente o endereço escolhido, como `https://dev.hubpages.com.br/minha-oferta` e abre sem login.
+15. Editar e salvar mantém o site publicado na versão anterior. **Publicar alterações** cria uma versão nova de texto e imagens. O cartão avisa **Alterações não publicadas** quando há revisão posterior à publicação. **Retirar página do ar** retira o site do ar sem excluir seus dados.
+
+As imagens de uma publicação recebem cópia versionada, para que substituir/remover a imagem no rascunho não quebre o site no ar. Essas cópias não formam biblioteca pessoal; pertencem ao histórico da publicação. Há limite de 100 MB de binários de versões publicadas por conta no DEV, além dos 20 MB de imagens ativas de rascunho.
+
+Esta liberação usa somente o domínio de DEV, sem indexação, cobrança ou configuração automática de DNS. Páginas de origem importada continuam exigindo domínio próprio verificado e não usam essa liberação. Métricas das páginas novas e a integração Asaas continuam pendentes; páginas legadas e suas integrações permanecem preservadas. Desligar a flag de novas publicações gratuitas impede novas ativações, mas não despublica automaticamente páginas já liberadas no DEV.
+
+O modelo Infância Além das Telas reutiliza a estrutura e os estilos da página original em https://hubpages.com.br/infancia_alem_das_telas: 13 seções principais e 16 CTAs na página inicial, sem repetição de botão em cada FAQ/página de degustação. O leitor abre na própria página e mantém o CTA próprio. A prévia completa apresenta o modelo sem ferramentas do editor; sua faixa superior informa que não está publicado. Alterar conteúdo/layout ou remover botões naturalmente modifica a cópia criada pelo usuário, preservando a página original.
+
+
+16. Em **Endereço**, informe apenas a última parte do link, como `minha_oferta`. O domínio de DEV é exibido como prefixo fixo. O painel verifica disponibilidade; salvar reserva o endereço e publicar confere novamente. Endereços legados e rotas do sistema estão protegidos. Ao mudar e atualizar a publicação, o link anterior deixa de abrir a página. Domínios externos/produção não são ativados por esta liberação.
+17. Em **Rastreamento**, ative o Meta Pixel e informe o ID numérico. Opcionalmente, configure o token da API de Conversões e código de teste; **Salvar credenciais da Meta** preserva o token existente quando o campo fica vazio, ou o remove pela opção explícita. Credenciais pertencem somente à página editada, armazenadas com criptografia e nunca devolvidas ao navegador. Salve/republique para aplicar ID/ativação. O Pixel dispara PageView somente na página publicada; a API deduplica pelo mesmo event_id. Editor e prévia não disparam tracking.
+18. Conteúdo e Identidade foram unificados; agora são sete etapas. Todo texto, imagens e layout continuam em **Conteúdo**. Rastreamento passa a ser a etapa 4. **Voltar para minhas páginas** aguarda o salvamento e **Despublicar** preserva alterações locais mesmo quando não podem ser salvas.
+
+19. O link é sugerido pelo **Nome da página**, sem acentos e com sublinhados. Exemplo: Outro site meu → outro_site_meu. Havendo ocupação/reserva, a sugestão acrescenta _2, _3 etc. Ela acompanha renomeações até você editar o link manualmente. A partir daí, o endereço fica preservado, mesmo ao renomear. **Usar sugestão do nome da página** retoma o comportamento automático. A confirmação final de disponibilidade continua no salvamento/publicação. Endereços já existentes não são alterados automaticamente. A seleção de idioma foi retirada temporariamente, preservando o idioma dos rascunhos atuais.
+
+20. A timeline mostra etapa atual em verde escuro, etapas prontas em verde claro e pendentes em cinza, com texto e símbolos além das cores. O progresso reflete dados preenchidos: rastreamento é opcional, endereço precisa estar disponível, revisão pode ser confirmada e publicação fica pronta quando está no ar sem ajustes pendentes. No celular, os cards deslizam horizontalmente dentro da navegação.
+21. Cada etapa traz um guia visual com três passos e atalhos. **Ver como fazer** expande o fluxo; **Recolher guia** libera espaço. Conteúdo começa com guia recolhido para ampliar a área de edição.
+22. O círculo vermelho em **Publicação** conta ajustes de conteúdo/configuração que diferem da versão no ar, inclusive arquivos de imagem substituídos no mesmo espaço. Trocar de aba e salvar não adicionam pendências. A aba mostra os campos/seções alterados e o texto atual, com o momento da publicação comparada. Primeira publicação/reativação também são sinalizadas. Ao publicar, a lista e o círculo são zerados; desfazer uma edição para o valor publicado também remove essa pendência.
+23. Em **Revisão**, confira a prévia e marque **Conferi os textos, as imagens e os links da minha página**. O sistema pede nova conferência após mudanças de conteúdo ou imagem. **Continuar para publicação** abre a etapa final. A confirmação orienta a experiência, sem criar um bloqueio adicional para publicar.
+
+24. Na etapa Revisão, **Computador**, **Tablet** e **Celular** abrem uma janela de prévia com viewport próprio: 1280×900, 768×1024 e 375×812 px. A página reorganiza o layout conforme o dispositivo. A escala indicada ajusta a janela à área disponível; role dentro da prévia para ver todo o conteúdo. Degustação e teclado funcionam dentro da janela. Links para outros endereços abrem em nova aba. A prévia recebe o rascunho atual, sem precisar publicar, e continua privada/sem Pixel.
+25. O painel, editor, conta e administração usam a paleta HubPages: azul-petróleo nos comandos principais e textos, coral nos destaques e superfícies claras. Verde/vermelho continuam sinalizando sucesso/atenção. Cores do conteúdo/template não são substituídas por este tema; a página de vendas e a prévia preservam suas configurações próprias.
+
+26. A timeline usa laranja/coral na etapa atual, tons quentes claros nas etapas prontas e uma linha de progresso laranja. Ao passar o mouse, cards ganham elevação e sombra; botões têm feedback de hover/pressionamento. Nos atalhos dos guias, texto e seta têm alinhamento próprio e área mínima de 44 px, sem cortar o rótulo. Com movimento reduzido ativado no dispositivo, deslocamentos e transições são desabilitados. Cores dos templates/prévias permanecem próprias.
+
+
+## Cards, mídias e Desfazer — HP-025
+
+Em **Conteúdo → Cards e recursos**, escolha as quantidades de cards do método, conteúdo, bônus e degustação. Ligue/desligue o autor e a degustação. Cada botão tem seu próprio controle **Exibido / Oculto**.
+
+A coleção aceita até **6 mídias**. Todos os espaços aparecem separadamente na edição, com **Trocar imagem / vídeo** centralizado; na prévia as capas aparecem distribuídas ao redor da principal. As três imagens da pilha de degustação também têm controles independentes.
+
+O leitor permite editar origem, título e descrição de cada página, além da chamada adicional do modelo espanhol. Substituir a mídia mantém o leitor aberto. Fotos otimizadas até 2 MB; vídeos MP4/WebM até 25 MB. Sem biblioteca de versões na VPS: a publicação atual é preservada até republicar.
+
+Use **↶ Desfazer**, à esquerda de Cards e recursos, na toolbar de Conteúdo, para recuperar a última alteração do rascunho — inclusive bloco removido ou imagem/vídeo substituído. Ctrl+Z/Cmd+Z funciona fora dos campos; dentro do texto o navegador desfaz a digitação. São até 50 ações da sessão, com até 100 MB temporários na memória da aba, descartados ao recarregar/fechar/trocar de página. Desfazer salva o rascunho, sem publicar.
+
+Diretrizes para todos os futuros modelos: [Contrato dos templates](DIRETRIZES_TEMPLATES_E_EDITOR.md).
+
+
+Na versão v0.7.0-dev.14, cada bloco oferece Duplicar bloco e Layout do bloco, além das configurações locais pertinentes. A revisão deve ser confirmada novamente após qualquer alteração; sem a caixinha atualizada a publicação é recusada. Guia de acesso, endereços e preferências: [Fluxo refinado](GUIA_STUDIO_UNIFICADO_DEV.md#fluxo-refinado--v070-dev14).
