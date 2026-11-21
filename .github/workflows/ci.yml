@@ -71,6 +71,7 @@ jobs:
           node scripts/test-legacy-template-es.cjs
           node scripts/test-editor-contract.cjs
           node scripts/test-studio-undo.cjs
+          node scripts/test-checkout-links.mjs
           node scripts/test-studio-wizard.mjs
           node scripts/test-visitor-session.mjs
           node scripts/test-studio-slug.mjs

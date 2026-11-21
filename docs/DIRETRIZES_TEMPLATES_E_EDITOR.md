@@ -43,3 +43,6 @@ Todo template deve oferecer duplicação por bloco com identificador próprio e 
 Vídeos de apresentação usam autoplay/loop com som habilitado e um botão de interação se o navegador bloquear a reprodução. Não silenciar automaticamente para contornar a escolha do usuário. Miniaturas permanecem sem autoplay.
 
 A publicação exige assinatura de revisão atual, validada no servidor junto da versão das mídias. A assinatura ignora navegação entre etapas e metadados da própria conferência. A comparação da publicação trata URLs canônicas como equivalentes.
+
+
+Todo campo de checkout deve usar CheckoutLinkInput e o preflight compartilhado checkoutLinkProblem: orientação discreta durante digitação, sem popup automático por URL incompleta, buffer de foco para preservar cursor e validação HTTPS estrita antes de persistir. Links incompletos ficam no editor aberto até serem corrigidos.
