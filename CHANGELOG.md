@@ -5,6 +5,10 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.7.1] - 2026-11-21
+
+- Checkout: autosave aguarda URL completa sem popups repetidos; links padrão e individuais mantêm foco e digitação durante salvamento. Validação HTTPS da API preservada.
+
 ## [0.7.0] - 2026-11-21
 
 - Promoção autorizada de todas as atualizações do Studio para produção, com origem, banco, dados, acesso e segredos próprios. Incorporação das páginas de produção e verificação de preservação; sem importar dados DEV.
