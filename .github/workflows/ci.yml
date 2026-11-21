@@ -50,6 +50,12 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
+      - name: Validar scripts de publicação
+        run: |
+          bash -n deploy/provision-postgres-prod.sh
+          bash -n deploy/verify-prod-restore.sh
+          bash -n deploy/provision-postgres-dev.sh
+
       - name: Verificar lint
         run: pnpm lint
 
@@ -75,6 +81,7 @@ jobs:
           node scripts/test-customers.mjs
           HUBPAGES_TEST_PUBLICATION=true node scripts/test-customers.mjs
           node scripts/test-workspace.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs
 
       - name: Validar contas e migração no PostgreSQL isolado
         env:
@@ -83,6 +90,7 @@ jobs:
         run: |
           node scripts/test-customers.mjs
           node scripts/test-workspace.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs
 
       - name: Verificar tipos e build
         run: pnpm build

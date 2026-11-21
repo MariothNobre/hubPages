@@ -61,3 +61,10 @@ As capturas usam exclusivamente dados sintéticos locais. Não foram criadas/exc
 - Após publicar, a comparação usa o rascunho canônico salvo no servidor e limpa as pendências, inclusive URLs com barra final normalizada.
 - Vídeos têm autoplay, loop e áudio habilitado. Se o navegador bloquear reprodução com som, aparece **Reproduzir com som**; a plataforma não pode remover essa restrição do navegador. As miniaturas não iniciam outra reprodução.
 - Botão direito fora dos campos exibe o aviso de direitos autorais solicitado. Nos campos de texto permanece disponível o menu de edição; Ctrl+C/Ctrl+V e colagem de texto continuam funcionando. O aviso é um recurso da interface.
+
+
+## Disponibilidade em produção
+
+Após a promoção v0.7.0, entre em https://hubpages.com.br/entrar com seu acesso de produção. DEV continua em https://dev.hubpages.com.br/entrar para homologação. Cada ambiente mostra suas próprias páginas, usuários e estatísticas. O conteúdo de teste do DEV não é transferido. Publicação está temporariamente gratuita até a integração de cobrança.
+
+Publicar alterações usa verde suave. Quando a página está no ar, o bloco do link acompanha a cor verde do resumo e o botão Alterar endereço aparece abaixo do link.

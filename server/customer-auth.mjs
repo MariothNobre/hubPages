@@ -1,6 +1,6 @@
 import { randomBytes, createHash, scryptSync, timingSafeEqual } from 'node:crypto'
 export const customerCookie = 'hubpages_customer'
-export const termsVersion = 'homologacao-2026-11-19'
+export const termsVersion = process.env.HUBPAGES_ENV==='production'?'plataforma-2026-11-21':'homologacao-2026-11-19'
 const duration = 8 * 60 * 60
 const digest = (token) => createHash('sha256').update(token).digest('hex')
 const error = (status, message) => Object.assign(new Error(message), { status })
@@ -33,7 +33,7 @@ export function customerAuth(store) {
     async register(input, reservedEmail) {
       const value = profile(input)
       if (!validPassword(input.password)) throw error(422, 'A senha deve ter entre 12 e 200 caracteres.')
-      if (input.acceptTerms !== true || input.termsVersion !== termsVersion) throw error(422, 'Leia e aceite as condições atuais de homologação.')
+      if (input.acceptTerms !== true || input.termsVersion !== termsVersion) throw error(422, 'Leia e aceite as condições atuais de uso.')
       if (value.email === reservedEmail || await store.findEmail(value.email)) throw error(409, 'Não foi possível cadastrar este e-mail. Use o acesso existente ou outro endereço.')
       const user = await store.create({ ...value, passwordHash: hash(input.password), termsVersion, termsAcceptedAt: new Date().toISOString() })
       return issue(user)

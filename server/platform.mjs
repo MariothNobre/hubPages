@@ -150,13 +150,13 @@ export function publishDraft(state,ownerId,id,revision,origin) {
   const url=normalizeStudioAddress(page.draft.publicUrl,origin,!!page.legacySlug)
   if(!page.draft.title||!page.draft.checkoutUrl||(!page.legacySlug&&!page.draft.checkoutUrl.startsWith('https://')))throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
   lifecycle(page,ownerId,revision,'publish')
-  const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:'dev-free',draft:structuredClone(page.draft)}
+  const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:origin==='https://hubpages.com.br'?'temporary-free':'dev-free',draft:structuredClone(page.draft)}
   const image=(value)=>value.startsWith(`/api/platform/pages/${id}/images/`)?value.replace(`/api/platform/pages/${id}/images/`,`/api/public/publications/${publication.id}/images/`):value
   publication.draft.imageUrl=image(publication.draft.imageUrl)
   publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)});publication.draft.offerGallery?.forEach(m=>{m.imageUrl=image(m.imageUrl)})
   state.platform.publications??={};state.platform.publications[publication.id]=publication
   const {draft:_draft,...metadata}=publication
   page.publication=metadata;page.editorialStatus='published'
-  audit(state,ownerId,'page.publish.dev-free',id)
+  audit(state,ownerId,origin==='https://hubpages.com.br'?'page.publish.temporary-free':'page.publish.dev-free',id)
   return structuredClone(page)
 }

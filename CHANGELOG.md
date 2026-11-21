@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.7.0] - 2026-11-21
+
+- Promoção autorizada de todas as atualizações do Studio para produção, com origem, banco, dados, acesso e segredos próprios. Incorporação das páginas de produção e verificação de preservação; sem importar dados DEV.
+- Publicação temporariamente gratuita em produção até Asaas, migração 009 aditiva, condições por ambiente e vídeos permitidos pela CSP. Pipeline main com backups/restores e rollback de aplicação.
+- Botão de publicação em verde suave, bloco do link com o mesmo verde do resumo quando no ar e Alterar endereço abaixo do link.
+
 ## [0.7.0-dev.14] - 2026-11-21 (somente DEV)
 
 - Revisão obrigatória no servidor, pendências de publicação canônicas e recuperação guiada de endereço ocupado ao voltar para a lista.
