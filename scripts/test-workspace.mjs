@@ -1,3 +1,4 @@
+import { pendingChanges,reviewSignature } from '../shared/studio-wizard.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdtemp,writeFile,readFile } from 'node:fs/promises'
@@ -21,7 +22,7 @@ let child,logs=''
 async function start(){child=spawn(process.execPath,['server/index.mjs'],{env,stdio:['ignore','pipe','pipe']});child.stdout.on('data',v=>logs+=v);child.stderr.on('data',v=>logs+=v);await new Promise((done,reject)=>{child.stdout.once('data',done);child.once('exit',code=>reject(Error('Server exit '+code+' '+logs)))})}
 async function stop(){if(!child)return;await new Promise(done=>{child.once('exit',done);child.kill()});child=null}
 const request=(path,method='GET',body,cookie='',referer)=>fetch(base+path,{method,headers:{Origin:base,'Content-Type':'application/json',Cookie:cookie,...(referer?{Referer:base+referer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})})
-async function data(path,method,body,cookie){const r=await request(path,method,body,cookie);const d=await r.json();assert.equal(r.ok,true,JSON.stringify(d));return d}
+async function data(path,method,body,cookie){if(method==='POST'&&path.endsWith('/publish')){const root=path.slice(0,-8),page=await data(root,'GET',undefined,cookie),context=await data(root+'/publication-review','GET',undefined,cookie),draft={...page.draft,visitedSteps:[...new Set([...(page.draft.visitedSteps||[]),7])],reviewedSignature:reviewSignature(page.draft,context.assetVersion)},saved=await data(root,'PUT',{revision:page.revision,draft},cookie);body={revision:saved.revision}}const r=await request(path,method,body,cookie);const d=await r.json();assert.equal(r.ok,true,JSON.stringify(d));return d}
 const cookie=r=>r.headers.get('set-cookie').split(';')[0]
 try{
   await start()
@@ -58,10 +59,13 @@ try{
   assert.equal((await fetch(base+mediaPath,{headers:{Cookie:customer,Range:'bytes=200-300'}})).status,416)
   mediaPage=await data(mediaRoot,'PUT',{revision:mediaPage.revision,draft:{...mediaPage.draft,offerGallery:[{id:galleryId,imageUrl:mediaPath,mediaType:'video',title:'Vídeo de teste'}]}},customer)
   const mediaCopy=await data(mediaRoot+'/duplicate','POST',undefined,customer);assert.equal(mediaCopy.draft.offerGallery[0].imageUrl,`/api/platform/pages/${mediaCopy.id}/images/${galleryId}`);assert.equal((await request(mediaCopy.draft.offerGallery[0].imageUrl,'GET',undefined,customer)).status,200)
+  const missingReview=await request(mediaRoot+'/publish','POST',{revision:mediaPage.revision},customer);assert.equal(missingReview.status,422);assert.match((await missingReview.json()).message,/Revisão/)
   mediaPage=await data(mediaRoot+'/publish','POST',{revision:mediaPage.revision},customer)
+  const cleanReview=await data(mediaRoot+'/publication-review','GET',undefined,customer);assert.equal(pendingChanges(mediaPage.draft,cleanReview.publishedDraft,cleanReview.changedImageSlots).length,0,'all publication notifications clear after publish')
   const mediaLive=await data('/api/public/resolve?url='+encodeURIComponent(base+'/media_test')),oldMedia=mediaLive.draft.offerGallery[0].imageUrl
   assert.match(oldMedia,/\/api\/public\/publications\//);assert.equal((await request(oldMedia)).headers.get('content-type'),'video/mp4')
   assert.equal((await uploadMedia(png)).status,200);assert.equal((await request(oldMedia)).headers.get('content-type'),'video/mp4','draft replacement must not change the current publication')
+  assert.equal((await request(mediaRoot+'/publish','POST',{revision:mediaPage.revision},customer)).status,422,'replacing a binary invalidates the reviewed publication')
   const binaryReview=await data(mediaRoot+'/publication-review','GET',undefined,customer);assert.ok(binaryReview.changedImageSlots.includes(galleryId))
   mediaPage=await data(mediaRoot,'PUT',{revision:mediaPage.revision,draft:{...mediaPage.draft,offerGallery:[{id:galleryId,imageUrl:mediaPath,mediaType:'image',title:'Foto de teste'}]}},customer)
   mediaPage=await data(mediaRoot+'/publish','POST',{revision:mediaPage.revision},customer)
@@ -70,6 +74,8 @@ try{
   const newMedia=(await data('/api/public/resolve?url='+encodeURIComponent(base+'/media_test'))).draft.offerGallery[0].imageUrl;assert.deepEqual(Buffer.from(await(await request(newMedia)).arrayBuffer()),png)
   mediaPage=await data(mediaRoot,'PUT',{revision:mediaPage.revision,draft:{...mediaPage.draft,offerGallery:[]}},customer);assert.equal((await request(mediaPath,'GET',undefined,customer)).status,404)
   await data(mediaRoot+'/publish','POST',{revision:mediaPage.revision},customer);assert.equal((await request(newMedia)).status,404)
+  const prefs=await data('/api/platform/preferences','PUT',{guideOpen:false},customer);assert.equal(prefs.guideOpen,false);await data('/api/platform/preferences','PUT',{listView:'list'},customer);assert.deepEqual(await data('/api/platform/preferences','GET',undefined,customer),{listView:'list',guideOpen:false})
+  const randomPages=await Promise.all([data('/api/platform/pages','POST',{name:'Minha nova página',template:'infancia_pt'},customer),data('/api/platform/pages','POST',{name:'Minha nova página',template:'infancia_pt'},customer)]);for(const p of randomPages)assert.match(p.draft.publicUrl,/\/minha_nova_pagina_\d{3,6}$/);assert.notEqual(randomPages[0].draft.publicUrl,randomPages[1].draft.publicUrl)
   console.log('PASS: editor configuration persistence, gallery ownership/duplication, video MIME/ranges, atomic replacement and obsolete media cleanup')
   const pub=await data('/api/public/resolve?url='+encodeURIComponent(pt.publication.url)),visitorId=randomUUID(),tabId=randomUUID(),body={publicationId:pub.id,visitorId,tabId,viewId:randomUUID(),sequence:1,url:pub.url,isNewVisit:true,active:true}
   const visit=async (patch={},referer='/infancia_alem_das_telas')=>request('/api/public/traffic','POST',{...body,...patch},'',referer)
@@ -112,6 +118,7 @@ try{
   const again=cookie(await request('/api/admin/login','POST',{email:legacy.admin.email,password}));const remaining=await data('/api/platform/pages','GET',undefined,again);assert.equal(remaining.pages.length,1);assert.equal(remaining.pages[0].id,es.id);assert.equal(remaining.preferences.listView,'list')
   assert.equal((await data('/api/platform/profile','GET',undefined,again)).email,legacy.admin.email)
   await data('/api/platform/logout','POST',undefined,again)
+  assert.equal((await request('/api/platform/pages','GET',undefined,again)).status,401,'logged out admin cookie is revoked');await stop();await start();assert.equal((await request('/api/platform/pages','GET',undefined,again)).status,401,'logout revocation survives restart')
   const reportTest=trafficReport([{hour:'2026-11-20T03:00:00Z',visits:3},{hour:'2026-11-20T23:00:00Z',visits:7}],20,1,10,new Date('2026-11-21T01:00:00Z'));assert.equal(reportTest.hours[0].visits,3);assert.equal(reportTest.hours[20].visits,7);assert.deepEqual(reportTest.peakHours,[20])
   console.log('PASS: DEV adoption PT/ES, credentials, metrics/dedup/presence, owner isolation, preferences, visited steps, address retirement, unpublish, scoped permanent deletion and restart tombstones ('+(database?'PostgreSQL':'file')+')')
 }catch(error){console.error(logs);throw error}finally{if(process.env.HUBPAGES_WORKSPACE_PREVIEW==='true')console.log('Local isolated workspace: '+base+'/admin — admin@example.test / '+password);else await stop()}

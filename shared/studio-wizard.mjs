@@ -1,4 +1,5 @@
-const clean=value=>value===undefined||value===null?'':typeof value==='string'?value.trim().replace(/\/api\/(?:platform\/pages|public\/publications)\/[a-f0-9-]{36}\/images\//g,'@image/'):Array.isArray(value)?value.map(clean):typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,clean(value[key])])):value
+const canonicalText=value=>{const text=value.trim();if(/^https:\/\//.test(text))try{return new URL(text).toString()}catch{/* Still being edited. */}return text}
+const clean=value=>value===undefined||value===null?'':typeof value==='string'?canonicalText(value).replace(/\/api\/(?:platform\/pages|public\/publications)\/[a-f0-9-]{36}\/images\//g,'@image/'):Array.isArray(value)?value.map(clean):typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,clean(value[key])])):value
 const equal=(a,b)=>JSON.stringify(clean(a))===JSON.stringify(clean(b))
 const snippet=value=>typeof value==='string'?value.replace(/\s+/g,' ').slice(0,130):''
 export function pendingChanges(draft,published,changedImageSlots=[]) {
@@ -17,7 +18,7 @@ export function pendingChanges(draft,published,changedImageSlots=[]) {
   for(const block of draft.blocks||[]) {
     const old=before.get(block.id),name=snippet(block.title)||'Seção sem título'
     if(!old){changes.push({id:'add:'+block.id,label:`Nova seção: ${name}`,detail:'Uma seção foi adicionada ao conteúdo.'});continue}
-    for(const [key,label]of Object.entries({title:'Título',body:'Texto',imageUrl:'Imagem',kind:'Tipo de seção',enabled:'Visibilidade da seção',mediaType:'Tipo de mídia',sampleSource:'Origem da degustação',sampleKicker:'Chamada da degustação'}))add(`${block.id}:${key}`,`${label}: ${name}`,old[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key],block[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key])
+    for(const [key,label]of Object.entries({title:'Título',body:'Texto',imageUrl:'Imagem',kind:'Tipo de seção',enabled:'Visibilidade da seção',mediaType:'Tipo de mídia',sampleSource:'Origem da degustação',sampleKicker:'Chamada da degustação',sourceRole:'Estrutura do bloco duplicado',textOverrides:'Textos do bloco duplicado',sectionCounts:'Quantidade de cards do bloco'}))add(`${block.id}:${key}`,`${label}: ${name}`,old[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key],block[key]??({enabled:true,mediaType:'image',sampleSource:'@template',sampleKicker:'@template'})[key])
     add(block.id+':button',`Botão de compra: ${name}`,[old.buttonLabel||'',old.buttonUrl||'',old.showButton!==false,old.inheritLink!==false],[block.buttonLabel||'',block.buttonUrl||'',block.showButton!==false,block.inheritLink!==false])
     add(block.id+':layout',`Layout: ${name}`,[old.style||{},old.layoutOverrides||[],!!old.layoutCustomized],[block.style||{},block.layoutOverrides||[],!!block.layoutCustomized])
   }

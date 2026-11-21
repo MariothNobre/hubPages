@@ -1,0 +1,3 @@
+import { useEffect,useState } from 'react'
+import { SystemDialog } from './SystemDialog'
+export function ContextNotice(){const [open,setOpen]=useState(false);useEffect(()=>{const context=(event:MouseEvent)=>{const target=event.target;if(target instanceof Element&&target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]'))return;event.preventDefault();setOpen(true)};document.addEventListener('contextmenu',context);return()=>document.removeEventListener('contextmenu',context)},[]);return open?<SystemDialog title="HubPages.com.br" message="HubPages.com.br | Todos os Direitos Reservados - cópia não autorizada." onClose={()=>setOpen(false)}/>:null}

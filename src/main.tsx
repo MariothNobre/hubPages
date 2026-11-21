@@ -16,3 +16,5 @@ createRoot(document.getElementById('root')!).render(
 
 
 import './editor-contract.css'
+
+import './studio-polish.css'

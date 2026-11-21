@@ -1,3 +1,4 @@
+import { reviewSignature } from '../shared/studio-wizard.mjs'
 import { pendingChanges } from '../shared/studio-wizard.mjs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -34,6 +35,7 @@ await writeFile(file, JSON.stringify(legacy))
 const base = 'http://localhost:4197'
 const child = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, DATABASE_URL: testDatabase, DATA_FILE: file, STATIC_DIR: resolve('dist'), PORT: '4197', APP_ORIGINS: base, HUBPAGES_PLATFORM_ENABLED: 'true', HUBPAGES_CUSTOMER_SIGNUP_ENABLED: 'true', HUBPAGES_ENV:publishingTests?'development':'test',HUBPAGES_DEV_FREE_PUBLISH_ENABLED:publishingTests?'true':'false',HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ADMIN_EMAIL: legacy.admin.email, HUBPAGES_SESSION_SECRET: 'local-admin-test-secret' }, stdio: ['ignore', 'pipe', 'pipe'] })
 const request = async (path, method = 'GET', body, cookie = '') => fetch(`${base}${path}`, { method, headers: { Origin: base, 'Content-Type': 'application/json', Cookie: cookie }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+async function approvedPublish(root,cookie){const page=await(await request(root,'GET',undefined,cookie)).json(),review=await(await request(root+'/publication-review','GET',undefined,cookie)).json();const saved=await(await request(root,'PUT',{revision:page.revision,draft:{...page.draft,visitedSteps:[...new Set([...(page.draft.visitedSteps||[]),7])],reviewedSignature:reviewSignature(page.draft,review.assetVersion)}},cookie)).json();return request(root+'/publish','POST',{revision:saved.revision},cookie)}
 const cookieOf = (response) => response.headers.get('set-cookie').split(';')[0]
 try {
   await new Promise((done, reject) => { child.stdout.once('data', done); child.once('exit', (code) => reject(new Error(`Server exited: ${code}`))) })
@@ -45,6 +47,7 @@ try {
   const a = cookieOf(aResponse), b = cookieOf(bResponse)
   const aUser = (await aResponse.json()).user, bUser = (await bResponse.json()).user
   assert.notEqual(aUser.accountId, bUser.accountId); assert.notEqual(aUser.accountId, 'legacy-owner'); assert.equal(aUser.role, 'customer'); assert.equal(aUser.passwordHash, undefined)
+  const primary=await request('/api/platform/login','POST',{email:'a@example.test',password});assert.equal(primary.status,200);const primaryCookie=cookieOf(primary);assert.equal((await request('/api/platform/pages','GET',undefined,primaryCookie)).status,200);const logout=await request('/api/platform/logout','POST',undefined,primaryCookie);assert.equal(logout.status,200);assert.match(logout.headers.get('set-cookie'),/Max-Age=0/);assert.equal((await request('/api/platform/pages','GET',undefined,primaryCookie)).status,401)
   assert.equal((await register('Duplicada', 'A@example.test')).status, 409)
   assert.equal((await register('Admin', legacy.admin.email)).status, 409)
   assert.equal((await request('/api/admin/analytics', 'GET', undefined, a)).status, 401)
@@ -113,7 +116,7 @@ try {
     assert.equal((await putImage(imageBytes)).status,200)
     p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,checkoutUrl:'https://pay.hotmart.com/example?ref=keep',publicUrl:base+'/oferta-teste',imageUrl:privateImage}},a)).json()
     assert.equal((await request(`${root}/publish`,'POST',{revision:p.revision},b)).status,404)
-    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    p=await (await approvedPublish(root,a)).json()
     assert.equal(p.editorialStatus,'published');assert.equal(p.financialStatus,'unpaid');assert.equal(p.publication.mode,'dev-free');assert.equal(p.publication.url,`${base}/oferta-teste`)
     assert.equal((await request('/api/public/resolve?url='+encodeURIComponent(base+'/oferta-teste'))).status,200)
     assert.equal((await request(root+'/tracking','PUT',{metaConversionsApiToken:'synthetic-private-token',metaTestEventCode:'TEST123'},b)).status,404)
@@ -149,7 +152,7 @@ try {
     p=await (await request(root,'PUT',{revision:p.revision,draft:{...p.draft,title:'Novo título ainda em rascunho',publicUrl:base+'/oferta-nova'}},a)).json()
     assert.notEqual((await (await request(publicPath)).json()).draft.title,p.draft.title)
     assert.deepEqual(Buffer.from(await (await request(firstImage)).arrayBuffer()),imageBytes)
-    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    p=await (await approvedPublish(root,a)).json()
     live=await (await request(publicPath)).json()
     assert.equal(live.draft.title,p.draft.title)
     review=await (await request(root+'/publication-review','GET',undefined,a)).json()
@@ -164,7 +167,7 @@ try {
     assert.equal((await request(live.draft.imageUrl)).status,200)
     p=await (await request(`${root}/unpublish`,'POST',{revision:p.revision},a)).json()
     assert.equal(p.editorialStatus,'draft');assert.equal((await request(publicPath)).status,404);assert.equal((await request(firstImage)).status,404)
-    p=await (await request(`${root}/publish`,'POST',{revision:p.revision},a)).json()
+    p=await (await approvedPublish(root,a)).json()
     p=await (await request(root,'DELETE',{revision:p.revision},a)).json()
     assert.equal((await request(publicPath)).status,404)
     p=await (await request(`${root}/untrash`,'POST',{revision:p.revision},a)).json()

@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.7.0-dev.14] - 2026-11-20 (somente DEV)
+
+- Revisão obrigatória no servidor, pendências de publicação canônicas e recuperação guiada de endereço ocupado ao voltar para a lista.
+- Duplicação de blocos nativos, configurações locais, Desfazer reposicionado, salvamento automático e criação somente na lista.
+- Identidade STUDIO DE CRIAÇÃO, setas na timeline, controles coral e preferência do guia por usuário (migração 008).
+- Login principal /entrar, logout com cookies expirados e revogação persistente; endereços padrão com sufixos aleatórios disponíveis.
+- Vídeos com autoplay/loop/áudio habilitado e fallback de interação; aviso no botão direito com copiar/colar preservado nos campos.
+
 ## [0.7.0-dev.13] - 2026-11-20 (somente DEV)
 
 - Contrato compartilhado de edição para templates PT/ES e futuros modelos: ações sem navegar no editor, preço legível em quatro posições, FAQ corrigida, visibilidade individual de botões e quantidades configuráveis.

@@ -46,3 +46,18 @@ Implementação de 20/11/2026; atualização de contadores v0.7.0-dev.12 publica
 - `docs/evidence/hp021/metricas.jpg`: relatório com total legado e início do detalhamento.
 
 As capturas usam exclusivamente dados sintéticos locais. Não foram criadas/excluídas páginas reais para testar o recurso.
+
+
+## Fluxo refinado — v0.7.0-dev.14
+
+- O acesso principal é `/entrar`, com a apresentação **Entre no HubPages**. Aceita as contas existentes e mantém sua identidade/propriedade; `/admin` fica reservado às credenciais administrativas do SuperAdmin. O rótulo Plano Ouro no cabeçalho é a apresentação solicitada, sem criação de cobrança nem novos privilégios.
+- **Sair** encerra a sessão no servidor, expira os cookies de cliente e administrador e abre `/entrar` em um documento novo. Sessões administrativas encerradas ficam revogadas também após reiniciar o serviço.
+- **Criar minha página de vendas** aparece somente na lista **Páginas Criadas no Studio**. Enquanto o nome continuar Minha nova página, o endereço recebe um sufixo numérico aleatório de 3 a 6 dígitos, com disponibilidade verificada globalmente. Não é um identificador sequencial. O UUID interno da página permanece independente.
+- Não existe mais Salvar agora: as edições são salvas automaticamente. A toolbar do Conteúdo começa com **Desfazer**, seguido de **Cards e recursos**. Cada seção oferece **Duplicar bloco**, **Layout do bloco** e configurações locais onde houver quantidades/recursos opcionais.
+- Duplicar cria outro bloco com ID próprio, copia sua mídia atual quando enviada e preserva o layout do template. Textos da cópia podem ser alterados independentemente. A duplicação participa do Desfazer e respeita o limite de 40 blocos.
+- O guia Recolher guia/Ver como fazer usa a mesma preferência em todas as etapas e páginas do usuário, salva no servidor. O modo Cards/Lista continua preservado. Migração 008 adiciona a preferência sem alterar os dados existentes.
+- Para publicar, confira a etapa Revisão e marque a caixinha de conferência. Qualquer nova alteração de conteúdo ou arquivo invalida essa confirmação. Cliente e servidor verificam a revisão; clicar em publicar sem confirmar abre uma janela explicativa.
+- Endereço ocupado recebe contorno e mensagem destacados e impede publicação. Se esse conflito impedir voltar à lista, a janela oferece **Usar endereço disponível e voltar**: mantém as outras alterações e salva com uma alternativa disponível. Não descarta o rascunho.
+- Após publicar, a comparação usa o rascunho canônico salvo no servidor e limpa as pendências, inclusive URLs com barra final normalizada.
+- Vídeos têm autoplay, loop e áudio habilitado. Se o navegador bloquear reprodução com som, aparece **Reproduzir com som**; a plataforma não pode remover essa restrição do navegador. As miniaturas não iniciam outra reprodução.
+- Botão direito fora dos campos exibe o aviso de direitos autorais solicitado. Nos campos de texto permanece disponível o menu de edição; Ctrl+C/Ctrl+V e colagem de texto continuam funcionando. O aviso é um recurso da interface.

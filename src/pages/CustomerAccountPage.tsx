@@ -47,7 +47,7 @@ export function CustomerAccountPage() {
   }
   async function logout() {
     setBusy(true)
-    try { await customerApi('logout', 'POST'); setUser(null); setPassword(''); setMessage('Sessão encerrada.') }
+    try { await customerApi('logout', 'POST'); setUser(null); setPassword(''); window.location.replace('/entrar') }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Falha ao sair.') }
     finally { setBusy(false) }
   }

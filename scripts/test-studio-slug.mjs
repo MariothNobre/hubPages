@@ -10,3 +10,5 @@ assert.equal(result.slug,'colecao_familia_2');assert.equal(result.url,origin+'/c
 assert.equal((await suggestStudioAddress('🎉',origin,async()=>{})).slug,'minha_pagina')
 await assert.rejects(suggestStudioAddress('Página',origin,async()=>{throw new Error('Banco indisponível')}),/Banco indisponível/)
 console.log('PASS: name-based slugs, accent normalization, reserved paths, collision suffixes and real errors preserved')
+
+for(let n=0;n<20;n++)assert.match((await suggestStudioAddress('Minha nova página',origin,async()=>{})).slug,/^minha_nova_pagina_\d{3,6}$/)

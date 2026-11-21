@@ -1,3 +1,4 @@
+import { reviewSignature } from '../shared/studio-wizard.mjs'
 import { pgWorkspace,fileWorkspace } from './workspace-store.mjs'
 import { pendingChanges } from '../shared/studio-wizard.mjs'
 import { readFile } from 'node:fs/promises'
@@ -79,6 +80,7 @@ export async function createPlatformStore(connectionString, fallback) {
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=5')).rowCount)await migration.query(await readFile(new URL('./migrations/005-studio-workspace.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=6')).rowCount)await migration.query(await readFile(new URL('./migrations/006-traffic-pageviews.sql',import.meta.url),'utf8'))
     if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=7')).rowCount)await migration.query(await readFile(new URL('./migrations/007-current-media.sql',import.meta.url),'utf8'))
+    if(!(await migration.query('SELECT version FROM hubpages_schema_migrations WHERE version=8')).rowCount)await migration.query(await readFile(new URL('./migrations/008-studio-guide-preference.sql',import.meta.url),'utf8'))
     await migration.query('COMMIT')
   } catch (error) { await migration.query('ROLLBACK'); throw error }
   finally { migration.release() }
@@ -106,6 +108,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       if(action==='trackingRead'||action==='trackingSave'){let row=(await client.query('SELECT * FROM hubpages_studio_tracking WHERE page_id=$1 AND owner_id=$2',[id,ownerId])).rows[0];if(action==='trackingSave'){row=trackingChange(input,row,fallback?.credentialKey);await client.query('INSERT INTO hubpages_studio_tracking(page_id,owner_id,token_ciphertext,test_event_code) VALUES($1,$2,$3,$4) ON CONFLICT(page_id) DO UPDATE SET token_ciphertext=EXCLUDED.token_ciphertext,test_event_code=EXCLUDED.test_event_code',[id,ownerId,row.token_ciphertext,row.test_event_code])}await client.query('COMMIT');return trackingView(row)}
       if (action === 'read') { await client.query('COMMIT'); return readDraft(state, ownerId, id) }
       if(['trash','untrash','publish','unpublish'].includes(action)) {
+        if(action==='publish'&&input.requireReview&&original.origin==='native'&&original.financialStatus==='unpaid'){const images=await client.query('SELECT slot,updated_at FROM hubpages_studio_images WHERE page_id=$1 ORDER BY slot',[id]);const version=images.rows.map(row=>row.slot+':'+row.updated_at.toISOString()).join('|');if(!(original.draft.visitedSteps||[]).includes(7)||original.draft.reviewedSignature!==reviewSignature(original.draft,version))throw new PlatformError(422,'A Revisão é necessária antes de publicar. Abra a etapa Revisão e marque a caixinha confirmando a conferência dos textos, imagens e links.')}
         if(action==='publish'&&original.origin==='native')await checkAddress(client,id,original.draft.publicUrl)
         const page=action==='publish'?publishDraft(state,ownerId,id,input.revision,input.origin):action==='unpublish'?unpublishDraft(state,ownerId,id,input.revision):trashDraft(state,ownerId,id,input.revision,action==='untrash')
         const publication=action==='publish'?state.platform.publications[page.publication.id]:null
@@ -143,7 +146,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
       }
       if(['create','save'].includes(action)&&input?.draft?.publicUrl&&input.draft.publicUrl!==previousAddress)input={...input,draft:{...input.draft,publicUrl:await checkAddress(client,id||'00000000-0000-0000-0000-000000000000',input.draft.publicUrl)}}
       let page
-      if (action === 'create') page = createDraft(state, ownerId, input)
+      if (action === 'create'){page = createDraft(state, ownerId, input);if(page.draft.name==='Minha nova página'&&!page.draft.publicUrl){page.draft.publicUrl=(await suggestStudioAddress(page.draft.name,publicOrigin,url=>checkAddress(client,page.id,url))).url;page.draft.addressAuto=true;page.revisions[0].draft=structuredClone(page.draft)}}
       else if (action === 'save') page = saveDraft(state, ownerId, id, input)
       else if (action === 'duplicate') page = duplicateDraft(state, ownerId, id)
       else if (action === 'restore') page = restoreDraft(state, ownerId, id, input.version, input.revision)
@@ -216,7 +219,7 @@ const result=await suggestStudioAddress(input.name,publicOrigin,url=>checkAddres
 function fileStore({ read, write,publicOrigin,credentialKey }) {
   let pending = Promise.resolve()
   const operation = (fn, persist = true) => {
-    const task = pending.then(async () => { const state = await read(); const result = fn(state); if (persist) await write(state); return result })
+    const task = pending.then(async () => { const state = await read(); const result = await fn(state); if (persist) await write(state); return result })
     pending = task.catch(() => undefined)
     return task
   }
@@ -237,14 +240,14 @@ function fileStore({ read, write,publicOrigin,credentialKey }) {
     finishMeta:(id,event,status)=>operation(s=>{s.platform.metaEvents[id+':'+event]=status}),
     list: (ownerId,trashed=false) => operation((s) => listDrafts(s, ownerId,trashed).map(page=>{if(trashed)return page;const context=review(s,ownerId,page.id);return{...page,coverUrl:s.platform.pages[page.id].draft.imageUrl,coverType:s.platform.pages[page.id].draft.mediaType,locale:s.platform.pages[page.id].draft.locale,pendingChangeCount:pendingChanges(s.platform.pages[page.id].draft,context.publishedDraft,context.changedImageSlots).length}}), false),
     read: (ownerId, id) => operation((s) => readDraft(s, ownerId, id), false),
-    create: (ownerId, input) => operation((s) => { quota(s, ownerId); const p = createDraft(s, ownerId, input);if(p.draft.publicUrl){p.draft.publicUrl=checkAddress(s,p.id,p.draft.publicUrl);p.revisions[0].draft=structuredClone(p.draft);s.platform.pages[p.id]=p} checkImages(p); return p }),
+    create: (ownerId, input) => operation(async(s) => { quota(s, ownerId); const p = createDraft(s, ownerId, input);if(p.draft.name==='Minha nova página'&&!p.draft.publicUrl){p.draft.publicUrl=(await suggestStudioAddress(p.draft.name,publicOrigin,url=>checkAddress(s,p.id,url))).url;p.draft.addressAuto=true;p.revisions[0].draft=structuredClone(p.draft)}if(p.draft.publicUrl){p.draft.publicUrl=checkAddress(s,p.id,p.draft.publicUrl);p.revisions[0].draft=structuredClone(p.draft);s.platform.pages[p.id]=p} checkImages(p); return p }),
     save: (ownerId, id, input) => operation((s) => { if(input.draft?.publicUrl&&input.draft.publicUrl!==readDraft(s,ownerId,id).draft.publicUrl)input={...input,draft:{...input.draft,publicUrl:checkAddress(s,id,input.draft.publicUrl)}};const p = saveDraft(s, ownerId, id, input); checkImages(p); for (const key of Object.keys(s.platform.images?.[id] ?? {})) if (!slots(p).includes(key)) delete s.platform.images[id][key]; return p }),
     duplicate: (ownerId, id) => operation((s) => { readDraft(s, ownerId, id); quota(s, ownerId); const p = duplicateDraft(s, ownerId, id); copyImages(p,id); s.platform.pages[p.id]=p; s.platform.images ??= {}; s.platform.images[p.id] = structuredClone(s.platform.images[id] ?? {}); return p }),
     restore: (ownerId, id, input) => operation((s) => restoreDraft(s, ownerId, id, input.version, input.revision)),
     trash:(ownerId,id,input)=>operation(s=>{const p=trashDraft(s,ownerId,id,input.revision);for(const pub of Object.values(s.platform.publications||{}))if(pub.pageId===id)pub.images={};return p}),
     untrash:(ownerId,id,input)=>operation(s=>trashDraft(s,ownerId,id,input.revision,true)),
     unpublish:(ownerId,id,input)=>operation(s=>{const p=unpublishDraft(s,ownerId,id,input.revision);for(const pub of Object.values(s.platform.publications||{}))if(pub.pageId===id)pub.images={};return p}),
-    publish:(ownerId,id,input)=>operation(s=>{const original=readDraft(s,ownerId,id);if(original.origin==='native')checkAddress(s,id,original.draft.publicUrl);const page=publishDraft(s,ownerId,id,input.revision,input.origin),pub=s.platform.publications[page.publication.id];pub.images={};for(const slot of slots(page).filter(Boolean)){const img=s.platform.images?.[id]?.[slot];if(!img)throw new PlatformError(422,'Reenvie as imagens antes de publicar.');pub.images[slot]=structuredClone(img)}for(const old of Object.values(s.platform.publications))if(old.pageId===id&&old.id!==pub.id)old.images={};return page}),
+    publish:(ownerId,id,input)=>operation(s=>{const original=readDraft(s,ownerId,id);if(input.requireReview&&original.origin==='native'&&original.financialStatus==='unpaid'&&(!(original.draft.visitedSteps||[]).includes(7)||original.draft.reviewedSignature!==reviewSignature(original.draft,review(s,ownerId,id).assetVersion)))throw new PlatformError(422,'A Revisão é necessária antes de publicar. Abra a etapa Revisão e marque a caixinha confirmando a conferência dos textos, imagens e links.');if(original.origin==='native')checkAddress(s,id,original.draft.publicUrl);const page=publishDraft(s,ownerId,id,input.revision,input.origin),pub=s.platform.publications[page.publication.id];pub.images={};for(const slot of slots(page).filter(Boolean)){const img=s.platform.images?.[id]?.[slot];if(!img)throw new PlatformError(422,'Reenvie as imagens antes de publicar.');pub.images[slot]=structuredClone(img)}for(const old of Object.values(s.platform.publications))if(old.pageId===id&&old.id!==pub.id)old.images={};return page}),
     publicPage:(id)=>operation(s=>{const page=s.platform?.pages?.[id],pub=s.platform?.publications?.[page?.publication?.id];if(!pub||page.trashedAt||page.editorialStatus!=='published')throw new PlatformError(404,'Página não encontrada.');const {ownerId:_owner,images:_images,...result}=pub;return result},false),
     publicImage:(id,slot)=>operation(s=>{const pub=s.platform?.publications?.[id],page=s.platform?.pages?.[pub?.pageId],img=pub?.images?.[slot];if(!img||page?.publication?.id!==id||page?.trashedAt||page?.editorialStatus!=='published')throw new PlatformError(404,'Imagem não encontrada.');return{mime:img.mime,content:Buffer.from(img.content,'base64')}},false),
     getImage: (ownerId, id, slot) => operation((s) => { checkSlot(readDraft(s, ownerId, id),slot); const img = s.platform.images?.[id]?.[slot]; if (!img) throw new PlatformError(404, 'Imagem não encontrada.'); return { mime: img.mime, content: Buffer.from(img.content,'base64') } }, false),
