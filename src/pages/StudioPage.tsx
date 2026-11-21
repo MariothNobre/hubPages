@@ -1,3 +1,4 @@
+import { checkoutLinkProblem } from '../../shared/checkout-links.mjs'
 import { SystemDialog } from '../components/SystemDialog'
 import { StudioUndo } from '../components/StudioUndo'
 import { metricsRefreshMs } from '../../shared/studio-traffic.mjs'
@@ -86,7 +87,9 @@ export function StudioPage() {
     return()=>{active=false}
   },[ready,requestedId,requestedStep,setParams])
   useEffect(()=>{if(!ready||page)return;let active=true;const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;api<{metrics:Record<string,{visits:number;online:number}>}>('metrics').then(result=>{if(active)setPages(pages=>pages.map(p=>({...p,...result.metrics[p.id]})))}).catch(()=>undefined)},metricsRefreshMs);return()=>{active=false;clearInterval(timer)}},[ready,page])
-  const flush = useCallback((): Promise<boolean> => {
+  const flush = useCallback((interactive=true): Promise<boolean> => {
+    const pauseForLink=()=>{const issue=current.current&&checkoutLinkProblem(current.current.draft);if(!issue)return false;const message=`Complete o campo “${issue.label}” com uma URL HTTPS válida para salvar. O texto em edição continua nesta página.`;failedSave.current={draft:JSON.stringify(current.current?.draft),message,step:4};setNotice('Link em edição: aguardando um endereço HTTPS completo para salvar.');if(interactive)setDialog({title:'Complete o link de compra',message,step:4});return true}
+    if(pauseForLink())return Promise.resolve(false)
     if (pending.current) return pending.current
     if(current.current&&failedSave.current?.step===6&&failedSave.current?.draft===JSON.stringify(current.current.draft))return Promise.resolve(false)
     if (!current.current || JSON.stringify(current.current.draft) === saved.current) return Promise.resolve(true)
@@ -97,6 +100,7 @@ export function StudioPage() {
         await history.current.settled()
         while (current.current && JSON.stringify(current.current.draft) !== saved.current) {
           await history.current.settled()
+          if(pauseForLink())return false
           const snapshot = {...current.current,draft:structuredClone(current.current.draft)}
           attempted=JSON.stringify(snapshot.draft)
           const result = await api<Page>(`pages/${snapshot.id}`, 'PUT', { revision: snapshot.revision, draft: snapshot.draft })
@@ -115,7 +119,7 @@ export function StudioPage() {
   }, [])
   useEffect(() => {
     if (transition.current || !page || JSON.stringify(page.draft) === saved.current) return
-    const timer = window.setTimeout(() => { void flush() }, 900)
+    const timer = window.setTimeout(() => { void flush(false) }, 900)
     return () => window.clearTimeout(timer)
   }, [page, flush, publishing, leaving])
   useEffect(() => {
@@ -128,6 +132,7 @@ export function StudioPage() {
     if (!current.current || transition.current) return
     const patch=typeof change==='function'?change(current.current.draft):change
     const before=current.current.draft,next={...before,...patch}
+    if(failedSave.current?.step===4&&!checkoutLinkProblem(next))failedSave.current=null
     const meaningful=Object.keys(patch).some(key=>!['step','visitedSteps','reviewedSignature'].includes(key)&&JSON.stringify(before[key as keyof Draft])!==JSON.stringify(next[key as keyof Draft]))
     if(meaningful&&!skipHistory.current){const oldSlots=history.current.slots(before,current.current.id),newSlots=history.current.slots(next,current.current.id);history.current.record(before,history.current.capture(before,current.current.id,[...oldSlots.keys()].filter(slot=>!newSlots.has(slot))));setUndoCount(history.current.entries.length)}
     skipHistory.current=false
@@ -245,5 +250,5 @@ export function StudioPage() {
       {draft.step === 7 && <><a className="studio-preview-link" href={`/studio/preview/${page.id}`} target="_blank" rel="noopener noreferrer" onClick={(event)=>{event.preventDefault();void run(async()=>{if(await flush()) window.open(`/studio/preview/${page.id}`,'_blank','noopener,noreferrer')})}}>Abrir minha página em prévia ↗</a><div className="wizard-review-confirm"><label><input type="checkbox" checked={reviewed} disabled={!reviewCurrent||!!reviewCurrent.error} onChange={event=>void confirmReview(event.target.checked)}/>Conferi os textos, as imagens e os links da minha página.</label><p>{reviewed?'Revisão confirmada. Sua página está pronta para o próximo passo.':'Depois de conferir, marque esta opção. Novas edições pedem uma nova revisão.'}</p><button disabled={!reviewed} onClick={()=>update({step:8})}>Continuar para publicação →</button></div><div className="studio-viewports">{['desktop','tablet','mobile'].map((size)=><button key={size} onClick={()=>setViewport(size)} aria-pressed={viewport===size}>{{desktop:'Computador',tablet:'Tablet',mobile:'Celular'}[size]}</button>)}</div><ResponsiveReview pageId={page.id} draft={draft} viewport={viewport}/></>}
       {draft.step === 8 && <><div className="wizard-publication-status"><span className={`studio-page-status ${page.editorialStatus==='published'?'is-published':''}`}>{page.editorialStatus==='published'?'NO AR':'RASCUNHO'}</span><p>{page.editorialStatus==='published'?'Seu link está ativo. As próximas mudanças ficam no rascunho até você atualizar a publicação.':'Você está a um passo de colocar sua oferta no ar.'}</p></div><PublicationChanges changes={changes} publishedAt={reviewCurrent?.publishedAt||null} loading={!reviewCurrent} error={reviewCurrent?.error||''} active={page.editorialStatus==='published'}/>{reviewCurrent?.error&&<button onClick={()=>setAssetRefresh(value=>value+1)}>Tentar conferir novamente</button>}<div className={'wizard-launch'+(page.editorialStatus==='published'?' is-published':'')}><div><span className="wizard-eyebrow">SEU LINK PARA COMPARTILHAR</span>{draft.publicUrl?<a className="studio-address-link" href={draft.publicUrl} target="_blank" rel="noopener noreferrer">{draft.publicUrl} ↗</a>:<p>Escolha um nome para seu link antes de publicar.</p>}<button onClick={()=>update({step:6})}>{draft.publicUrl?'Alterar endereço':'Escolher endereço'} →</button></div><div className="wizard-launch-checks"><p>{stepReady[1]?'✓':'○'} Conteúdo preparado</p><p>{stepReady[2]?'✓':'○'} Link de compra conectado</p><p>{stepReady[4]?'✓':'○'} Endereço escolhido</p><button onClick={()=>update({step:7})}>{stepReady[5]?'✓ Revisão conferida':'○ Conferir a prévia'} →</button></div></div>{!freePublishing&&<p role="status">A publicação ainda não está disponível neste ambiente. Seu rascunho continua salvo e você pode usar a prévia.</p>}<div className="wizard-publish-actions">{page.editorialStatus==='published'&&<button className="studio-unpublish" disabled={publishing} onClick={()=>void publishPage(true)}>Retirar página do ar</button>}<button className="studio-publish" disabled={publishing||!freePublishing} onClick={()=>void publishPage()}>{publishing?'Preparando sua página…':page.editorialStatus==='published'?'Publicar alterações':'Publicar minha página'}</button>{page.editorialStatus==='published'&&page.publication&&<a href={page.publication.url} target="_blank" rel="noopener noreferrer">Visitar página no ar ↗</a>}</div><p className="wizard-environment-note">{production?'Sua página será publicada no domínio HubPages. Depois de publicar, copie o endereço para compartilhar.':'Ambiente de testes: o link será publicado no domínio de homologação. Depois de publicar, copie o endereço para compartilhar.'} Para continuar editando, volte ao Conteúdo.</p></>}
     </section></div></>}
-    </main><WorkspaceFooter/>{dialog&&<SystemDialog title={dialog.title} message={dialog.message} onClose={()=>setDialog(null)} actionLabel={dialog.recover?'Usar endereço disponível e voltar':dialog.step===7?'Ir para Revisão':dialog.step?'Corrigir endereço':'Tentar novamente'} onAction={dialog.recover?()=>void recoverAddressAndLeave():dialog.step?()=>{const step=dialog.step;setDialog(null);update({step})}:dialog.title==='Não foi possível salvar'?()=>{setDialog(null);void flush()}:undefined}/>}{metricTarget&&<StudioInsights pageId={metricTarget.id} name={metricTarget.name} onClose={()=>setMetricTarget(null)}/>} {purgeTarget&&<PurgePageDialog name={purgeTarget.name} busy={deleting} error={deleteError} onCancel={()=>setPurgeTarget(null)} onConfirm={()=>void purgePage()}/>} {deleteTarget&&<DeletePageDialog name={deleteTarget.name} busy={deleting} error={deleteError} onCancel={()=>setDeleteTarget(null)} onConfirm={()=>void deletePage()}/>}</div>
+    </main><WorkspaceFooter/>{dialog&&<SystemDialog title={dialog.title} message={dialog.message} onClose={()=>setDialog(null)} actionLabel={dialog.recover?'Usar endereço disponível e voltar':dialog.step===7?'Ir para Revisão':dialog.step===4?'Ir para Checkout':dialog.step?'Corrigir endereço':'Tentar novamente'} onAction={dialog.recover?()=>void recoverAddressAndLeave():dialog.step?()=>{const step=dialog.step;setDialog(null);update({step})}:dialog.title==='Não foi possível salvar'?()=>{setDialog(null);void flush()}:undefined}/>}{metricTarget&&<StudioInsights pageId={metricTarget.id} name={metricTarget.name} onClose={()=>setMetricTarget(null)}/>} {purgeTarget&&<PurgePageDialog name={purgeTarget.name} busy={deleting} error={deleteError} onCancel={()=>setPurgeTarget(null)} onConfirm={()=>void purgePage()}/>} {deleteTarget&&<DeletePageDialog name={deleteTarget.name} busy={deleting} error={deleteError} onCancel={()=>setDeleteTarget(null)} onConfirm={()=>void deletePage()}/>}</div>
 }

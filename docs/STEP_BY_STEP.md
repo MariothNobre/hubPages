@@ -364,3 +364,11 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - DEV e produção servem /entrar com o mesmo bundle index-DSti1CNR.js e CSS index-DNum4ijW.css: Studio, duplicação, revisão e verde confirmados. APIs privadas de páginas 401 sem sessão nos dois ambientes. Produção retorna environment=production, cadastro habilitado e condições plataforma-2026-11-21. Health DEV, produção e Sistera 200.
 - Acesso de produção: https://hubpages.com.br/entrar, com as credenciais já cadastradas em produção. Homologação: https://dev.hubpages.com.br/entrar. Recarregar o Studio para receber a versão nova. Publicar alterações em verde suave; bloco do link publicado no mesmo verde do resumo; Alterar endereço abaixo do link. Evidência visual local em docs/evidence/hp029/publicacao-verde.jpg.
 - Documentação final com skip-ci, sem novo deploy de aplicação.
+
+
+## HP-032 — v0.7.1 — Checkout sem interrupção na digitação
+
+- Correção solicitada para DEV e produção. O autosave aguarda URLs HTTPS completas antes de enviar o rascunho. Durante a digitação há apenas orientação no campo, sem popup. O texto incompleto permanece no editor aberto; completar o link retoma o salvamento. Sair/prévia/publicação exigem a correção antes de prosseguir.
+- Campo compartilhado nos links padrão, individuais e no editor visual. O valor em foco mantém a digitação mesmo se o servidor canonicalizar a URL; evita acrescentar uma barra no meio da digitação e deslocar o cursor. HTTPS, limite de tamanho e rejeição de credenciais continuam validados pela API. Âncoras legadas aceitas somente no link padrão.
+- QA local sintético: pausas maiores que 900 ms com https:// e https: não abriram popup e mantiveram foco. Após salvar https://pay, continuar com .hotmart.com/example?off=abc&src=teste manteve a URL correta. Link individual salvo; F5 reabriu ambos os links completos. Ao sair com link incompleto houve um aviso direcionado ao Checkout. Evidências em docs/evidence/hp032. Nenhum checkout real foi aberto.
+- Testes locais: contrato de links/API, lint, build, workspace isolado, undo, wizard e preservação do legado passaram. Sem migração de banco ou alteração de dados, pixels, segredos, DNS ou Sistera. Entrega e pipelines registrados em HP-033 após confirmação.
