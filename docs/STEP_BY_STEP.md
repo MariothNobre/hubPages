@@ -346,3 +346,21 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Workspace parametrizado executa a suíte também com configuração de produção real (origem/Host hubpages.com.br via HTTP exclusivamente localhost), em arquivo e PostgreSQL isolado no CI. Cobre incorporação, credenciais, configuração, revisão/publicação, modo temporary-free, CSP/indexação, ownership, métricas, presença, endereços e logout. Verificador real da incorporação também é exercitado no PostgreSQL sintético.
 - Textos de conta/condições refletem o ambiente: produção informa criação/publicação e gratuidade temporária, sem cobrança automática; aceite versionado próprio, mantendo os aceites históricos. Confirmação/recuperação por e-mail e cobrança Asaas continuam com os recursos efetivamente disponíveis.
 - Próximo: CI, deploy DEV e promoção develop→main; registrar os restores e a verificação externa da produção nos próximos passos.
+
+
+## HP-030 — DEV v0.7.0-dev.15 validado
+
+- 2026-11-21. Preparação 0885370325b29b39f0645bf399521fd0eb767348, PR #15, merge develop/runtime a6fc07b6108d6c5b201300e1fbe0e5e30529bb79. Tag v0.7.0-dev.15 aponta ao runtime DEV.
+- CI da preparação 44862081477 / job 136717477277 e CI develop 44862210281 / job 136717885122: sucesso, incluindo scripts Bash, lint/build, suites DEV e produção em arquivo e PostgreSQL 17, verificador de incorporação e preservação do legado.
+- Deploy DEV 44862210224 / job 136717885144: sucesso. Backup DEV restaurado/verificado em /opt/hubpages-backups/dev/verified-20261121T033912Z-353699.dump. App e banco healthy. Conferência externa do CSS index-DNum4ijW.css confirmou a regra verde e posicionamento. Nenhuma alteração dos dados reais de páginas para teste.
+
+## HP-031 — v0.7.0 publicada em produção
+
+- 2026-11-21 00:43 BRT / 03:43 UTC. Promoção develop→main por PR #16, merge/runtime e27d4bafe48a3a4ac0c8e75e1fda78be65f18f25. Tag v0.7.0 aponta ao runtime implantado. Todas as atualizações do Studio desde a base ca0574981d787323dd5e20ddefc2a07ba1906f2f foram promovidas, conforme autorização do usuário.
+- CI do PR de promoção 44862265280 / job 136718062053 e CI main 44862393487 / job 136718451158: sucesso. Deploy produção 44862393501 / job 136718451871: sucesso.
+- Restore protegido antes da migração: /opt/hubpages-backups/prod/verified-20261121T034125Z-357120.dump. Restore após migração: /opt/hubpages-backups/prod/verified-20261121T034156Z-358437.dump. Ambos restaurados em container PostgreSQL isolado, sem rede/porta pública. Após a migração, cadeias de revisões e referências publicadas íntegras.
+- Verificador executado na própria produção confirmou conteúdo das páginas fonte, status publicado/rascunho, totais de visitas, pixels/tokens e acesso existente preservados. Nenhum dado DEV importado. Segredos de produção não foram reprovisionados. Banco e app healthy; sem alteração em Sistera/DNS/proxy/firewall.
+- Comparação externa somente por APIs públicas: PT e ES responderam 200 antes e depois. Título, descrição, faixa, chamada, rótulo/link de compra e ID/ativação do Pixel conferidos iguais ao snapshot público anterior à promoção. Snapshot temporário removido; nenhum token/credencial exposto em logs. As leituras não executam pixels nem geram visitas.
+- DEV e produção servem /entrar com o mesmo bundle index-DSti1CNR.js e CSS index-DNum4ijW.css: Studio, duplicação, revisão e verde confirmados. APIs privadas de páginas 401 sem sessão nos dois ambientes. Produção retorna environment=production, cadastro habilitado e condições plataforma-2026-11-21. Health DEV, produção e Sistera 200.
+- Acesso de produção: https://hubpages.com.br/entrar, com as credenciais já cadastradas em produção. Homologação: https://dev.hubpages.com.br/entrar. Recarregar o Studio para receber a versão nova. Publicar alterações em verde suave; bloco do link publicado no mesmo verde do resumo; Alterar endereço abaixo do link. Evidência visual local em docs/evidence/hp029/publicacao-verde.jpg.
+- Documentação final com skip-ci, sem novo deploy de aplicação.
