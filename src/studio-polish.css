@@ -26,3 +26,5 @@
 .studio .presentation-video .video-start-audio:hover{transform:translateX(-50%) translateY(-1px)}
 
 .studio:not(.private-preview) .wizard-timeline li.is-current>button{background:linear-gradient(135deg,#efa382,#df8063);border-color:#d37455;color:#082b33}.studio:not(.private-preview) .wizard-timeline li.is-current .wizard-step-hint{color:#173b39}
+
+.studio .canvas-media-edit>.canvas-media-replace{background:#fff1e7!important;border-color:#efb28f!important;color:#914325!important}.studio .canvas-media-edit>.canvas-media-replace:hover{background:#ffe4d1!important}
