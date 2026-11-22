@@ -5,6 +5,13 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.12.2] - 2026-11-22
+
+- Preparar conexão aceita qualquer subdomínio público válido sem exigir domínio pai conectado ou liberação administrativa por sufixo. Corrige infancia.sistera.com.br na produção.
+- Retiradas exceções pontuais e configuração de allowlist. Permanecem protegidos somente os seis hostnames exatos dos serviços existentes, com prova DNS/HTTPS individual obrigatória para ativação.
+- Regressão HTTP offline em DEV/produção confirma preparo do endereço sem vínculo pai e recusa ativação sem prova. Quotas e controles de solicitações não foram alterados.
+- Botão Cancelar configuração nos endereços pendentes, com confirmação, retirada da lista e nova prova ao recomeçar. Domínios ativos usam Desconectar. Respostas DNS antigas não reativam configuração cancelada ou reiniciada.
+
 ## [0.12.1] - 2026-11-22
 
 - Liberação explícita de site.sistera.com.br para conexão no DEV e produção, mantendo os serviços Sistera reservados e exigindo prova TXT/HTTPS.

@@ -4,7 +4,7 @@ Versão 0.12.1 / HP-056/057. Recurso inicialmente entregue apenas no DEV em HP-0
 
 ## Guia de uso
 
-Correção 0.12.1: `site.sistera.com.br`, informado pelo proprietário, está explicitamente liberado para conexão nos dois ambientes. A exceção não inclui `app.sistera.com.br`, os domínios centrais nem outros nomes reservados. A mensagem de endereço reservado agora explica que o formato está correto; não confunde reserva com caminho/parâmetros. O primeiro passo gera as instruções mesmo sem A/TXT configurados. A liberação do nome não comprova propriedade: TXT, apontamento e HTTPS continuam obrigatórios antes da ativação.
+Regra 0.12.2: **qualquer subdomínio público válido pode iniciar a conexão**, nos dois ambientes, sem domínio pai previamente conectado e sem aprovação individual da administração. Exemplos: infancia.sistera.com.br, site.sistera.com.br, campanha.seudominio.com.br. Não há reserva genérica por sufixo, nem exceção pontual por nome. O primeiro passo gera instruções mesmo sem A/TXT configurados. Isso não comprova propriedade nem publica a página: TXT, apontamento e HTTPS próprios continuam obrigatórios antes da ativação.
 
 Na página do Studio, abra Endereço → Conectar meu domínio.
 
@@ -16,7 +16,7 @@ Na página do Studio, abra Endereço → Conectar meu domínio.
 
 O endereço personalizado serve a raiz do hostname. **Subdomínios de domínio ativo e verificado da mesma conta não têm limite fixo de quantidade**, por página ou conta. Cada hostname exige seu próprio TXT, apontamento e HTTPS. Novos domínios independentes conservam a quota de 3 por página e 10 por conta; ela não conta os subdomínios associados à base já conectada. Há até 20 solicitações de preparo por minuto por conta, sem limite total de subdomínios. Desconectar libera o nome; reconectar gera prova nova.
 
-A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, usa-se o hostname já verificado, sem inventar um domínio pai. Uma conta não herda a base de outra, nem uma conexão expirada/desligada libera novos subdomínios. Os domínios centrais HubPages, a infraestrutura hstgr.cloud e os endereços sistera.com.br/www/app continuam protegidos. site.sistera.com.br é a entrada adicional autorizada pelo proprietário, sem conceder acesso automático aos serviços existentes.
+A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, usa-se o hostname já verificado, sem inventar um domínio pai. Ela serve somente para isenção de quota, nunca como requisito para preparar um endereço. Uma conta não herda a prova ou a isenção de outra, nem uma conexão expirada/desligada concede novas isenções. Apenas os nomes exatos dos serviços atuais são protegidos: hubpages.com.br, www.hubpages.com.br, dev.hubpages.com.br, sistera.com.br, www.sistera.com.br e app.sistera.com.br. Seus demais subdomínios seguem o fluxo normal de prova própria, sem liberação manual.
 
 ## Implementação e isolamento
 
@@ -34,6 +34,7 @@ A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, u
 - Minhas páginas, em Cards ou Lista: informa **Domínio próprio vinculado**, mostra os endereços ativos, abre a página publicada em nova aba e oculta somente nesse card o atalho HubPages. Rascunhos mostram orientação para publicar. Vínculos sem prova válida, expirados ou desligados não são apresentados como ativos.
 - **Desvincular domínio** abre confirmação customizada. Após confirmar, o nome fica livre, sua autorização TLS é removida e o card volta ao link HubPages. Para usar em outra página, conecte nela com a nova prova TXT. A publicação e os conteúdos existentes são preservados.
 - Assistente: card do domínio ativo em verde claro, inclusive selecionado/hover, e passo 5 **Use seu domínio** marcado com ✓ após vínculo válido.
+- Endereços aguardando configuração têm **Cancelar configuração**, com confirmação. A pendência sai da lista e libera seu espaço sem apagar a página nem mexer no DNS. É possível recomeçar, inclusive em outra página, com uma nova prova TXT. Um endereço já vinculado usa Desconectar domínio. Configurações encerradas não podem ser verificadas/ativadas novamente por chamadas antigas; resultados DNS/TLS da geração anterior são descartados.
 - Publicação: **Seu link para compartilhar** mostra o domínio próprio no ar e também o endereço HubPages. Os dois são clicáveis em nova aba.
 
 ## Testes
@@ -42,6 +43,7 @@ A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, u
 - test-custom-domain-http.mjs: hostname próprio, bloqueio de rotas privadas, prova/ask, métricas/CAPI vinculadas, expiração/desconexão/unpublish, flag habilitada na produção e recusa com a flag desligada.
 - test-domains-proxy.py e validação Caddy em contêiner sem rede: preservação dos sites existentes, idempotência e recusa de conflito.
 - Regra de subdomínios: teste cria 15 subdomínios na mesma página após validar a base, conserva prova individual, recusa herança entre contas/âncora desconectada e mantém quotas de domínios independentes e rate-limit. Repete em arquivo e PostgreSQL isolado.
+- Cancelamento: API DEV/produção, exclusão da listagem, nova prova em outra página, proteção de conexões ativas e respostas DNS atrasadas após cancelar/reiniciar; repetidos em arquivo/PostgreSQL. QA visual confirma botão, popup e persistência após F5, preservando a conexão ativa da fixture.
 - QA local: HostGator selecionada, cópia TXT funcionando, A aprovado/TXT ausente diagnosticado, registro persistido após F5. Sem overflow em desktop e 390×844. Evidências em docs/evidence/hp052. Valores TXT dessas capturas são de fixture local e não devem ser usados no DNS real.
 - Provisionamento técnico DEV cria somente a página marcada Teste — domínio próprio e sua conexão. Idempotente, não sobrescreve a página ou reativa uma conexão que o proprietário desconectou. TXT real é gerado na VPS; resultado externo registrado na entrega HP-053.
 
