@@ -54,3 +54,6 @@ Padrão genérico para .text-box, ul/ol e data-hp-text-group: se o retângulo n�
 Allowlist restrita de data-hp-fill-mode, data-hp-fill-next e variáveis --hp-box-fill-*. Camada derivada local ao bloco, pointer-events:none, acima de decoração e abaixo do conteúdo; atualização por geometria/resize, igual na edição/prévia/publicação. Marcadores runtime não são armazenados como objetos. Seleção explícita de grupo no campo editável evita interferência dos eventos de portal. Duplicações remapeiam referências internas e removem referências externas.
 
 Regressões em test-import-editor.cjs e test-workspace.mjs: display:contents, limites dos filhos, fundo/fluxo, próximo grupo, saneamento, persistência e publicação em arquivo/PostgreSQL CI. Sem executar scripts/hidratação remota, sem exceção por domínio e sem alterar controles de rede.
+
+### Altura do bloco importado — HP-048
+Layout.height ajusta a raiz do bloco, inclusive sobre estilos inline prioritários da origem, preservando o conteúdo e o scaffold. Controle compartilhado com templates, sem executar scripts ou acrescentar objetos persistidos ao HTML. Altura mínima preserva grades/filhos maiores em telas pequenas. Testes de gesto/Undo/persistência/publicação e F5 com fixture local.

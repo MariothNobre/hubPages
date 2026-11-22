@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.11.0] - 2026-11-22
+
+- Altura vertical dos blocos por arraste, teclado, pixels e tamanho automático, em templates e importações.
+- Salvamento, Desfazer, revisão e publicação preservados; mínimo responsivo evita recortes do conteúdo.
+- Promoção autorizada das melhorias acumuladas do DEV para produção; dados dos ambientes permanecem separados.
+- Restore PROD com volume temporário em disco; app HubPages PROD com limite de 2 GiB e CPU mantida em 0,25.
 ## [0.10.3-dev.2] - 2026-11-22 (somente DEV)
 
 - Entrega os recursos de 0.10.3-dev.1 após corrigir o armazenamento do teste de restauração: volume anônimo temporário em disco em lugar de tmpfs, mantendo rede desabilitada e limites de CPU/memória.
@@ -123,5 +129,3 @@ semântico.
 - Plano de evolução para uma plataforma dinâmica de criação de páginas de vendas.
 - Compartimentos Docker DEV e produção implantados e validados na VPS.
 - Acesso de deploy restrito instalado; chave administrativa temporária revogada.
-
-
