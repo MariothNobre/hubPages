@@ -52,3 +52,12 @@ A entrega anterior tinha recursos parciais. A conferência solicitada pelo propr
 8. **Mídias de fundo:** imagens referenciadas no CSS recebem controles no próprio bloco para trocar, dimensionar e alinhar. São identificadas por referências locais capturadas e seletores CSS, sem executar scripts remotos. A lista de mídias permanece disponível como alternativa para estilos não associáveis a um elemento.
 
 Todos os ajustes de conteúdo usam o Desfazer e ficam no rascunho até revisão/publicação. Os testes usam dados sintéticos. Evidências em `docs/evidence/hp042/`; publicação do sistema exclusivamente DEV, sem migração de banco.
+
+## Janelas móveis e fundo da caixa — HP-044 / 0.10.2-dev.1
+
+- As janelas **Caixas e objetos** e **Cores do texto** têm cabeçalho **Arraste para mover** e botão **×** sempre acessível no topo. Arraste pelo cabeçalho com mouse/toque; com o cabeçalho selecionado, as setas movem a janela. Os limites da tela são respeitados, inclusive após redimensionar a janela do navegador.
+- O × da janela de objetos recolhe as ferramentas e mantém a seleção da caixa. O botão Ferramentas da caixa permite reabrir. O × das cores fecha a barra preservando o foco do campo para continuar digitando. Clicar fora continua fechando a barra contextual.
+- A posição é mantida na memória da sessão do editor ao reabrir a ferramenta. Mover/recolher janelas não altera o conteúdo, a publicação nem gera ações de Desfazer.
+- Em **Fundo da caixa selecionada**, escolha uma amostra ou uma cor personalizada. A cor cobre a caixa inteira, incluindo seus vários parágrafos/listas. Não muda textos, cores das letras, dimensões ou posição. **Transparente** remove o preenchimento; Desfazer restaura a alteração anterior.
+- Para alcançar um grupo maior, use Camada selecionada ou Selecionar caixa/grupo pai. A alteração é da caixa selecionada, não da página inteira. O preenchimento fica no rascunho e aparece na prévia; a página pública recebe a mudança após revisão/publicação.
+- QA sintético em docs/evidence/hp044: ambas as janelas movidas, fechadas, digitação continuada com a barra fechada; fundo verde escuro na caixa de vários textos brancos, Undo, F5 e prévia; limites em 390×844. Nenhuma edição/publicação de página real durante os testes.
