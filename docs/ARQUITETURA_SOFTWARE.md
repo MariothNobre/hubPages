@@ -205,3 +205,11 @@ Tema separado system-theme.css, importado após estilos-base, usa tokens hp pró
 Tema do sistema passa a usar coral/laranja na etapa atual, tons pêssego nas etapas prontas, linha/progresso e comandos principais. Microinterações de hover são restritas a mouse com ponteiro fino: elevação/sombra e ícone discreto nos cards, feedback nos botões e seta dos atalhos. Movimento reduzido remove transições/deslocamentos e controles desabilitados não recebem hover animado. CSS continua excluindo conteúdo/canvas e prévias.
 
 Atalhos dos guias têm spans separados para texto/seta, alinhamento flexível e área mínima de 44 px, com foco e navegação por teclado preservados. A timeline recebeu padding para acomodar o badge e as sombras. Alterações só em apresentação: nenhuma rota, regra de publicação, banco, integração ou credencial foi alterada.
+
+## Reconciliação e evolução administrativa — HP-060 — 22/11/2026
+
+Baseline atual v0.12.2: PostgreSQL 17 com migrações 001–010, identidades de clientes, Studio multi-tenant, editor/importador com mídias correntes, publicações, métricas e domínios. A lista inicial acima é histórica, não descreve as funcionalidades atuais; consultar AUDITORIA_SAAS_DEV.md, PARIDADE_DEV_PRODUCAO.md e STEP_BY_STEP HP-059/060. Apps têm atualmente 2 GiB/0,25 CPU; bancos 256 MiB/0,25 CPU.
+
+Novo projeto exclusivamente DEV: isolamento operacional confirmado antes de mudanças por projetos/volumes/redes reais; SQL READ ONLY confirma a identidade principal sem imprimir hashes. Nenhum reload do proxy compartilhado na esteira desta evolução, nenhuma mudança de produção. Checkpoint privado em /data/saas-dev-preflight.json. Banco e imagens são restaurados em verificação isolada antes de cada atualização DEV.
+
+Evolução prevista aditiva: serviço administrativo/RBAC, auditoria global, autenticação adicional e SMTP cifrado, catálogo de planos com assinatura/franquia, integração Asaas exclusivamente sandbox e governança de matrizes/importações. Conta administrativa legada será referenciada por sujeito estável, preservando senha/cookie e sem duplicar e-mail. Papéis/políticas e segredos ficam no backend; controles novos somente sob flag DEV. Conectividade real SMTP/Asaas depende da configuração protegida e teste, sem resultados fictícios.

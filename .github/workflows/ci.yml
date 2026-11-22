@@ -56,6 +56,8 @@ jobs:
           bash -n deploy/verify-prod-restore.sh
           bash -n deploy/provision-postgres-dev.sh
           bash -n deploy/configure-custom-domains-dev.sh
+          bash -n deploy/verify-dev-isolation.sh
+          python3 scripts/test-dev-isolation.py
           python3 scripts/test-domains-proxy.py /tmp/hubpages-domains.Caddyfile
           docker run --rm --network none -v /tmp/hubpages-domains.Caddyfile:/etc/caddy/Caddyfile:ro caddy:2.10.2-alpine caddy validate --config /etc/caddy/Caddyfile
 
