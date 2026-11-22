@@ -33,7 +33,17 @@ O endereço personalizado serve a raiz do hostname. Até 3 nomes por página e 1
 - QA local: HostGator selecionada, cópia TXT funcionando, A aprovado/TXT ausente diagnosticado, registro persistido após F5. Sem overflow em desktop e 390×844. Evidências em docs/evidence/hp052. Valores TXT dessas capturas são de fixture local e não devem ser usados no DNS real.
 - Provisionamento técnico DEV cria somente a página marcada Teste — domínio próprio e sua conexão. Idempotente, não sobrescreve a página ou reativa uma conexão que o proprietário desconectou. TXT real é gerado na VPS; resultado externo registrado na entrega HP-053.
 
-## Referências oficiais consultadas
+## Validação real — HP-053
+
+Em 22/11/2026, `https://teste.sistera.com.br` foi conectado ao DEV com DNS administrado na HostGator. O registro A já configurado pelo proprietário foi preservado; acrescentado somente TXT `_hubpages.teste` com TTL 300. A prova de propriedade, o apontamento e o HTTPS foram aprovados, e a página técnica **Teste — domínio próprio** está publicada nesse hostname. Evidência: `docs/evidence/hp052/dominio-real-https.jpg`.
+
+Esse endereço está vinculado à página técnica de teste. Para usá-lo em outra página, primeiro desconecte-o nessa página pelo assistente; depois conecte-o na página desejada e use o novo TXT gerado. Isso evita trocar a página de destino acidentalmente. Não é necessário alterar o site ou e-mail de sistera.com.br.
+
+Certificado Let's Encrypt YE2, CN teste.sistera.com.br, válido até 20/02/2027, autorizado pelo cliente TLS. A publicação recebe `noindex, nofollow, noarchive`. Solicitação de certificado para hostname sem prova retorna 403. Renovação/emissão permanece sob o Caddy e sua política de autorização.
+
+Produção permanece em 0.11.1. A conexão real foi testada na HostGator; os demais provedores têm guias e validação DNS comum, sem alegar teste real em cada conta/provedor.
+
+## Fontes oficiais
 
 - Hostinger: https://www.hostinger.com/br/support/4468886-como-adicionar-e-remover-um-registro-a-no-hpanel-hostinger/
 - HostGator: https://suporte.hostgator.com.br/hc/pt-br/articles/30813120385427-Como-criar-ou-alterar-um-registro-A-MX-TXT-CNAME-e-outros-na-Zona-DNS
