@@ -4,3 +4,5 @@
 .studio .domain-timeline .is-done button{background:#e5f3eb!important;border-color:#96c6ac!important;color:#205b43!important}
 
 .published-domain-links{display:grid;gap:8px;margin:16px 0;padding-bottom:16px;border-bottom:1px solid #bedbce;overflow-wrap:anywhere}.published-domain-links>strong{color:#23644b;font-size:.85rem}
+
+.domain-connection-item{display:grid;gap:6px;align-content:start;min-width:190px}.domain-connections>button{align-self:start}.studio .domain-connections .domain-cancel-setup{background:#fff0ec!important;border-color:#edc3b8!important;color:#9b4030!important;font-size:12px;padding:7px 12px}.studio .domain-connections .domain-cancel-setup:hover{background:#ffe2d9!important}

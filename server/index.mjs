@@ -444,7 +444,7 @@ async function handleApi(request, response, url) {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,1500*1024)))
         return sendJson(response, 201, pageView(page))
       }
-      const domainRoute=url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})\/(check|activate|disconnect))?$/)
+      const domainRoute=url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})\/(check|activate|disconnect|cancel))?$/)
       if(domainRoute){if(!customDomains)throw new PlatformError(404,'Domínios próprios ainda não estão habilitados neste ambiente.');const[,pageId,domainId,action]=domainRoute;await platformStore.read(ownerId,pageId);if(!action&&request.method==='GET')return sendJson(response,200,{domains:await customDomains.list(ownerId,pageId)});if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'});if(!action)return sendJson(response,201,await customDomains.create(ownerId,pageId,await readJsonBody(request,2000)));return sendJson(response,200,await customDomains[action](ownerId,pageId,domainId))}
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking|metrics|purge))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
