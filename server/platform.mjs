@@ -1,3 +1,4 @@
+import {validateImported,safeImportHtml} from './import-sanitize.mjs'
 import { isTemplateTheme } from '../shared/template-themes.mjs'
 import { randomUUID } from 'node:crypto'
 import { PlatformError } from './platform-error.mjs'
@@ -20,6 +21,7 @@ function https(value) {
 function image(value) {
   const url = text(value, 2000)
   if (/^\/assets\/[a-zA-Z0-9_./-]+\.(webp|png|jpe?g)$/.test(url) && !url.includes('..')) return url
+  if(/^\/assets\/templates\/sabor\/[a-zA-Z0-9_-]+\.(mp4|webm)$/.test(url))return url
   if (/^\/api\/platform\/pages\/[a-f0-9-]{36}\/images\/(hero|[a-f0-9-]{36})$/.test(url)) return url
   return https(url)
 }
@@ -40,6 +42,10 @@ export function validateDraft(input) {
   if (!input || typeof input !== 'object') fail('Rascunho inválido.')
   const step = Number(input.step === 3 ? 2 : input.step ?? 1)
   if (!Number.isInteger(step) || step < 1 || step > 8) fail('Etapa inválida.')
+  const imported=input.imported===undefined?undefined:validateImported(input.imported)
+  if(imported&&!(input.template==='sabor_pt'&&imported.sourceUrl==='https://comericoenminutos.online/'&&imported.localized===true))delete imported.hubpagesCreated
+  if(imported&&JSON.stringify(input).length>1200000)fail('A página importada excede 1,2 MB de estrutura editável.')
+  if(input.importedAssets!==undefined&&(!Array.isArray(input.importedAssets)||input.importedAssets.length>70||new Set(input.importedAssets.map(m=>m.id)).size!==input.importedAssets.length||input.importedAssets.some(m=>!/^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.test(m?.id))))fail('Mídias importadas inválidas.')
   const blocks = input.blocks ?? []
   if (!Array.isArray(blocks) || blocks.length > 40) fail('Limite de 40 blocos por rascunho.')
   if(blocks.some(b=>b?.sourceRole&&!['pain','solution','method','manual','possibilities','offer','author','final'].includes(b.sourceRole)))fail('Origem do bloco duplicado inválida.')
@@ -68,16 +74,17 @@ export function validateDraft(input) {
     checkoutUrl: /^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(input.checkoutUrl||'')?text(input.checkoutUrl,2000):https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
     visitedSteps:Array.isArray(input.visitedSteps)?[...new Set(input.visitedSteps.filter(id=>[1,2,4,5,6,7,8].includes(id)))].slice(0,7):[],
     addressAuto: input.addressAuto===true, reviewedSignature:text(input.reviewedSignature,20),
+    ...(imported?{imported,importedAssets:(input.importedAssets||[]).map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240),style:style(m.style),...(m.videoOptions?{videoOptions:Object.fromEntries(['autoplay','loop','muted','controls'].map(key=>[key,m.videoOptions[key]===true]))}:{}),...(m.embedUrl&&/^https:\/\/(?:www\.youtube-nocookie\.com\/embed\/[a-zA-Z0-9_-]+|player\.vimeo\.com\/video\/\d+)$/.test(m.embedUrl)?{embedUrl:m.embedUrl}:{})}))}:{}),
     ...(input.colorTheme===undefined?{}:{colorTheme:input.colorTheme}),
     imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
     locale: input.locale === 'es' ? 'es' : 'pt-BR',
-    template: ['colecao', 'infancia_pt','infancia_es'].includes(input.template) ? input.template : 'essencial',
+    template: ['colecao', 'infancia_pt','infancia_es','imported','sabor_pt'].includes(input.template) ? input.template : 'essencial',
     layoutCustomized: input.layoutCustomized===true,
     layoutOverrides: overrides(input.layoutOverrides),
     templateTexts:Object.fromEntries(Object.entries(templateTexts).map(([key,value])=>{if(typeof value!=='string'||value.length>5000)fail('Texto do modelo inválido.');return[text(key,80),value]})),
-    templateButtons:Object.fromEntries(Object.entries(buttons).map(([key,value])=>[key,{enabled:value?.enabled!==false,label:text(value?.label,100),url:https(text(value?.url,2000)),inheritLink:value?.inheritLink!==false}])),
-    blocks: blocks.map((block) => ({ ...(block?.sourceRole?{sourceRole:text(block.sourceRole,80),textOverrides:Object.fromEntries(Object.entries(block.textOverrides||{}).slice(0,160).map(([k,v])=>[text(k,80),text(v,5000)])),sectionCounts:Object.fromEntries(Object.entries(block.sectionCounts||{}).filter(([k,n])=>['method','manual','bonus','sample'].includes(k)&&Number.isInteger(n)&&n>=0&&n<=20))}:{}), enabled:block?.enabled!==false,mediaType:block?.mediaType==='video'?'video':'image',sampleSource:block?.sampleSource===undefined?undefined:text(block.sampleSource,240),sampleKicker:block?.sampleKicker===undefined?undefined:text(block.sampleKicker,240),id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
+    templateButtons:Object.fromEntries(Object.entries(buttons).map(([key,value])=>[key,{enabled:value?.enabled!==false,label:text(value?.label,100),...(imported?{useSourceLabel:value?.useSourceLabel!==false,...(typeof value?.anchor==='string'&&/^#[a-zA-Z0-9_%:.-]{1,200}$/.test(value.anchor)?{anchor:value.anchor}:{})}:{}),url:https(text(value?.url,2000)),inheritLink:value?.inheritLink!==false}])),
+    blocks: blocks.map((block) => ({ ...(imported&&block.importHtml?{importHtml:safeImportHtml(block.importHtml)}:{}), ...(block?.sourceRole?{sourceRole:text(block.sourceRole,80),textOverrides:Object.fromEntries(Object.entries(block.textOverrides||{}).slice(0,160).map(([k,v])=>[text(k,80),text(v,5000)])),sectionCounts:Object.fromEntries(Object.entries(block.sectionCounts||{}).filter(([k,n])=>['method','manual','bonus','sample'].includes(k)&&Number.isInteger(n)&&n>=0&&n<=20))}:{}), enabled:block?.enabled!==false,mediaType:block?.mediaType==='video'?'video':'image',sampleSource:block?.sampleSource===undefined?undefined:text(block.sampleSource,240),sampleKicker:block?.sampleKicker===undefined?undefined:text(block.sampleKicker,240),id: /^[a-f0-9-]{36}$/.test(block?.id ?? '') ? block.id : randomUUID(), title: text(block?.title, 240), body: text(block?.body, 5000), imageUrl: image(block?.imageUrl), kind: ['bonus','sample','faq','author','offer','button','divider','spacer'].includes(block?.kind) ? block.kind : 'content', buttonLabel: text(block?.buttonLabel, 100), buttonUrl: https(text(block?.buttonUrl, 2000)), showButton: block?.showButton ?? !['sample','faq','author','divider','spacer'].includes(block?.kind), inheritLink:block?.inheritLink!==false, templateRole:text(block?.templateRole,80), layoutCustomized:block?.layoutCustomized===true, layoutOverrides:overrides(block?.layoutOverrides), style: style(block?.style) })),
   }
 }
 function owned(state, ownerId, id, includeTrashed = false) {
@@ -96,14 +103,16 @@ export function createDraft(state, ownerId, input = {}) {
   const draft = validateDraft(input)
   state.platform ??= { schemaVersion: 1, pages: {}, audit: [] }
   const now = new Date().toISOString()
-  const page = { id: randomUUID(), ownerId, origin: 'native', editorialStatus: 'draft', financialStatus: 'unpaid', createdAt: now, updatedAt: now, revision: 1, draft, revisions: [{ version: 1, at: now, actorId: ownerId, draft: structuredClone(draft), reason: 'create' }] }
+  const page = { id: randomUUID(), ownerId, origin: draft.imported?'imported':'native', editorialStatus: 'draft', financialStatus: 'unpaid', createdAt: now, updatedAt: now, revision: 1, draft, revisions: [{ version: 1, at: now, actorId: ownerId, draft: structuredClone(draft), reason: 'create' }] }
   state.platform.pages[page.id] = page
-  audit(state, ownerId, 'page.create', page.id)
+  audit(state, ownerId, 'page.create', page.id);if(draft.imported)audit(state,ownerId,'page.import',page.id)
   return structuredClone(page)
 }
 export function saveDraft(state, ownerId, id, input) {
   const page = owned(state, ownerId, id)
   if (input.revision !== page.revision) throw new PlatformError(409, 'Existe uma versão mais recente. Recarregue a página antes de salvar.')
+  if(Boolean(page.draft.imported)!==Boolean(input.draft?.imported))throw new PlatformError(422,'A origem da página não pode ser alterada. Crie outra página para importar.')
+  if(page.draft.imported&&(page.draft.imported.sourceUrl!==input.draft.imported?.sourceUrl||page.draft.template!==input.draft.template||(!page.draft.imported.hubpagesCreated&&input.draft.imported?.hubpagesCreated)))throw new PlatformError(422,'A origem e a autoria da importação são preservadas. Importe outra página para mudar a origem.')
   const draft = validateDraft(input.draft)
   page.draft = draft; page.revision += 1; page.updatedAt = new Date().toISOString()
   page.revisions.push({ version: page.revision, at: page.updatedAt, actorId: ownerId, draft: structuredClone(draft), reason: 'edit' })
@@ -149,14 +158,14 @@ export function unpublishDraft(state,ownerId,id,revision) {
 export function publishDraft(state,ownerId,id,revision,origin) {
   const page=owned(state,ownerId,id)
   if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui vigência financeira e não pode usar a liberação gratuita de homologação.')
-  if(page.origin!=='native')throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
+  if(page.origin!=='native'&&!(page.origin==='imported'&&page.draft.imported?.authorized&&origin!=='https://hubpages.com.br'))throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
   const url=normalizeStudioAddress(page.draft.publicUrl,origin,!!page.legacySlug)
   if(!page.draft.title||!page.draft.checkoutUrl||(!page.legacySlug&&!page.draft.checkoutUrl.startsWith('https://')))throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
   lifecycle(page,ownerId,revision,'publish')
   const publication={id:randomUUID(),pageId:id,ownerId,revision:page.revision,publishedAt:page.updatedAt,url,mode:origin==='https://hubpages.com.br'?'temporary-free':'dev-free',draft:structuredClone(page.draft)}
   const image=(value)=>value.startsWith(`/api/platform/pages/${id}/images/`)?value.replace(`/api/platform/pages/${id}/images/`,`/api/public/publications/${publication.id}/images/`):value
   publication.draft.imageUrl=image(publication.draft.imageUrl)
-  publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)});publication.draft.offerGallery?.forEach(m=>{m.imageUrl=image(m.imageUrl)})
+  publication.draft.blocks.forEach(block=>{block.imageUrl=image(block.imageUrl)});publication.draft.offerGallery?.forEach(m=>{m.imageUrl=image(m.imageUrl)});publication.draft.importedAssets?.forEach(m=>{m.imageUrl=image(m.imageUrl)})
   state.platform.publications??={};state.platform.publications[publication.id]=publication
   const {draft:_draft,...metadata}=publication
   page.publication=metadata;page.editorialStatus='published'

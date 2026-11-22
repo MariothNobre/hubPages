@@ -7,6 +7,8 @@
 - Capacidade: 2 vCPUs, 8 GB de RAM e 102 GB de disco.
 - Uso observado em 15/11/2026: aproximadamente 5% de CPU, 2,1 GB de RAM e 31 GB de disco.
 
+Em 21/11/2026, leitura da API Hostinger: aproximadamente 7,3% de CPU, 2,5 GB de RAM e 36 GB de disco. Para a captura de mídias, por solicitação explícita do proprietário, somente o aplicativo DEV passa de 128 MB para 2 GB de teto; CPU continua em 0,25 e há uma importação por vez. Limites de produção e serviços Sistera preservados.
+
 ## Separação do Sistera
 
 A HubPages não reutiliza imagens, containers, volumes, bancos, diretórios de runtime nem projetos Compose do Sistera.
@@ -19,7 +21,7 @@ A HubPages não reutiliza imagens, containers, volumes, bancos, diretórios de r
 | Imagem | `hubpages-dev:<commit>` | `hubpages-prod:<commit>` |
 | Alias no proxy | `hubpages-dev` | `hubpages-prod` |
 | Volume de conteúdo | `hubpages_dev_content` | `hubpages_prod_content` |
-| Limite | 0,25 CPU / 128 MB | 0,25 CPU / 128 MB |
+| Limite | 0,25 CPU / 2 GB | 0,25 CPU / 128 MB |
 
 Os containers executam com usuário sem privilégios, filesystem do aplicativo somente leitura, capabilities
 removidas, `no-new-privileges`, limite de processos e logs rotacionados. Apenas `/data` recebe um volume gravável

@@ -5,6 +5,13 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.9.0-dev.1] - 2026-11-21 (somente DEV)
+
+- Importação de uma página HTTPS pública autorizada, com assistente de sete etapas, conteúdo editável, mídias locais atuais, âncoras e seis temas de cores.
+- Segundo modelo compartilhado **Sabor**, baseado na página de teste autorizada Coma Bem em Minutos, com textos e artes localizados em português brasileiro e miniaturas reais.
+- Rodapé original nas importações, sem marca HubPages adicional. Exceção exclusiva para o modelo Sabor de autoria autorizada.
+- Persistência, revisão obrigatória, preview, checkout/Pixel individual, duplicação, desfazer e publicação DEV integrados. Captura limitada e saneada, sem scripts ou pixels externos; produção não alterada.
+
 ## [0.8.0-dev.1] - 2026-11-21 (somente DEV)
 
 - Modelo 01 renomeado Aurora no catálogo, com paleta Original e mais cinco combinações: Oceano, Lavanda, Bosque, Solar e Rosé.

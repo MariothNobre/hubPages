@@ -25,6 +25,10 @@ fi
 "${compose[@]}" config --quiet
 "${compose[@]}" build hubpages-dev
 "${compose[@]}" up -d --wait --wait-timeout 180
+dev_container="$("${compose[@]}" ps -q hubpages-dev)"
+[[ "$(docker inspect --format '{{.HostConfig.Memory}}' "$dev_container")" == 2147483648 ]] || { echo 'Teto de 2 GB do DEV não aplicado.' >&2; exit 1; }
+docker inspect --format 'HubPages DEV resources verified: memory={{.HostConfig.Memory}} bytes, nano_cpus={{.HostConfig.NanoCpus}}' "$dev_container"
 "${compose[@]}" exec -T hubpages-db psql -U hubpages -d hubpages -v ON_ERROR_STOP=1 -c "SELECT id, (SELECT count(*) FROM jsonb_object_keys(payload->'pages')) AS pages FROM hubpages_state;"
+"${compose[@]}" exec -T hubpages-dev node server/provision-sabor-demo.mjs
 curl --fail --silent --show-error https://dev.hubpages.com.br/health.json
 curl --fail --silent --show-error https://app.sistera.com.br/api/health >/dev/null
