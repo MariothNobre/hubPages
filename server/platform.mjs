@@ -161,7 +161,7 @@ export function unpublishDraft(state,ownerId,id,revision) {
 export function publishDraft(state,ownerId,id,revision,origin) {
   const page=owned(state,ownerId,id)
   if(page.financialStatus!=='unpaid')throw new PlatformError(409,'Esta página possui vigência financeira e não pode usar a liberação gratuita de homologação.')
-  if(page.origin!=='native'&&!(page.origin==='imported'&&page.draft.imported?.authorized&&origin!=='https://hubpages.com.br'))throw new PlatformError(409,'Páginas importadas exigem domínio próprio verificado. Esta liberação temporária atende somente modelos nativos.')
+  if(page.origin!=='native'&&!(page.origin==='imported'&&page.draft.imported?.authorized===true))throw new PlatformError(409,'Esta origem de página não está habilitada para publicação. Confirme a autorização da importação.')
   const url=normalizeStudioAddress(page.draft.publicUrl,origin,!!page.legacySlug)
   if(!page.draft.title||!page.draft.checkoutUrl||(!page.legacySlug&&!page.draft.checkoutUrl.startsWith('https://')))throw new PlatformError(422,'Preencha o título e o link de checkout antes de publicar.')
   lifecycle(page,ownerId,revision,'publish')

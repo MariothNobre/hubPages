@@ -23,7 +23,15 @@ assert.equal(result.draft.metaPixelId,undefined);assert.equal(result.draft.check
 const draft=validateDraft(result.draft);assert.equal(draft.imported.hubpagesCreated,undefined)
 const forged=validateDraft({...draft,imported:{...draft.imported,hubpagesCreated:true}});assert.equal(forged.imported.hubpagesCreated,undefined,'ordinary imports never gain HubPages branding')
 const state={};const page=createDraft(state,'test-owner',draft);assert.equal(page.origin,'imported')
-assert.throws(()=>publishDraft(state,'test-owner',page.id,page.revision,'https://hubpages.com.br'),/domínio próprio/)
+for(const origin of ['https://dev.hubpages.com.br','https://hubpages.com.br']){
+ const publicationState={},prepared=createDraft(publicationState,'test-owner',{...draft,title:'Oferta autorizada',checkoutUrl:'https://pay.example.test/test',publicUrl:origin+'/oferta_importada'})
+ const published=publishDraft(publicationState,'test-owner',prepared.id,prepared.revision,origin)
+ assert.equal(published.publication.url,origin+'/oferta_importada');assert.equal(published.publication.mode,origin.includes('dev.')?'dev-free':'temporary-free')
+ assert.equal(publicationState.platform.publications[published.publication.id].draft.imported.sourceUrl,draft.imported.sourceUrl)
+ publicationState.platform.pages[prepared.id].draft.imported.authorized=false
+ assert.throws(()=>publishDraft(publicationState,'test-owner',prepared.id,published.revision,origin),/autorização/)
+}
+console.log('PASS: captured authorized imports publish on DEV and production with separate URLs; unauthorized origins stay blocked')
 const removed={...draft,blocks:[draft.blocks[1]]};assert.ok(activeImportedAssets(removed).length<draft.importedAssets.length);assert.ok(Object.keys(activeImportedButtons(removed)).every(id=>id.startsWith('nav-')))
 console.log('PASS: import network boundaries, CSS/HTML safety, one document, anchor-only navigation, independent current media, origin and branding policy')
 

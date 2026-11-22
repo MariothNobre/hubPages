@@ -80,6 +80,7 @@ jobs:
           node scripts/test-page-import.mjs
           node scripts/test-import-editor.cjs
           node scripts/test-import-store.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-platform.mjs
           node scripts/test-page-address.mjs
           node scripts/test-admin.mjs
@@ -94,6 +95,7 @@ jobs:
           HUBPAGES_TEST_PUBLICATION: 'true'
         run: |
           node scripts/test-import-store.mjs
+          HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-customers.mjs
           node scripts/test-workspace.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs

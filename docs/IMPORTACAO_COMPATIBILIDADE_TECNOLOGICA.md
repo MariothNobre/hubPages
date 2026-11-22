@@ -57,3 +57,6 @@ Regressões em test-import-editor.cjs e test-workspace.mjs: display:contents, li
 
 ### Altura do bloco importado — HP-048
 Layout.height ajusta a raiz do bloco, inclusive sobre estilos inline prioritários da origem, preservando o conteúdo e o scaffold. Controle compartilhado com templates, sem executar scripts ou acrescentar objetos persistidos ao HTML. Altura mínima preserva grades/filhos maiores em telas pequenas. Testes de gesto/Undo/persistência/publicação e F5 com fixture local.
+
+### Disponibilidade em produção — HP-050 / 0.11.1
+Importação e publicação autorizadas também nos endereços hubpages.com.br/nome_da_pagina. Retirados os dois bloqueios antigos de ambiente; controles de rede, saneamento, sessão, quotas e revisão preservados. Regressões em test-page-import, test-workspace e test-import-store nos modos DEV/produção, arquivo/PostgreSQL. Não usar testes somente de bundle como prova da disponibilidade do backend. Matriz atual em PARIDADE_DEV_PRODUCAO.md.
