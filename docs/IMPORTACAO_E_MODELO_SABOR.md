@@ -63,3 +63,6 @@ Compatibilidade e recursos reutilizáveis para outras origens: [IMPORTACAO_COMPA
 ## Edição de objetos e campos — HP-040
 
 Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânticas aninhadas passam a blocos sem perder o scaffold. Marcadores internos limitados identificam objetos, visibilidade e remoção de fundo; não liberam scripts ou atributos arbitrários. Textos usam identificadores estáveis e cores hexadecimais validadas; os spans de cor herdam tipografia para não reduzir preços. Mídias persistem alinhamento por espaço. Dimensões e deslocamento preservam o transform original. Duplicações remapeiam objetos, textos, botões e mídias para manter edição independente. Testes offline em test-page-import.mjs e test-import-editor.cjs; persistência/publicação em test-workspace.mjs, arquivo e PostgreSQL CI.
+
+## Atualização 0.11.1 — DEV e produção
+A restrição inicial a DEV descrita historicamente acima foi revogada pelo proprietário. A importação e a publicação de páginas autorizadas estão liberadas nos endereços escolhidos em dev.hubpages.com.br e hubpages.com.br, sem domínio próprio obrigatório. O exemplo privado não é transferido entre ambientes; Sabor está no catálogo de ambos. Conferir PARIDADE_DEV_PRODUCAO.md e STEP_BY_STEP HP-050/051.

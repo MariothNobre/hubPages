@@ -5,6 +5,11 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.11.1] - 2026-11-22
+
+- Libera a captura e publicação de páginas importadas autorizadas nos endereços da HubPages em produção, removendo os dois bloqueios antigos de ambiente.
+- Mantém autenticação, revisão, validação HTTPS/rede, saneamento e limites da importação.
+- Acrescenta testes de paridade DEV/produção para importação e publicação, incluindo armazenamento PostgreSQL, e configuração efetiva de recursos.
 ## [0.11.0] - 2026-11-22
 
 - Altura vertical dos blocos por arraste, teclado, pixels e tamanho automático, em templates e importações.

@@ -5,7 +5,7 @@ import pg from 'pg'
 import {createPlatformStore,importMediaKey} from '../server/platform-store.mjs'
 import {reviewSignature,pendingChanges} from '../shared/studio-wizard.mjs'
 import {templateInput} from '../server/templates.mjs'
-const origin='https://dev.hubpages.com.br',owner='legacy-owner',slot=randomUUID()
+const origin=process.env.HUBPAGES_TEST_PRODUCTION==='true'?'https://hubpages.com.br':'https://dev.hubpages.com.br',owner='legacy-owner',slot=randomUUID()
 let database=process.env.HUBPAGES_TEST_DATABASE_URL||'',pool,state={pages:{}}
 if(database){const url=new URL(database);assert.equal(url.pathname,'/hubpages_ci');const root=new pg.Pool({connectionString:database});const schema='import_test_'+randomUUID().replaceAll('-','');try{await root.query('CREATE SCHEMA '+schema)}finally{await root.end()}url.searchParams.set('options','-c search_path='+schema);database=url.href;pool=new pg.Pool({connectionString:database});await pool.query('CREATE TABLE hubpages_state(id integer PRIMARY KEY,payload jsonb NOT NULL)');await pool.query('INSERT INTO hubpages_state VALUES(1,$1)',[state]);await pool.query(await readFile('server/migrations/001-customer-identity.sql','utf8'))}
 const fallback={publicOrigin:origin,credentialKey:'isolated-import-test',read:async()=>pool?(await pool.query('SELECT payload FROM hubpages_state WHERE id=1')).rows[0].payload:structuredClone(state),write:async value=>{if(pool)await pool.query('UPDATE hubpages_state SET payload=$1 WHERE id=1',[value]);else state=structuredClone(value)}}
