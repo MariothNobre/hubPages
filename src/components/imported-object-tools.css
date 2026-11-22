@@ -3,3 +3,5 @@
 .hp-object-panel select{width:100%;padding:8px;color:#183f3a;background:white;border:1px solid #a6bbb4;border-radius:6px;margin:6px 0;max-width:100%}
 
 .hp-box-background{border:1px solid #e4bc9f;border-radius:10px;margin:12px 0;padding:12px}.hp-box-background legend{font-weight:700}.hp-box-background label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}.hp-box-background input[type=color]{width:60px;height:38px;padding:3px}.hp-box-swatches{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.hp-box-swatches button:not(:last-child){width:28px;height:28px;min-width:28px;padding:0;border:1px solid #81918e;border-radius:50%}.hp-object-panel.floating-tools{max-height:min(650px,calc(100dvh - 150px))}@media(max-width:600px){.hp-object-panel.floating-tools{max-height:48dvh}}
+
+.hp-box-resize-mode label{display:grid;gap:6px}.hp-box-resize-mode select{min-width:0;max-width:100%}
