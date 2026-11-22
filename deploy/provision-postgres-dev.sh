@@ -4,6 +4,7 @@ umask 077
 [[ "$EUID" -eq 0 ]] || { echo 'Execute como root.' >&2; exit 1; }
 cd /opt/hubpages-src-dev
 [[ "$(git branch --show-current)" == develop ]] || { echo 'Somente homologação.' >&2; exit 1; }
+bash deploy/verify-dev-isolation.sh
 install -d -m 0700 /opt/hubpages-secrets /opt/hubpages-backups/dev
 if [[ ! -f /opt/hubpages-secrets/dev-db.env ]]; then
   printf 'HUBPAGES_DB_PASSWORD=%s\n' "$(openssl rand -hex 32)" > /opt/hubpages-secrets/dev-db.env
@@ -29,7 +30,7 @@ dev_container="$("${compose[@]}" ps -q hubpages-dev)"
 [[ "$(docker inspect --format '{{.HostConfig.Memory}}' "$dev_container")" == 2147483648 ]] || { echo 'Teto de 2 GB do DEV não aplicado.' >&2; exit 1; }
 docker inspect --format 'HubPages DEV resources verified: memory={{.HostConfig.Memory}} bytes, nano_cpus={{.HostConfig.NanoCpus}}' "$dev_container"
 "${compose[@]}" exec -T hubpages-db psql -U hubpages -d hubpages -v ON_ERROR_STOP=1 -c "SELECT id, (SELECT count(*) FROM jsonb_object_keys(payload->'pages')) AS pages FROM hubpages_state;"
-bash deploy/configure-custom-domains-dev.sh
+echo 'Shared proxy preserved: no configuration/reload in the DEV SaaS evolution.'
 "${compose[@]}" exec -T hubpages-dev node server/provision-domain-demo.mjs
 "${compose[@]}" exec -T hubpages-dev node server/provision-sabor-demo.mjs
 curl --fail --silent --show-error https://dev.hubpages.com.br/health.json
