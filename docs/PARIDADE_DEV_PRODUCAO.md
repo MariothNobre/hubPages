@@ -1,6 +1,6 @@
 # Paridade de recursos DEV e produção
 
-Atualização 0.12.0 / HP-054/055, autorizada pelo proprietário para ambos os ambientes. DEV usa dev.hubpages.com.br; produção usa hubpages.com.br. Bancos, contas, sessões, páginas, imagens privadas e Pixel permanecem próprios de cada ambiente.
+Atualização 0.12.1 / HP-056/057, autorizada pelo proprietário para ambos os ambientes. DEV usa dev.hubpages.com.br; produção usa hubpages.com.br. Bancos, contas, sessões, páginas, imagens privadas e Pixel permanecem próprios de cada ambiente.
 
 | Recurso | DEV | Produção | Verificação |
 | --- | --- | --- | --- |
@@ -15,6 +15,7 @@ Atualização 0.12.0 / HP-054/055, autorizada pelo proprietário para ambos os a
 | Endereço disponível, publicar/retirar do ar, duplicar e lixeira | Habilitado | Habilitado | workspace e page-address |
 | Pixel por página, API de Conversões e métricas de visitas/online | Habilitado | Habilitado | tracking, visitor-session e workspace |
 | Domínio próprio, guia DNS e HTTPS | Habilitado | Habilitado | TXT/A, certificado, hostname/página/proprietário, router e isolamento |
+| Subdomínios de base ativa/verificada sem quota total fixa | Habilitado | Habilitado | 15 subdomínios, isolamento, prova individual, quotas de domínios independentes e rate-limit |
 | Card de domínio, desvinculação e links de compartilhamento | Habilitado | Habilitado | cards/lista, API, fluxo visual com F5 e nova prova ao reconectar |
 | Publicação gratuita temporária | Habilitado | Habilitado | configuração do ambiente |
 
@@ -22,6 +23,6 @@ Asaas e envio/recuperação por e-mail ainda dependem de integração também no
 
 As proteções de importação continuam iguais: somente o documento autorizado, sem executar scripts/pixels da origem, HTTPS público verificado, limites de consumo, mídias por espaço e autorização por proprietário. Use Revisão e confira os links antes de publicar.
 
-Consultar /api/customer/config para ambiente e features.studio, features.pageImport, features.freePublishing e features.customDomains efetivos. Não substitui teste do fluxo: CI exerce autorização/HTTPS/limites e publicação importada em DEV e produção, com arquivo e PostgreSQL isolado. O teste visual local confirma conteúdo e F5. Entregas e backups em STEP_BY_STEP.md HP-051 e HP-055.
+Consultar /api/customer/config para ambiente e features.studio, features.pageImport, features.freePublishing e features.customDomains efetivos. Não substitui teste do fluxo: CI exerce autorização/HTTPS/limites e publicação importada em DEV e produção, com arquivo e PostgreSQL isolado. O teste visual local confirma conteúdo e F5. Entregas e backups em STEP_BY_STEP.md HP-051, HP-055 e HP-057.
 
 O domínio teste.sistera.com.br permanece conectado somente ao DEV. A promoção não copia vínculos DNS, páginas ou usuários para produção. Cada domínio de produção deve ser conectado na página desejada no ambiente de produção.
