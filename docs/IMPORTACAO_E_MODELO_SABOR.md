@@ -57,3 +57,5 @@ Em implantação DEV, `server/provision-sabor-demo.mjs` provisiona o exemplo ap�
 Evidências locais sintéticas: `docs/evidence/hp036/`. A captura local foi importada pela interface, teve texto editado, checkout configurado, revisão obrigatória, publicação, seção duplicada e desfazer; modelo Sabor foi escolhido com Oceano e conferido em 390 px sem corte lateral. Nenhum checkout foi aberto para compra e nenhum Pixel real foi usado no teste local.
 
 As especificações e caminhos das artes localizadas estão em [ARTES_SABOR.md](ARTES_SABOR.md).
+
+Compatibilidade e recursos reutilizáveis para outras origens: [IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md](IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md).

@@ -5,6 +5,13 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.9.1-dev.1] - 2026-11-21 (somente DEV)
+
+- Corrige a importação de páginas com blocos `<style>` vazios: o importador deixa de solicitar um arquivo inexistente `/undefined`. Folhas de estilo externas continuam sendo copiadas e validadas normalmente.
+- Preserva conteúdo estático em contêineres Astro e identificadores de CSS com escopo, sem executar componentes remotos. Impede captura vazia sem slots editáveis.
+- Recursos e diretrizes reutilizáveis registrados no guia de compatibilidade tecnológica.
+- Regressão automatizada para estilos vazios e teste real com `https://codigodivinochurch.site/`.
+
 ## [0.9.0-dev.1] - 2026-11-21 (somente DEV)
 
 - Importação de uma página HTTPS pública autorizada, com assistente de sete etapas, conteúdo editável, mídias locais atuais, âncoras e seis temas de cores.

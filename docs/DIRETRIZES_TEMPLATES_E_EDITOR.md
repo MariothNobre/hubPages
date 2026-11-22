@@ -62,3 +62,9 @@ Registrar paletas com IDs estáveis em shared/template-themes.mjs. Persistir som
 - Seis temas por importação: cores originais + cinco combinações HubPages; nomes automáticos `Nome do modelo · Nome da paleta`. A paleta altera cores de HTML/CSS, não os pixels das fotos e capas.
 - Mídias importadas pertencem ao espaço atual da página. Ao substituir/remover, aplicar a mesma limpeza e proteção da publicação já existente. Assets fixos do catálogo são recursos compartilhados do modelo, não biblioteca pessoal de uploads antigos.
 - Captura: HTTPS público, DNS e redirecionamentos verificados, 2 MB de HTML, 8 MB por recurso, 45 MB totais, até 70 mídias/40 seções/40 folhas CSS. Uma captura global por vez, uma tentativa por minuto por conta, prazo de 45 s na API. Sem buscas recursivas por outras páginas.
+
+## Compatibilidade tecnológica reutilizável
+
+- Para toda importação futura, aplicar o catálogo de padrões em [IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md](IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md).
+- Estilos inline vazios não são URLs externas. Wrappers Astro com HTML no servidor devem preservar filhos por meio de contêineres inertes. Identificadores CSS `data-v-*`/`data-astro-cid-*` precisam de allowlist limitada, sem transportar código ou props.
+- Uma captura só é considerada válida depois de conferir slots editáveis e conteúdo visível no Studio, inclusive após recarregar. Corrigir por padrão tecnológico, com fixture offline e regressão, sem condicionais por domínio.
