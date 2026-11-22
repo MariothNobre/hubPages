@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.10.1-dev.1] - 2026-11-22 (somente DEV)
+
+- Completa a edição direta de caixas: excluir fundo atrás do texto, recolher ferramentas sem perder a alça, ajustar caixas/textos por bloco e retornar ao modo de texto ao fechar a seleção.
+- Divide rascunhos importados antigos em seções ao abrir e preserva contêineres na inserção/exclusão de blocos; permite adicionar itens aos grupos.
+- Fecha a barra de cores fora do campo de texto e remove realces do editor da prévia/publicação.
+- Corrige dimensões/alinhamento da galeria, inclusive a validação do servidor que descartava estilos. Mantém dimensões originais quando não configuradas.
+- Acrescenta controles contextuais de mídias usadas como fundo no CSS. Regressões de DOM, geometria, eventos, salvamento e publicação.
+
 ## [0.10.0-dev.1] - 2026-11-22 (somente DEV)
 
 - Seleção de objetos/camadas nas importações; excluir objeto, remover fundo ou caixa preservando conteúdo, mover/redimensionar e desfazer.

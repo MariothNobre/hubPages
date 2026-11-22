@@ -37,3 +37,18 @@ Cards e listagem mostram **Template · Nome** ou **Importada · endereço origin
 Testes de DOM, contrato nativo, saneamento, armazenamento, publicação, revisão e identificação de origem acompanham a implementação. Os testes de integração usam dados sintéticos e rodam também no PostgreSQL isolado do CI. Evidências locais em `docs/evidence/hp040/`.
 
 Somente DEV recebe esta entrega. Produção e Sistera permanecem preservados; o app DEV mantém o limite de 2 GiB. Este recurso não executa código remoto nem reduz as proteções de rede do importador.
+
+## Complementação após auditoria — HP-042 / 0.10.1-dev.1
+
+A entrega anterior tinha recursos parciais. A conferência solicitada pelo proprietário identificou e corrigiu:
+
+1. **Caixas de fundo:** a seleção exigia ativar um modo separado e a remoção do fundo do texto não alcançava formas SVG independentes. Agora clicar no texto ou na forma mostra a seleção; **Excluir caixa de fundo** retira a forma sobreposta mais próxima, preservando o texto. A ação fica também na seleção sobre a página.
+2. **Redimensionamento:** a janela lateral podia cobrir a alça e a largura ficava limitada ao contêiner antigo. **Recolher ferramentas** preserva a seleção e libera a alça; largura/altura e arraste continuam disponíveis. A largura admite ajuste até o limite da janela. Fechar a seleção retorna à edição de textos.
+3. **Textos fora de caixas:** **Ajustar caixas e textos** fica em cada bloco e **Ajustar caixas desta página** aplica o ajuste ao conjunto. As caixas de texto recebem altura conforme o conteúdo e fundos grandes que interceptam o texto são ampliados quando necessário. Não apaga formas decorativas automaticamente. Layouts livres ainda permitem ajuste manual pela alça e posição; confira a revisão responsiva.
+4. **Importações antigas:** se houver seções semânticas dentro de um bloco gigante, o editor divide o rascunho ao abri-lo, com Desfazer e sem alterar a publicação existente. Inserir/remover blocos mantém os slots nos contêineres aninhados, evitando deslocar conteúdo para outra estrutura.
+5. **Cores contextuais:** a barra só abre ao entrar no campo editável. Clicar fora, focar outro controle ou Escape fecha a barra. Interagir com a própria barra mantém a escolha. Edição de objetos não é edição de texto.
+6. **Itens de grupos:** além de ocultar/restaurar quantidades existentes, há **Adicionar item ao grupo**, também para grupos com um item. A cópia usa identificadores próprios e, em grades de builders com linhas explícitas, vai para linhas livres, evitando sobreposição total.
+7. **Galeria da coleção:** o CSS impedia o efeito das dimensões e o servidor descartava o estilo individual. Agora largura, altura, encaixe e alinhamento persistem e aparecem na edição/prévia/publicação. Só configurações explícitas alteram as dimensões; alinhar não inventa altura/largura. A composição original em leque permanece por padrão.
+8. **Mídias de fundo:** imagens referenciadas no CSS recebem controles no próprio bloco para trocar, dimensionar e alinhar. São identificadas por referências locais capturadas e seletores CSS, sem executar scripts remotos. A lista de mídias permanece disponível como alternativa para estilos não associáveis a um elemento.
+
+Todos os ajustes de conteúdo usam o Desfazer e ficam no rascunho até revisão/publicação. Os testes usam dados sintéticos. Evidências em `docs/evidence/hp042/`; publicação do sistema exclusivamente DEV, sem migração de banco.

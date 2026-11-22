@@ -34,6 +34,7 @@ function style(value = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Layout inválido.')
   return { ...( ['left','center','right'].includes(value.imageAlign)?{imageAlign:value.imageAlign}:{}),width: number(value.width, 20, 100, 100), imageWidth: number(value.imageWidth, 10, 100, 100), padding: number(value.padding, 0, 120, 32), margin: number(value.margin, 0, 120, 16), gap: number(value.gap, 0, 80, 24), fontSize: number(value.fontSize, 14, 64, 18), headingSize: number(value.headingSize,20,80,36), buttonWidth: number(value.buttonWidth,20,100,100), buttonPadding: number(value.buttonPadding,8,40,16), columns: number(value.columns, 1, 3, 1), font: ['serif','rounded'].includes(value.font) ? value.font : 'system', align: ['left','center','right'].includes(value.align) ? value.align : 'left', animation: ['fade','rise'].includes(value.animation) ? value.animation : 'none', background: /^#[a-f0-9]{6}$/i.test(value.background ?? '') ? value.background : '#ffffff', imageFit: value.imageFit === 'cover' ? 'cover' : 'contain', imageHeight: number(value.imageHeight, 80, 800, 360) }
 }
+function mediaStyle(value){if(value===undefined)return{};const parsed=style(value);return Object.fromEntries(['imageAlign','imageWidth','imageHeight','imageFit'].filter(key=>Object.hasOwn(value,key)&&parsed[key]!==undefined).map(key=>[key,parsed[key]]))}
 function overrides(value=[]) {
   if(!Array.isArray(value)||value.length>24||value.some(key=>!['imageAlign','color','width','imageWidth','imageHeight','imageFit','padding','margin','gap','fontSize','headingSize','buttonWidth','buttonPadding','font','columns','align','animation','background'].includes(key)))fail('Ajustes de layout inválidos.')
   return [...new Set(value)]
@@ -67,7 +68,7 @@ export function validateDraft(input) {
   if(!counts||typeof counts!=='object'||Array.isArray(counts)||Object.entries(counts).some(([key,n])=>!['method','manual','bonus','sample'].includes(key)||!Number.isInteger(n)||n<0||n>20))fail('Quantidade de cards inválida (0 a 20).')
   if(input.offerGallery!==undefined&&(!Array.isArray(input.offerGallery)||input.offerGallery.length>6||new Set(input.offerGallery.map(m=>m?.id)).size!==input.offerGallery.length||input.offerGallery.some(m=>!m||!/^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|hero)$/.test(m.id))))fail('A galeria aceita até 6 mídias, sem espaços duplicados.')
   return {
-    ...(input.offerGallery===undefined?{}:{offerGallery:input.offerGallery.map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240)}))}),
+    ...(input.offerGallery===undefined?{}:{offerGallery:input.offerGallery.map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240),...(m.style?{style:mediaStyle(m.style)}:{})}))}),
     sectionCounts:{...counts},sampleEnabled:input.sampleEnabled!==false,mediaType:input.mediaType==='video'?'video':'image',
     name: text(input.name, 120, 'Minha página') || 'Minha página',
     title: text(input.title, 240), description: text(input.description, 3000),
@@ -75,7 +76,7 @@ export function validateDraft(input) {
     checkoutUrl: /^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(input.checkoutUrl||'')?text(input.checkoutUrl,2000):https(text(input.checkoutUrl, 2000)), publicUrl: /^http:\/\/localhost:\d+\//.test(input.publicUrl||'') ? text(input.publicUrl,500) : https(text(input.publicUrl, 500)),
     visitedSteps:Array.isArray(input.visitedSteps)?[...new Set(input.visitedSteps.filter(id=>[1,2,4,5,6,7,8].includes(id)))].slice(0,7):[],
     addressAuto: input.addressAuto===true, reviewedSignature:text(input.reviewedSignature,20),
-    ...(imported?{imported,importedAssets:(input.importedAssets||[]).map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240),style:style(m.style),...(m.videoOptions?{videoOptions:Object.fromEntries(['autoplay','loop','muted','controls'].map(key=>[key,m.videoOptions[key]===true]))}:{}),...(m.embedUrl&&/^https:\/\/(?:www\.youtube-nocookie\.com\/embed\/[a-zA-Z0-9_-]+|player\.vimeo\.com\/video\/\d+)$/.test(m.embedUrl)?{embedUrl:m.embedUrl}:{})}))}:{}),
+    ...(imported?{imported,importedAssets:(input.importedAssets||[]).map(m=>({id:m.id,imageUrl:image(m.imageUrl),mediaType:m.mediaType==='video'?'video':'image',title:text(m.title,240),style:mediaStyle(m.style),...(m.videoOptions?{videoOptions:Object.fromEntries(['autoplay','loop','muted','controls'].map(key=>[key,m.videoOptions[key]===true]))}:{}),...(m.embedUrl&&/^https:\/\/(?:www\.youtube-nocookie\.com\/embed\/[a-zA-Z0-9_-]+|player\.vimeo\.com\/video\/\d+)$/.test(m.embedUrl)?{embedUrl:m.embedUrl}:{})}))}:{}),
     ...(input.colorTheme===undefined?{}:{colorTheme:input.colorTheme}),
     imageUrl: image(input.imageUrl), metaPixelId, metaPixelEnabled, ga4Id, color, step,
     redLine: text(input.redLine, 300), eyebrow: text(input.eyebrow, 300), priceLabel: text(input.priceLabel, 80), originalPrice: text(input.originalPrice, 80), style: style(input.style),
