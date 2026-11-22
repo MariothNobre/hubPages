@@ -1,5 +1,9 @@
 # Diretrizes de desenvolvimento da HubPages
 
+## Domínios e subdomínios
+
+Preserve a regra de negócio em `docs/DOMINIOS_PROPRIOS.md` e `server/domain-policy.mjs`: subdomínios de uma base ativa/verificada da mesma conta não têm quota total fixa. Cada hostname exige prova DNS/HTTPS própria. Não herdar bases de outra conta nem liberar serviços de infraestrutura. Quotas de novos domínios independentes e limites de solicitações/concorrência permanecem distintos da quantidade total de subdomínios. Execute `scripts/test-custom-domains.mjs` (arquivo e PostgreSQL CI) ao alterar esta regra.
+
 ## Importação de páginas de vendas
 
 Antes de alterar o importador, consulte:

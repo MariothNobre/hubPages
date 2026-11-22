@@ -46,7 +46,8 @@ if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isStudioPublication&&(process.env.HUBPAGES_FREE_PUBLISH_ENABLED==='true'||isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true')
 const customDomainsEnabled=process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&isStudioPublication
 const customDomainStore=customDomainsEnabled?await createDomainStore(process.env.DATABASE_URL,{read:loadStore,write:saveStore}):null
-const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:isDevPublication?[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean):[]}):null
+const allowedDomainHosts=(process.env.HUBPAGES_CUSTOM_DOMAIN_ALLOWED_HOSTS||'').split(',').map(h=>h.trim().toLowerCase()).filter(h=>h==='site.sistera.com.br')
+const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:[...allowedDomainHosts,...(isDevPublication?[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean):[])]}):null
 if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
 const domainUpstream=domainRouter({service:customDomains,production:isProductionStudio,devFallback:process.env.HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER==='true'})
 

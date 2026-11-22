@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.12.1] - 2026-11-22
+
+- Liberação explícita de site.sistera.com.br para conexão no DEV e produção, mantendo os serviços Sistera reservados e exigindo prova TXT/HTTPS.
+- Mensagens distintas para formato inválido e endereço reservado. O assistente pode preparar registros mesmo antes da configuração DNS.
+- Regra de negócio: subdomínios de domínio ativo/verificado da mesma conta não têm limite fixo de quantidade. Mantidos os limites de novos domínios independentes e de solicitações por minuto, proteção dos serviços e prova individual por endereço.
+
 ## [0.12.0] - 2026-11-22
 
 - Domínio próprio nos cards e na listagem, com atalho de visita e confirmação para desvincular e liberar o endereço para outra página. O link HubPages fica oculto somente no card enquanto há vínculo ativo.
