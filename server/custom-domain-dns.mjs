@@ -20,13 +20,13 @@ export async function domainZone(hostname,resolver=dnsResolver()){
   const labels=hostname.split('.')
   const candidates=[hostname,...Array.from({length:Math.min(5,labels.length-2)},(_,i)=>labels.slice(-(Math.min(6,labels.length-1)-i)).join('.'))];
   for(const name of [...new Set(candidates)]){try{const ns=await answer(resolver,'resolveNs',name);if(ns.length)return{zone:name,nameservers:ns}}catch{/* The user can still use full DNS record names. */}}
-  return{zone:hostname,nameservers:[]}
+  return{zone:null,nameservers:[]}
 }
 export function dnsProvider(nameservers=[]){const ns=nameservers.join(' ');return /cloudflare\.com/.test(ns)?'cloudflare':/dns-parking\.com|hostinger/.test(ns)?'hostinger':/hostgator/.test(ns)?'hostgator':/domaincontrol\.com/.test(ns)?'godaddy':/\.dns\.br|registro\.br/.test(ns)?'registrobr':'outro'}
 export function dnsRecords(claim,ipv4){
-  const zone=claim.zone||claim.hostname,prefix=claim.hostname===zone?'':claim.hostname.endsWith('.'+zone)?claim.hostname.slice(0,-zone.length-1):claim.hostname
-  return[{type:'TXT',name:'_hubpages.'+claim.hostname,shortName:'_hubpages'+(prefix?'.'+prefix:''),value:'hubpages-verification='+claim.token,ttl:'Padrão'},
-    {type:'A',name:claim.hostname,shortName:prefix||'@',value:ipv4,ttl:'Padrão'}]
+  const zone=claim.zone,prefix=zone===null||zone===undefined?null:claim.hostname===zone?'':claim.hostname.endsWith('.'+zone)?claim.hostname.slice(0,-zone.length-1):claim.hostname
+  return[{type:'TXT',name:'_hubpages.'+claim.hostname,shortName:prefix===null?null:'_hubpages'+(prefix?'.'+prefix:''),value:'hubpages-verification='+claim.token,ttl:'Padrão'},
+    {type:'A',name:claim.hostname,shortName:prefix===null?null:prefix||'@',value:ipv4,ttl:'Padrão'}]
 }
 export async function checkDomainDns(claim,ipv4,resolver=dnsResolver()){
   const results=await Promise.allSettled([answer(resolver,'resolveTxt','_hubpages.'+claim.hostname),answer(resolver,'resolve4',claim.hostname),answer(resolver,'resolve6',claim.hostname)])

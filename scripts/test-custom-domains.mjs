@@ -13,7 +13,7 @@ for(const name of ['http://exemplo.com.br','https://exemplo.com.br/admin','127.0
 assert.equal(domainName('teste.sistera.com.br',{allowedReserved:['teste.sistera.com.br']}),'teste.sistera.com.br')
 assert.throws(()=>domainName('app.sistera.com.br',{allowedReserved:['teste.sistera.com.br']}))
 const claim={hostname:'oferta.exemplo.com.br',zone:'exemplo.com.br',token:'token-isolado'}
-assert.equal(dnsRecords(claim,ipv4)[0].shortName,'_hubpages.oferta');assert.equal(dnsRecords({...claim,hostname:claim.zone},ipv4)[1].shortName,'@')
+assert.equal(dnsRecords({...claim,zone:null},ipv4)[0].shortName,null,'never invent a short host when DNS zone discovery failed');assert.equal(dnsRecords(claim,ipv4)[0].shortName,'_hubpages.oferta');assert.equal(dnsRecords({...claim,hostname:claim.zone},ipv4)[1].shortName,'@')
 const resolver={resolveTxt:async()=>[['hubpages-verifi','cation=token-isolado']],resolve4:async()=>[ipv4],resolve6:async()=>{throw Object.assign(Error(),{code:'ENODATA'})},resolveNs:async name=>name==='exemplo.com.br'?['ns470.hostgator.com.br']:[]}
 assert.equal((await checkDomainDns(claim,ipv4,resolver)).ready,true)
 assert.equal((await checkDomainDns(claim,ipv4,{...resolver,resolve4:async()=>[ipv4,'1.1.1.1']})).ready,false)
