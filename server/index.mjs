@@ -333,7 +333,7 @@ async function handleApi(request, response, url) {
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const token = parseCookies(request)[customerCookie]
     try {
-      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing}, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
       if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
       if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
         const key = `${url.pathname}:${request.socket.remoteAddress}`
@@ -418,7 +418,6 @@ async function handleApi(request, response, url) {
         return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
       }
       if(url.pathname==='/api/platform/imports'&&request.method==='POST'){
-        if(isProductionStudio)throw new PlatformError(409,'A importação está disponível somente no DEV por enquanto.')
         const body=await readJsonBody(request,8000)
         if(body.authorized!==true)throw new PlatformError(422,'Confirme que pode usar o conteúdo e o layout desta página.')
         const now=Date.now();for(const [key,time]of importAttempts)if(now-time>60000)importAttempts.delete(key)

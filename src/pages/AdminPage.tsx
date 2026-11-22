@@ -227,7 +227,7 @@ export function AdminPage() {
         {view === 'editor' && (
           <section className="editor-card">
             <AdminProfile />
-            {import.meta.env.VITE_APP_ENV === 'development' && <Link to="/studio">Abrir HubPages Studio — criar página grátis</Link>}
+            <Link to="/studio">Abrir HubPages Studio</Link>
             <div className="editor-heading">
               <div>
                 <p className="section-kicker">Página de vendas</p>

@@ -47,11 +47,17 @@ try{
   assert.equal((await data('/api/platform/pages/'+es.id+'/tracking','GET',undefined,admin)).metaConversionsApiConfigured,true)
   assert.equal((await request('/api/admin/pages/infancia_alem_das_telas','PUT',{},admin)).status,409)
   assert.equal((await request('/api/resolve-page?url='+encodeURIComponent(origin+'/infancia_alem_das_telas'))).status,404)
-  const config=await data('/api/customer/config'),signup=await request('/api/customer/register','POST',{name:'Cliente',email:'workspace@example.test',password,acceptTerms:true,termsVersion:config.termsVersion}),customer=cookie(signup)
+  const config=await data('/api/customer/config');assert.deepEqual(config.features,{studio:true,pageImport:true,freePublishing:true});const signup=await request('/api/customer/register','POST',{name:'Cliente',email:'workspace@example.test',password,acceptTerms:true,termsVersion:config.termsVersion}),customer=cookie(signup)
   assert.equal(signup.status,201);assert.equal((await request('/api/platform/pages/'+pt.id+'/metrics','GET',undefined,customer)).status,404)
   await data('/api/platform/preferences','PUT',{listView:'list'},admin)
   assert.equal((await data('/api/platform/pages','GET',undefined,admin)).preferences.listView,'list');assert.equal((await data('/api/platform/preferences','GET',undefined,customer)).listView,'cards')
   const catalog=await data('/api/platform/templates','GET',undefined,customer);assert.equal(catalog.templates[0].name,'Aurora')
+  assert.ok(catalog.templates.some(t=>t.id==='sabor_pt'),'curated imported template is available in both environments')
+  assert.equal((await request('/api/platform/imports','POST',{url:'https://source.example.test/',authorized:true})).status,401,'import still requires a session')
+  assert.equal((await request('/api/platform/imports','POST',{url:'https://source.example.test/',authorized:false},customer)).status,422,'same import authorization validation in DEV and production')
+  const invalidImport=await request('/api/platform/imports','POST',{url:'http://source.example.test/',authorized:true},customer);assert.equal(invalidImport.status,422,'production reaches the real HTTPS importer rather than a DEV-only block')
+  assert.equal((await request('/api/platform/imports','POST',{url:'https://source.example.test/',authorized:true},customer)).status,429,'per-account import limits remain active')
+
   let themed=await data('/api/platform/pages','POST',{name:'Aurora personalizada',template:'infancia_pt',colorTheme:'oceano'},customer)
   const themeRoot='/api/platform/pages/'+themed.id,themeTitle='Conteúdo do cliente preservado'
   assert.equal(themed.draft.colorTheme,'oceano')
@@ -74,8 +80,8 @@ try{
   const toolRoot='/api/platform/pages/'+toolsPage.id
   toolsPage=await data(toolRoot,'GET',undefined,customer);assert.equal(toolsPage.draft.blocks[0].style.height,920);assert.equal(toolsPage.draft.textColors['import:t-one'],'#c62828');assert.equal(toolsPage.draft.importedAssets[0].style.imageAlign,'right');assert.match(toolsPage.draft.blocks[0].importHtml,/data-hp-node="n-one"/);assert.match(toolsPage.draft.blocks[0].importHtml,/data-hp-hidden="true"/);assert.match(toolsPage.draft.blocks[0].importHtml,/data-hp-fill-mode="overlay"/)
   const sourced=(await data('/api/platform/pages','GET',undefined,customer)).pages;assert.equal(sourced.find(p=>p.id===toolsPage.id).source.url,'https://source.example.test/offer');assert.equal(sourced.find(p=>p.id===themed.id).source.name,'Aurora')
-  if(!production){toolsPage=await data(toolRoot+'/publish','POST',{revision:toolsPage.revision},customer);const live=await data('/api/public/resolve?url='+encodeURIComponent(origin+'/imported_tools'));assert.equal(live.draft.blocks[0].style.height,920);assert.equal(live.draft.textColors['import:t-one'],'#c62828');assert.equal(live.draft.importedAssets[0].style.imageAlign,'right');assert.match(live.draft.blocks[0].importHtml,/width:350px!important/);assert.match(live.draft.blocks[0].importHtml,/background:#183f3a!important/);assert.match(live.draft.blocks[0].importHtml,/data-hp-fill-next="n-next"/);assert.match(live.draft.blocks[0].importHtml,/--hp-box-fill-height:700px/)}
-  console.log('PASS: object markers, hidden items, custom text colors, media alignment and page source persist through API and publication')
+  {toolsPage=await data(toolRoot+'/publish','POST',{revision:toolsPage.revision},customer);const live=await data('/api/public/resolve?url='+encodeURIComponent(origin+'/imported_tools'));assert.equal(live.draft.blocks[0].style.height,920);assert.equal(live.draft.textColors['import:t-one'],'#c62828');assert.equal(live.draft.importedAssets[0].style.imageAlign,'right');assert.match(live.draft.blocks[0].importHtml,/width:350px!important/);assert.match(live.draft.blocks[0].importHtml,/background:#183f3a!important/);assert.match(live.draft.blocks[0].importHtml,/data-hp-fill-next="n-next"/);assert.match(live.draft.blocks[0].importHtml,/--hp-box-fill-height:700px/)}
+  console.log('PASS: DEV/production import endpoint parity, HTTPS/authorization/session/rate limits, imported publication; object markers, hidden items, custom text colors, media alignment and page source persist through API and publication')
   const model=await data('/api/platform/pages','POST',{name:'Teste de progresso',template:'infancia_pt'},customer);assert.deepEqual(model.draft.visitedSteps,[])
   const visited=await data('/api/platform/pages/'+model.id,'PUT',{revision:model.revision,draft:{...model.draft,visitedSteps:[2,5]}},customer);assert.deepEqual(visited.draft.visitedSteps,[2,5])
   assert.equal((await data('/api/platform/pages/'+model.id,'GET',undefined,customer)).draft.visitedSteps[0],2)
