@@ -55,6 +55,9 @@ jobs:
           bash -n deploy/provision-postgres-prod.sh
           bash -n deploy/verify-prod-restore.sh
           bash -n deploy/provision-postgres-dev.sh
+          bash -n deploy/configure-custom-domains-dev.sh
+          python3 scripts/test-domains-proxy.py /tmp/hubpages-domains.Caddyfile
+          docker run --rm --network none -v /tmp/hubpages-domains.Caddyfile:/etc/caddy/Caddyfile:ro caddy:2.10.2-alpine caddy validate --config /etc/caddy/Caddyfile
 
       - name: Verificar lint
         run: pnpm lint
@@ -79,6 +82,8 @@ jobs:
           node scripts/test-studio-tracking.mjs
           node scripts/test-page-import.mjs
           node scripts/test-import-editor.cjs
+          node scripts/test-custom-domains.mjs
+          node scripts/test-custom-domain-http.mjs
           node scripts/test-import-store.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-platform.mjs
@@ -96,6 +101,7 @@ jobs:
         run: |
           node scripts/test-import-store.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
+          node scripts/test-custom-domains.mjs
           node scripts/test-customers.mjs
           node scripts/test-workspace.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs

@@ -1,3 +1,5 @@
+import {createDomainStore} from './custom-domain-store.mjs'
+import {customDomainService} from './custom-domains.mjs'
 const importAttempts=new Map();let activeImports=0
 import {importSalesPage} from './import-page.mjs'
 import {importMediaKey} from './platform-store.mjs'
@@ -41,6 +43,11 @@ const isStudioPublication=isDevPublication||isProductionStudio
 const unifiedStudio=isStudioPublication&&process.env.HUBPAGES_STUDIO_UNIFIED_ENABLED==='true'
 if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isStudioPublication&&(process.env.HUBPAGES_FREE_PUBLISH_ENABLED==='true'||isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true')
+const customDomainsEnabled=process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&isDevPublication
+const customDomainStore=customDomainsEnabled?await createDomainStore(process.env.DATABASE_URL,{read:loadStore,write:saveStore}):null
+const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean)}):null
+if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
+
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
 const revokedAdminSessions=new Map(Object.entries((await loadStore()).revokedAdminSessions||{}).filter(([,expires])=>expires>Date.now()/1000))
@@ -303,19 +310,20 @@ function analyticsSnapshot(store) {
 
 async function handleApi(request, response, url) {
   if(url.pathname.startsWith('/api/public/')) {
-    if(!isStudioPublication||request.headers.host!==new URL(devPublicOrigin).host)return sendJson(response,404,{message:'Página não encontrada.'})
+    const binding=request.customDomain,publicOrigin=binding?'https://'+binding.hostname:devPublicOrigin,publicOriginAllowed=()=>binding?request.headers.origin===publicOrigin:hasAllowedOrigin(request)
+    if(!isStudioPublication||!request.customDomain&&request.headers.host!==new URL(devPublicOrigin).host)return sendJson(response,404,{message:'Página não encontrada.'})
     try {
       if(url.pathname==='/api/public/traffic'&&request.method==='POST'){
-        if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+        if(!publicOriginAllowed())return sendJson(response,403,{message:'Origem não autorizada.'})
         const body=await readJsonBody(request);if(!allowMetaEvent('traffic:'+request.socket.remoteAddress+':'+String(body.visitorId).slice(0,40)))return sendJson(response,429,{message:'Aguarde antes de tentar novamente.'});const source=new URL(body.url),referer=new URL(request.headers.referer||'about:blank')
-        if(source.origin!==devPublicOrigin||referer.origin!==source.origin||referer.pathname!==source.pathname||!/^([a-f0-9-]{36})$/.test(body.publicationId||'')||!/^([a-f0-9-]{36})$/.test(body.tabId||''))throw new PlatformError(403,'Somente a página publicada registra visitas.')
+        if(source.origin!==publicOrigin||referer.origin!==source.origin||referer.pathname!==source.pathname||!/^([a-f0-9-]{36})$/.test(body.publicationId||'')||!/^([a-f0-9-]{36})$/.test(body.tabId||''))throw new PlatformError(403,'Somente a página publicada registra visitas.')
         if(body.viewId!==undefined&&!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(body.viewId))throw new PlatformError(422,'Identificador do acesso inválido.')
         if(body.sequence!==undefined&&(!Number.isSafeInteger(body.sequence)||body.sequence<0))throw new PlatformError(422,'Sequência de presença inválida.')
-        const canonical=source.origin+source.pathname.replace(/\/$/,'')
+        let canonical=source.origin+source.pathname.replace(/\/$/,'');if(binding){if(source.pathname!=='/')throw new PlatformError(403,'Somente a página publicada registra visitas.');const p=await platformStore.publicPage(binding.pageId);if(p.id!==body.publicationId)throw new PlatformError(403,'A visita não pertence a este domínio.');canonical=p.url}
         return sendJson(response,202,await platformStore.track({publicationId:body.publicationId,url:canonical,visitor:visitorHash(body.visitorId,sessionSecret),tabId:body.tabId,isNewVisit:body.isNewVisit===true,active:body.active!==false,viewId:body.viewId||randomUUID(),sequence:body.sequence??0}))
       }
-      if(url.pathname==='/api/public/meta/events'&&request.method==='POST'){if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'});if(!allowMetaEvent(request.socket.remoteAddress))return sendJson(response,429,{message:'Aguarde.'});return sendJson(response,200,await forwardStudioMeta({store:platformStore,body:await readJsonBody(request),origin:devPublicOrigin,userAgent:request.headers['user-agent']}))}
-      if(url.pathname==='/api/public/resolve'&&request.method==='GET'){const target=new URL(url.searchParams.get('url'));if(target.origin!==devPublicOrigin)throw new PlatformError(404,'Página não encontrada.');return sendJson(response,200,await platformStore.publicResolve(target.origin+target.pathname.replace(/\/$/,'')))}
+      if(url.pathname==='/api/public/meta/events'&&request.method==='POST'){if(!publicOriginAllowed())return sendJson(response,403,{message:'Origem não autorizada.'});if(!allowMetaEvent(request.socket.remoteAddress))return sendJson(response,429,{message:'Aguarde.'});return sendJson(response,200,await forwardStudioMeta({store:binding?{...platformStore,metaContext:async id=>{const p=await platformStore.publicPage(binding.pageId);if(p.id!==id)return null;const c=await platformStore.metaContext(id);return c?{...c,url:publicOrigin}:null}}:platformStore,body:await readJsonBody(request),origin:publicOrigin,userAgent:request.headers['user-agent']}))}
+      if(url.pathname==='/api/public/resolve'&&request.method==='GET'){const target=new URL(url.searchParams.get('url'));if(target.origin!==publicOrigin||binding&&target.pathname!=='/')throw new PlatformError(404,'Página não encontrada.');return sendJson(response,200,binding?await customDomains.publication(binding):await platformStore.publicResolve(target.origin+target.pathname.replace(/\/$/,'')))}
     }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});return sendJson(response,404,{message:'Página não encontrada.'})}
     if(request.method!=='GET')return sendJson(response,405,{message:'Método não permitido.'})
     const page=url.pathname.match(/^\/api\/public\/pages\/([a-f0-9-]{36})$/)
@@ -323,6 +331,7 @@ async function handleApi(request, response, url) {
     const id=page?.[1]||image?.[1]
     if(!id||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))return sendJson(response,404,{message:'Página não encontrada.'})
     try {
+      if(binding){const p=await platformStore.publicPage(binding.pageId);if(page&&page[1]!==binding.pageId||image&&image[1]!==p.id)throw new PlatformError(404,'Página não encontrada.')}
       if(page)return sendJson(response,200,await platformStore.publicPage(id))
       const result=await platformStore.publicImage(id,image[2]);return sendMedia(request,response,result)
     }catch(error){if(error instanceof PlatformError)return sendJson(response,error.status,{message:error.message});throw error}
@@ -333,7 +342,7 @@ async function handleApi(request, response, url) {
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const token = parseCookies(request)[customerCookie]
     try {
-      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing}, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled}, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
       if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
       if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
         const key = `${url.pathname}:${request.socket.remoteAddress}`
@@ -415,7 +424,7 @@ async function handleApi(request, response, url) {
       if(url.pathname==='/api/platform/trash'&&request.method==='GET')return sendJson(response,200,{pages:await platformStore.list(ownerId,true)})
       if (url.pathname === '/api/platform/pages' && request.method === 'GET') {
         const metrics=await platformStore.summary(ownerId)
-        return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
+        return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{customDomainsEnabled,provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
       }
       if(url.pathname==='/api/platform/imports'&&request.method==='POST'){
         const body=await readJsonBody(request,8000)
@@ -432,6 +441,8 @@ async function handleApi(request, response, url) {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,1500*1024)))
         return sendJson(response, 201, pageView(page))
       }
+      const domainRoute=url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})\/(check|activate|disconnect))?$/)
+      if(domainRoute){if(!customDomains)throw new PlatformError(404,'Domínios próprios ainda não estão habilitados neste ambiente.');const[,pageId,domainId,action]=domainRoute;await platformStore.read(ownerId,pageId);if(!action&&request.method==='GET')return sendJson(response,200,{domains:await customDomains.list(ownerId,pageId)});if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'});if(!action)return sendJson(response,201,await customDomains.create(ownerId,pageId,await readJsonBody(request,2000)));return sendJson(response,200,await customDomains[action](ownerId,pageId,domainId))}
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking|metrics|purge))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })
       const [, id, action] = match
@@ -613,11 +624,14 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
+    if(url.pathname==='/api/domains/tls'&&request.method==='GET'){const allowed=customDomains&&await customDomains.certificateAllowed(String(url.searchParams.get('domain')||'').toLowerCase());return sendJson(response,allowed?200:403,{allowed:Boolean(allowed)})}
+    const centralHost=request.headers.host===new URL(devPublicOrigin).host||allowedOrigins.has('https://'+request.headers.host)||request.headers.host===`localhost:${port}`||request.headers.host===`127.0.0.1:${port}`
+    if(!centralHost){const hostname=String(request.headers.host||'').toLowerCase();if(!customDomains)return sendJson(response,404,{message:'Página não encontrada.'});const proof=url.pathname==='/.well-known/hubpages-connection',binding=await customDomains.binding(hostname,{proof});if(!binding)return sendJson(response,404,{message:'Página não encontrada.'});if(proof&&request.method==='GET')return sendJson(response,200,{connection:'hubpages-dev',hostname,claim:binding.id});request.customDomain=binding;response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(!url.pathname.startsWith('/api/public/')&&!(request.method==='GET'&&(url.pathname==='/'||/^\/assets\/[a-zA-Z0-9_./-]+$/.test(url.pathname)||url.pathname==='/favicon.ico')))return sendJson(response,404,{message:'Página não encontrada.'})}
     if (['/studio', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
-    if(isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
+    if(request.customDomain||isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
       if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
@@ -627,6 +641,7 @@ createServer(async (request, response) => {
     }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
     if(['/api/public/meta/events','/api/public/traffic'].includes(url.pathname))return await handleApi(request,response,url)
+    if(postgresStore&&url.pathname.match(/^\/api\/platform\/pages\/[a-f0-9-]{36}\/domains/))return await handleApi(request,response,url)
     if(url.pathname==='/api/platform/imports')return await handleApi(request,response,url)
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))

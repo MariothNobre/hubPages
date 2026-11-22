@@ -17,5 +17,5 @@ export function SalesPageRoute() {
   if (slug === null) return <p role="status">Carregando…</p>
   if (slug === 'infancia_alem_das_telas') return <InfanciaAlemDasTelas />
   if (slug === 'infancia_alem_das_telas_es') return <InfanciaAlemDasTelasEs />
-  return location.pathname === '/' && window.location.hostname.endsWith('hubpages.com.br') ? <HubPagesHome /> : <PublishedPage key={location.pathname}/>
+  return location.pathname === '/' && ['hubpages.com.br','www.hubpages.com.br','dev.hubpages.com.br','www.dev.hubpages.com.br'].includes(window.location.hostname) ? <HubPagesHome /> : <PublishedPage key={location.pathname}/>
 }
