@@ -47,7 +47,7 @@ try{
   assert.equal((await data('/api/platform/pages/'+es.id+'/tracking','GET',undefined,admin)).metaConversionsApiConfigured,true)
   assert.equal((await request('/api/admin/pages/infancia_alem_das_telas','PUT',{},admin)).status,409)
   assert.equal((await request('/api/resolve-page?url='+encodeURIComponent(origin+'/infancia_alem_das_telas'))).status,404)
-  const config=await data('/api/customer/config');assert.deepEqual(config.features,{studio:true,pageImport:true,freePublishing:true});const signup=await request('/api/customer/register','POST',{name:'Cliente',email:'workspace@example.test',password,acceptTerms:true,termsVersion:config.termsVersion}),customer=cookie(signup)
+  const config=await data('/api/customer/config');assert.deepEqual(config.features,{studio:true,pageImport:true,freePublishing:true,customDomains:process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&!production});const signup=await request('/api/customer/register','POST',{name:'Cliente',email:'workspace@example.test',password,acceptTerms:true,termsVersion:config.termsVersion}),customer=cookie(signup)
   assert.equal(signup.status,201);assert.equal((await request('/api/platform/pages/'+pt.id+'/metrics','GET',undefined,customer)).status,404)
   await data('/api/platform/preferences','PUT',{listView:'list'},admin)
   assert.equal((await data('/api/platform/pages','GET',undefined,admin)).preferences.listView,'list');assert.equal((await data('/api/platform/preferences','GET',undefined,customer)).listView,'cards')

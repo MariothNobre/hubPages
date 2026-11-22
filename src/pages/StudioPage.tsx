@@ -1,3 +1,4 @@
+import {CustomDomainWizard} from '../components/CustomDomainWizard'
 import {ImportPageDialog} from '../components/ImportPageDialog'
 import {ImportedModelPanel} from '../components/ImportedModelPanel'
 import '../import-studio.css'
@@ -53,6 +54,7 @@ export function StudioPage() {
   const [deleteError,setDeleteError]=useState('')
   const [freePublishing,setFreePublishing]=useState(false)
   const [production,setProduction]=useState(false)
+  const [customDomainsEnabled,setCustomDomainsEnabled]=useState(false)
   const [publishing,setPublishing]=useState(false)
   const [leaving,setLeaving]=useState(false)
   const transition=useRef(false)
@@ -77,8 +79,8 @@ export function StudioPage() {
   const failedSave=useRef<{draft:string;message:string;step?:number}|null>(null)
   const pending = useRef<Promise<boolean> | null>(null)
   const refresh = useCallback(async () => {
-    const result = await api<{ pages: Summary[]; preferences:{listView:'cards'|'list';guideOpen:boolean};billing:{temporaryFreePublishing:boolean;publicOrigin:string;environment?:string} }>('pages')
-    setFreePublishing(result.billing.temporaryFreePublishing)
+    const result = await api<{ pages: Summary[]; preferences:{listView:'cards'|'list';guideOpen:boolean};billing:{customDomainsEnabled?:boolean;temporaryFreePublishing:boolean;publicOrigin:string;environment?:string} }>('pages')
+    setFreePublishing(result.billing.temporaryFreePublishing);setCustomDomainsEnabled(result.billing.customDomainsEnabled===true)
     setPublicOrigin(result.billing.publicOrigin);setProduction(result.billing.environment==='production')
     setTrashed((await api<{pages:Summary[]}>('trash')).pages)
     setTemplates((await api<{templates:typeof templates}>('templates')).templates)
@@ -252,7 +254,7 @@ export function StudioPage() {
 
       {draft.step === 4 && <CheckoutSettings draft={draft} update={update}/>}
       {draft.step === 5 && <TrackingSettings key={page.id} id={page.id} draft={draft} update={update}/>}
-      {draft.step === 6 && <AddressSettings id={page.id} draft={draft} origin={publicOrigin} update={update}/>}
+      {draft.step === 6 && <><AddressSettings id={page.id} draft={draft} origin={publicOrigin} update={update}/>{customDomainsEnabled&&<CustomDomainWizard key={page.id} pageId={page.id} published={page.editorialStatus==='published'} onReview={()=>update({step:7})}/>}</>}
       {draft.step === 7 && <><a className="studio-preview-link" href={`/studio/preview/${page.id}`} target="_blank" rel="noopener noreferrer" onClick={(event)=>{event.preventDefault();void run(async()=>{if(await flush()) window.open(`/studio/preview/${page.id}`,'_blank','noopener,noreferrer')})}}>Abrir minha página em prévia ↗</a><div className="wizard-review-confirm"><label><input type="checkbox" checked={reviewed} disabled={!reviewCurrent||!!reviewCurrent.error} onChange={event=>void confirmReview(event.target.checked)}/>Conferi os textos, as imagens e os links da minha página.</label><p>{reviewed?'Revisão confirmada. Sua página está pronta para o próximo passo.':'Depois de conferir, marque esta opção. Novas edições pedem uma nova revisão.'}</p><button disabled={!reviewed} onClick={()=>update({step:8})}>Continuar para publicação →</button></div><div className="studio-viewports">{['desktop','tablet','mobile'].map((size)=><button key={size} onClick={()=>setViewport(size)} aria-pressed={viewport===size}>{{desktop:'Computador',tablet:'Tablet',mobile:'Celular'}[size]}</button>)}</div><ResponsiveReview pageId={page.id} draft={draft} viewport={viewport}/></>}
       {draft.step === 8 && <><div className="wizard-publication-status"><span className={`studio-page-status ${page.editorialStatus==='published'?'is-published':''}`}>{page.editorialStatus==='published'?'NO AR':'RASCUNHO'}</span><p>{page.editorialStatus==='published'?'Seu link está ativo. As próximas mudanças ficam no rascunho até você atualizar a publicação.':'Você está a um passo de colocar sua oferta no ar.'}</p></div><PublicationChanges changes={changes} publishedAt={reviewCurrent?.publishedAt||null} loading={!reviewCurrent} error={reviewCurrent?.error||''} active={page.editorialStatus==='published'}/>{reviewCurrent?.error&&<button onClick={()=>setAssetRefresh(value=>value+1)}>Tentar conferir novamente</button>}<div className={'wizard-launch'+(page.editorialStatus==='published'?' is-published':'')}><div><span className="wizard-eyebrow">SEU LINK PARA COMPARTILHAR</span>{draft.publicUrl?<a className="studio-address-link" href={draft.publicUrl} target="_blank" rel="noopener noreferrer">{draft.publicUrl} ↗</a>:<p>Escolha um nome para seu link antes de publicar.</p>}<button onClick={()=>update({step:6})}>{draft.publicUrl?'Alterar endereço':'Escolher endereço'} →</button></div><div className="wizard-launch-checks"><p>{stepReady[1]?'✓':'○'} Conteúdo preparado</p><p>{stepReady[2]?'✓':'○'} Link de compra conectado</p><p>{stepReady[4]?'✓':'○'} Endereço escolhido</p><button onClick={()=>update({step:7})}>{stepReady[5]?'✓ Revisão conferida':'○ Conferir a prévia'} →</button></div></div>{!freePublishing&&<p role="status">A publicação ainda não está disponível neste ambiente. Seu rascunho continua salvo e você pode usar a prévia.</p>}<div className="wizard-publish-actions">{page.editorialStatus==='published'&&<button className="studio-unpublish" disabled={publishing} onClick={()=>void publishPage(true)}>Retirar página do ar</button>}<button className="studio-publish" disabled={publishing||!freePublishing} onClick={()=>void publishPage()}>{publishing?'Preparando sua página…':page.editorialStatus==='published'?'Publicar alterações':'Publicar minha página'}</button>{page.editorialStatus==='published'&&page.publication&&<a href={page.publication.url} target="_blank" rel="noopener noreferrer">Visitar página no ar ↗</a>}</div><p className="wizard-environment-note">{production?'Sua página será publicada no domínio HubPages. Depois de publicar, copie o endereço para compartilhar.':'Ambiente de testes: o link será publicado no domínio de homologação. Depois de publicar, copie o endereço para compartilhar.'} Para continuar editando, volte ao Conteúdo.</p></>}
     </section></div></>}
