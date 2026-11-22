@@ -61,3 +61,12 @@ Todos os ajustes de conteúdo usam o Desfazer e ficam no rascunho até revisão/
 - Em **Fundo da caixa selecionada**, escolha uma amostra ou uma cor personalizada. A cor cobre a caixa inteira, incluindo seus vários parágrafos/listas. Não muda textos, cores das letras, dimensões ou posição. **Transparente** remove o preenchimento; Desfazer restaura a alteração anterior.
 - Para alcançar um grupo maior, use Camada selecionada ou Selecionar caixa/grupo pai. A alteração é da caixa selecionada, não da página inteira. O preenchimento fica no rascunho e aparece na prévia; a página pública recebe a mudança após revisão/publicação.
 - QA sintético em docs/evidence/hp044: ambas as janelas movidas, fechadas, digitação continuada com a barra fechada; fundo verde escuro na caixa de vários textos brancos, Undo, F5 e prévia; limites em 390×844. Nenhuma edição/publicação de página real durante os testes.
+
+## Fundo completo e crescimento independente — HP-046 / 0.10.3-dev.1
+
+1. Clique no texto da lista e use Selecionar caixa ou lista completa. Escolha Fundo da caixa selecionada para pintar todos os textos do grupo. Contêineres sem pintura própria passam a comportar seus parágrafos, mantendo o conteúdo.
+2. Em Como aumentar esta caixa?, escolha Empurrar conteúdo abaixo para redimensionar no fluxo normal ou Estender apenas o fundo, sem empurrar para preservar a posição das caixas seguintes.
+3. Cobrir próxima caixa com este fundo estende o preenchimento até o final do grupo seguinte no mesmo bloco e acompanha mudanças de tela. Desvincular próxima caixa devolve o controle manual. Não é necessário mover a lista para dentro do título.
+4. Desfazer restaura a alteração. F5 mantém o fundo e seu vínculo. Confira a prévia e publique após a revisão; a página pública existente só muda ao publicar. Duplicar blocos remapeia vínculos internos; cópias isoladas não referenciam a caixa original.
+
+QA em docs/evidence/hp046: lista real com 13 elementos, fundo completo, F5, Undo, desktop e 390×844. Testes usam páginas sintéticas, sem editar conta real. Publicação do sistema somente DEV.

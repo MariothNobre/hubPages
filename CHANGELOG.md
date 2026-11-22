@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.10.3-dev.1] - 2026-11-22 (somente DEV)
+
+- Fundo completo de listas e caixas agrupadas, incluindo contêineres sem pintura própria.
+- Modos para empurrar o conteúdo ou estender somente o fundo sem deslocar textos.
+- Atalho para cobrir o grupo seguinte, com geometria responsiva, Desfazer e persistência.
+- Seleção direta do grupo corrigida quando há camadas de fundo compartilhado.
 ## [0.10.2-dev.1] - 2026-11-22 (somente DEV)
 
 - Cabeçalhos para arrastar e × para fechar as duas janelas de ferramentas, com suporte a toque/teclado e limites da tela.
@@ -113,3 +119,4 @@ semântico.
 - Plano de evolução para uma plataforma dinâmica de criação de páginas de vendas.
 - Compartimentos Docker DEV e produção implantados e validados na VPS.
 - Acesso de deploy restrito instalado; chave administrativa temporária revogada.
+

@@ -46,3 +46,11 @@ Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânt
 ## Complementação de edição — HP-042
 
 A barra de cores é contextual ao campo; fechar fora dela respeita eventos compostos de Shadow DOM. Formas de fundo podem ser removidas por interseção geométrica sem excluir o texto. Ajuste de caixas é explícito por bloco/página, sem apagar fundos arbitrariamente. Recolher ferramentas mantém a seleção e libera o redimensionamento. Importações antigas com seções são organizadas ao abrir o rascunho, com undo; inserção/exclusão reconcilia slots preservando o scaffold. Grupos aceitam inclusão e cópias em linhas livres de grades de builders. Estilos de mídia devem ser esparsos e persistidos na API: não aplicar dimensões padrão apenas por escolher alinhamento. Referências CSS a assets locais podem expor troca/alinhamento de fundos sem executar scripts. Conferir também prévia pública sem realces do editor. Casos de regressão em test-import-editor.cjs e test-workspace.mjs. Guia detalhado: EDICAO_VISUAL_E_CORES.md.
+
+### Grupos sem caixa própria e fundos extensíveis — HP-046
+
+Padrão genérico para .text-box, ul/ol e data-hp-text-group: se o retângulo não existe, medir a união dos filhos. Materializar pintura em flow-root apenas ao aplicar fundo/redimensionar em fluxo. Modo de fundo isolado não altera display nem dimensões do conteúdo, evitando deslocamento por colapso de margens.
+
+Allowlist restrita de data-hp-fill-mode, data-hp-fill-next e variáveis --hp-box-fill-*. Camada derivada local ao bloco, pointer-events:none, acima de decoração e abaixo do conteúdo; atualização por geometria/resize, igual na edição/prévia/publicação. Marcadores runtime não são armazenados como objetos. Seleção explícita de grupo no campo editável evita interferência dos eventos de portal. Duplicações remapeiam referências internas e removem referências externas.
+
+Regressões em test-import-editor.cjs e test-workspace.mjs: display:contents, limites dos filhos, fundo/fluxo, próximo grupo, saneamento, persistência e publicação em arquivo/PostgreSQL CI. Sem executar scripts/hidratação remota, sem exceção por domínio e sem alterar controles de rede.
