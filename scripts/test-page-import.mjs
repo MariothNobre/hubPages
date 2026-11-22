@@ -32,3 +32,18 @@ const scaffold=await importSalesPage('https://source.example.test/',{fetchResour
 assert.equal(scaffold.draft.blocks.length,4);assert.ok(scaffold.draft.blocks[0].importHtml.includes('Cabeçalho preservado'));assert.ok(scaffold.draft.blocks[3].importHtml.includes('Rodapé original'));assert.ok(scaffold.draft.imported.css.includes('.late'));assert.ok(scaffold.draft.imported.rootHtml.includes('data-hp-slot="3"'));assert.ok(Object.values(scaffold.draft.imported.palette).includes('#abcdef'))
 assert.equal(safeImportHtml('<div data-hp-slot="1"></div>').includes('data-hp-slot'),false)
 console.log('PASS: full body scaffold, original header/footer and late stylesheet capture')
+
+// Empty inline styles are valid placeholders, not links to an undefined URL.
+const emptyRequests=[]
+const emptyStyles=await importSalesPage('https://source.example.test/',{fetchResource:async url=>{emptyRequests.push(url);assert.equal(url,'https://source.example.test/');return{url,headers:{'content-type':'text/html'},content:Buffer.from('<html><head><style></style><style>h1{color:#123456}</style><style> </style></head><body><main><section><h1>Oferta com estilos vazios</h1></section></main></body></html>')}}})
+assert.equal(emptyRequests.length,1);assert.ok(emptyStyles.draft.imported.css.includes('h1'));assert.ok(emptyStyles.draft.blocks.some(block=>block.importHtml.includes('Oferta com estilos vazios')))
+console.log('PASS: empty inline style placeholders never trigger a request to /undefined')
+
+const astroSource='<html><head><style></style><style>.offer[data-v-5636d6b6]{color:#123456}</style></head><body><div><astro-island component-url="/remote.js" props="secret-state"><main class="page"><section data-v-5636d6b6="" class="offer"><h1 data-astro-cid-abc123="">Oferta Astro preservada</h1></section><section><p>Conteúdo editável</p></section></main></astro-island></div></body></html>'
+const astro=await importSalesPage('https://source.example.test/',{fetchResource:async url=>({url,headers:{'content-type':'text/html'},content:Buffer.from(astroSource)})})
+assert.ok(astro.draft.imported.rootHtml.includes('data-hp-slot="0"'));assert.ok(astro.draft.imported.rootHtml.includes('display:contents'));assert.ok(!/astro-island|component-url|remote.js|secret-state/.test(astro.draft.imported.rootHtml));assert.ok(astro.draft.blocks[0].importHtml.includes('data-v-5636d6b6'));assert.ok(astro.draft.blocks[0].importHtml.includes('Oferta Astro preservada'));assert.ok(astro.draft.imported.css.includes('[data-v-5636d6b6]'))
+console.log('PASS: inert Astro wrappers preserve slots and scoped styles without remote components or props')
+
+assert.ok(astro.draft.blocks[0].importHtml.includes('data-astro-cid-abc123'))
+await assert.rejects(importSalesPage('https://source.example.test/',{fetchResource:async url=>({url,headers:{'content-type':'text/html'},content:Buffer.from('<html><body><unknown-shell><main><section><h1>Oferta inacessível</h1></section></main></unknown-shell></body></html>')})}),/estrutura.*aplicativo/)
+console.log('PASS: scoped Astro IDs are preserved and an empty sanitized scaffold cannot be reported as a successful import')

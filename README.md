@@ -45,5 +45,7 @@ pnpm build
 
 9. [Importação e modelo Sabor — DEV](docs/IMPORTACAO_E_MODELO_SABOR.md)
 
+10. [Compatibilidade tecnológica do importador](docs/IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md)
+
 Consulte o [CHANGELOG](CHANGELOG.md) para acompanhar versões e entregas.
 
