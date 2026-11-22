@@ -19,4 +19,5 @@ export function movePageBlocks(draft:Draft,from:number,to:number) {
   return rest
 }
 
-export function defaultOfferMedia(draft:Draft):MediaItem[]{const offer=draft.blocks.find(b=>b.templateRole==='offer');return [{id:offer?.id||'hero',imageUrl:offer?.imageUrl||draft.imageUrl,mediaType:offer?.mediaType||draft.mediaType,title:draft.locale==='es'?'Infancia Más Allá de las Pantallas':'Infância Além das Telas'},...draft.blocks.filter(b=>b.kind==='bonus').slice(0,5).map(b=>({id:b.id,imageUrl:b.imageUrl,mediaType:b.mediaType,title:b.title}))]}
+function defaultMediaStyle(block?:Block):Layout{return Object.fromEntries(['imageAlign','imageWidth','imageHeight','imageFit'].filter(key=>key==='imageAlign'?block?.style?.imageAlign!==undefined:block?.layoutOverrides?.includes(key)).map(key=>[key,block?.style?.[key as keyof Layout]]))}
+export function defaultOfferMedia(draft:Draft):MediaItem[]{const offer=draft.blocks.find(b=>b.templateRole==='offer');return [{id:offer?.id||'hero',imageUrl:offer?.imageUrl||draft.imageUrl,mediaType:offer?.mediaType||draft.mediaType,style:defaultMediaStyle(offer),title:draft.locale==='es'?'Infancia Más Allá de las Pantallas':'Infância Além das Telas'},...draft.blocks.filter(b=>b.kind==='bonus').slice(0,5).map(b=>({id:b.id,imageUrl:b.imageUrl,mediaType:b.mediaType,style:defaultMediaStyle(b),title:b.title}))]}
