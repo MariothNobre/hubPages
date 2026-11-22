@@ -1,6 +1,6 @@
 # Domínio próprio — DEV e produção
 
-Versão 0.12.1 / HP-056/057. Recurso inicialmente entregue apenas no DEV em HP-052/053; promoção para produção autorizada em 22/11/2026. Cada ambiente conserva seu banco, páginas, usuários e vínculos. Teste real autorizado no DEV: teste.sistera.com.br, DNS HostGator.
+Versão 0.12.2 / HP-058/059. Recurso inicialmente entregue apenas no DEV em HP-052/053; promoção para produção autorizada em 22/11/2026. Cada ambiente conserva seu banco, páginas, usuários e vínculos. Teste real autorizado no DEV: teste.sistera.com.br, DNS HostGator.
 
 ## Guia de uso
 
