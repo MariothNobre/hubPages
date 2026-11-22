@@ -4,6 +4,8 @@ Versão 0.12.0 / HP-054. Recurso inicialmente entregue apenas no DEV em HP-052/0
 
 ## Guia de uso
 
+Correção 0.12.1: `site.sistera.com.br`, informado pelo proprietário, está explicitamente liberado para conexão nos dois ambientes. A exceção não inclui `app.sistera.com.br`, os domínios centrais nem outros nomes reservados. A mensagem de endereço reservado agora explica que o formato está correto; não confunde reserva com caminho/parâmetros. O primeiro passo gera as instruções mesmo sem A/TXT configurados. A liberação do nome não comprova propriedade: TXT, apontamento e HTTPS continuam obrigatórios antes da ativação.
+
 Na página do Studio, abra Endereço → Conectar meu domínio.
 
 1. **Escolha o endereço.** Digite o domínio registrado ou um subdomínio. Se o endereço principal já tem site ou e-mail, prefira oferta.seudominio.com.br. Cada nome (com/sem www) é uma conexão separada.
@@ -12,7 +14,9 @@ Na página do Studio, abra Endereço → Conectar meu domínio.
 4. **Confira a conexão.** Há indicadores separados de propriedade TXT, apontamento A e HTTPS. IPv6 ou destinos diferentes, TXT ausente e falhas temporárias são apresentados com orientação. Somente DNS aprovado habilita a emissão do certificado. Propagação pode levar minutos ou até 48 horas, conforme provedor/cache. Cloudflare deve estar em Somente DNS; restrições CAA precisam permitir o certificado.
 5. **Use seu domínio.** Após DNS e HTTPS conferidos, vincule o endereço. Vá para Revisão e publique a página. Conectar um rascunho não o publica; o domínio mostra somente o snapshot publicado. Editar mantém a versão pública até republicar. Retirar do ar/lixeira interrompe a página também no domínio. Desconectar preserva a publicação e os dados da página.
 
-O endereço personalizado serve a raiz do hostname. Até 3 nomes por página e 10 conexões pendentes/ativas por conta. Desconectar libera o nome e a quota; reconectar gera prova nova. Os endereços internos da plataforma são reservados, com exceção de teste.sistera.com.br explicitamente autorizada e configurada apenas no DEV.
+O endereço personalizado serve a raiz do hostname. **Subdomínios de domínio ativo e verificado da mesma conta não têm limite fixo de quantidade**, por página ou conta. Cada hostname exige seu próprio TXT, apontamento e HTTPS. Novos domínios independentes conservam a quota de 3 por página e 10 por conta; ela não conta os subdomínios associados à base já conectada. Há até 20 solicitações de preparo por minuto por conta, sem limite total de subdomínios. Desconectar libera o nome; reconectar gera prova nova.
+
+A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, usa-se o hostname já verificado, sem inventar um domínio pai. Uma conta não herda a base de outra, nem uma conexão expirada/desligada libera novos subdomínios. Os domínios centrais HubPages, a infraestrutura hstgr.cloud e os endereços sistera.com.br/www/app continuam protegidos. site.sistera.com.br é a entrada adicional autorizada pelo proprietário, sem conceder acesso automático aos serviços existentes.
 
 ## Implementação e isolamento
 
@@ -37,6 +41,7 @@ O endereço personalizado serve a raiz do hostname. Até 3 nomes por página e 1
 - test-custom-domains.mjs: nomes/IDN, TXT/A/AAAA, NS, confirmação de DNS, isolamento, emissão inicial, ativação, expiração, disputa entre contas, retirada do ar e reconexão. Arquivo e PostgreSQL isolado no CI.
 - test-custom-domain-http.mjs: hostname próprio, bloqueio de rotas privadas, prova/ask, métricas/CAPI vinculadas, expiração/desconexão/unpublish, flag habilitada na produção e recusa com a flag desligada.
 - test-domains-proxy.py e validação Caddy em contêiner sem rede: preservação dos sites existentes, idempotência e recusa de conflito.
+- Regra de subdomínios: teste cria 15 subdomínios na mesma página após validar a base, conserva prova individual, recusa herança entre contas/âncora desconectada e mantém quotas de domínios independentes e rate-limit. Repete em arquivo e PostgreSQL isolado.
 - QA local: HostGator selecionada, cópia TXT funcionando, A aprovado/TXT ausente diagnosticado, registro persistido após F5. Sem overflow em desktop e 390×844. Evidências em docs/evidence/hp052. Valores TXT dessas capturas são de fixture local e não devem ser usados no DNS real.
 - Provisionamento técnico DEV cria somente a página marcada Teste — domínio próprio e sua conexão. Idempotente, não sobrescreve a página ou reativa uma conexão que o proprietário desconectou. TXT real é gerado na VPS; resultado externo registrado na entrega HP-053.
 
