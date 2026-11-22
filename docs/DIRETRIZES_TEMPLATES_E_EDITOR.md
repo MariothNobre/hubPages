@@ -7,7 +7,7 @@ Aplicável a todos os novos templates e às derivações do modelo Infância em 
 - Toda edição acontece no canvas. Textos, títulos, preços, rótulos e metadados da degustação são editáveis no próprio contexto.
 - O editor nunca navega para um checkout. Use `EditorAction`: elemento editável sem href, controle individual Exibido/Oculto e seleção do botão correto. Links funcionam na prévia privada e na publicação.
 - Elementos desabilitados continuam disponíveis na edição e ficam ausentes no HTML público. Autor e degustação têm controles globais; cada botão tem sua própria visibilidade.
-- Preserve o layout aprovado por padrão. Quantidades, ordem, estilo e conteúdos só mudam quando o usuário configura. O cabeçalho de vendas não mostra a marca da plataforma; o rodapé mostra a logo sem link e com tooltip **Feito com HubPages.com.br**.
+- Preserve o layout aprovado por padrão. Quantidades, ordem, estilo e conteúdos só mudam quando o usuário configura. O cabeçalho de vendas não mostra a marca da plataforma; nos modelos de autoria HubPages, o rodapé mostra a logo sem link e com tooltip **Feito com HubPages.com.br**.
 - Isole estilos do editor. Preços devem herdar a tipografia correta, inclusive a moeda e a barra móvel. Nunca aplique a rotação do ícone de FAQ ao título editável. Ícones de navegação/fechar/expandir são controles, não campos de texto.
 
 ## Mídias e armazenamento
@@ -51,3 +51,14 @@ Todo campo de checkout deve usar CheckoutLinkInput e o preflight compartilhado c
 ## Temas de cores por modelo — Aurora
 
 Registrar paletas com IDs estáveis em shared/template-themes.mjs. Persistir somente a escolha na própria página; seleção exploratória na janela não altera o rascunho. Usar o mesmo renderizador na prévia/edição/publicação, preservar o original quando ausente e incluir a escolha na revisão e nas pendências. Não usar filtros sobre fotografias para simular paletas. Manter textos e mídias ao trocar apenas cores. Novos modelos devem registrar suas próprias paletas compatíveis, respeitar contraste e reduced-motion e validar IDs na API.
+
+
+## Importações — HP-036
+
+- A importação preserva o rodapé e as informações da origem. Não acrescenta logo, atribuição ou link HubPages. A autoria é preservada no servidor; editar o rascunho não pode transformar uma importação comum em modelo de autoria HubPages.
+- Única exceção autorizada: o modelo **Sabor**, preparado a partir de `https://comericoenminutos.online/`, página de autoria do proprietário. Somente essa derivação curada permite a marca HubPages no rodapé, sem link. Uma importação comum até desse mesmo endereço continua sem a marca adicional.
+- Capturar somente o documento solicitado e seus recursos visuais. Preservar âncoras; não seguir links de navegação, executar scripts da origem ou copiar seus pixels. Destinos de compra originais ficam disponíveis para consulta/adoção explícita. Cada página mantém seu checkout e suas credenciais Meta.
+- Usar `ImportedCanvas`: HTML e CSS saneados em Shadow DOM, textos editáveis no contexto, controles de mídia centralizados, seções ordenáveis/duplicáveis/removíveis e desfazer. Formulários não submetem à origem; widgets dependentes de scripts próprios podem precisar de reconstrução. Essa restrição deve ser explicada antes da captura.
+- Seis temas por importação: cores originais + cinco combinações HubPages; nomes automáticos `Nome do modelo · Nome da paleta`. A paleta altera cores de HTML/CSS, não os pixels das fotos e capas.
+- Mídias importadas pertencem ao espaço atual da página. Ao substituir/remover, aplicar a mesma limpeza e proteção da publicação já existente. Assets fixos do catálogo são recursos compartilhados do modelo, não biblioteca pessoal de uploads antigos.
+- Captura: HTTPS público, DNS e redirecionamentos verificados, 2 MB de HTML, 8 MB por recurso, 45 MB totais, até 70 mídias/40 seções/40 folhas CSS. Uma captura global por vez, uma tentativa por minuto por conta, prazo de 45 s na API. Sem buscas recursivas por outras páginas.

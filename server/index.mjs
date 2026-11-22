@@ -1,3 +1,6 @@
+const importAttempts=new Map();let activeImports=0
+import {importSalesPage} from './import-page.mjs'
+import {importMediaKey} from './platform-store.mjs'
 import { detectMedia,maxMediaBytes,sendMedia } from './media.mjs'
 import { visitorHash } from './workspace-model.mjs'
 import { forwardStudioMeta } from './studio-tracking.mjs'
@@ -55,7 +58,7 @@ const salesPageLabels = {
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8', '.ico': 'image/x-icon',
   '.jpeg': 'image/jpeg', '.jpg': 'image/jpeg', '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml; charset=utf-8',
+  '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.mp4':'video/mp4', '.webm':'video/webm', '.svg': 'image/svg+xml; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8', '.webp': 'image/webp',
 }
 
@@ -63,7 +66,7 @@ function securityHeaders(response) {
   response.setHeader('X-Content-Type-Options', 'nosniff')
   response.setHeader('X-Frame-Options', 'DENY')
   response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https://www.facebook.com; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
+  response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https://www.facebook.com; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
 }
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
@@ -390,7 +393,7 @@ async function handleApi(request, response, url) {
         }
       }
       if(url.pathname==='/api/platform/metrics'&&request.method==='GET')return sendJson(response,200,{metrics:await platformStore.summary(ownerId)})
-      if(url.pathname==='/api/platform/templates/infancia_pt/preview'&&request.method==='GET')return sendJson(response,200,{draft:validateDraft({...templateInput({template:'infancia_pt'}),checkoutUrl:'#oferta'})})
+      const modelPreview=url.pathname.match(/^\/api\/platform\/templates\/([a-z_]+)\/preview$/);if(modelPreview&&request.method==='GET'&&templates.some(model=>model.id===modelPreview[1]))return sendJson(response,200,{draft:validateDraft({...templateInput({template:modelPreview[1]}),checkoutUrl:'#oferta'})})
       if (url.pathname === '/api/platform/templates' && request.method === 'GET') return sendJson(response, 200, { templates })
       const imageMatch = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/images\/(hero|[a-f0-9-]{36})$/)
       if (imageMatch) {
@@ -414,8 +417,20 @@ async function handleApi(request, response, url) {
         const metrics=await platformStore.summary(ownerId)
         return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
       }
+      if(url.pathname==='/api/platform/imports'&&request.method==='POST'){
+        if(isProductionStudio)throw new PlatformError(409,'A importação está disponível somente no DEV por enquanto.')
+        const body=await readJsonBody(request,8000)
+        if(body.authorized!==true)throw new PlatformError(422,'Confirme que pode usar o conteúdo e o layout desta página.')
+        const now=Date.now();for(const [key,time]of importAttempts)if(now-time>60000)importAttempts.delete(key)
+        if(importAttempts.has(ownerId)||activeImports>=1)throw new PlatformError(429,'Uma importação está em andamento ou acabou de terminar. Aguarde um minuto.')
+        importAttempts.set(ownerId,now);activeImports++
+        const controller=new AbortController(),signal=AbortSignal.any([controller.signal,AbortSignal.timeout(45000)]),cancel=()=>{if(!response.writableEnded)controller.abort()};response.once('close',cancel)
+        try{const result=await importSalesPage(String(body.url||'').trim(),{signal});const commit=apiQueue.then(()=>{if(signal.aborted)throw new PlatformError(408,'Importação interrompida. Tente novamente.');return platformStore.create(ownerId,{...result.draft,[importMediaKey]:result.media})});apiQueue=commit.catch(()=>undefined);const page=await commit;return sendJson(response,201,pageView(page))}
+        catch(error){if(error instanceof PlatformError)throw error;throw new PlatformError(422,'Não foi possível capturar esta página. Confira o endereço público e tente novamente.')}
+        finally{response.removeListener('close',cancel);activeImports--}
+      }
       if (url.pathname === '/api/platform/pages' && request.method === 'POST') {
-        const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,256*1024)))
+        const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,1500*1024)))
         return sendJson(response, 201, pageView(page))
       }
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking|metrics|purge))?$/)
@@ -433,9 +448,9 @@ async function handleApi(request, response, url) {
       if(request.method==='DELETE'&&!action)page=await platformStore.trash(ownerId,id,await readJsonBody(request))
       else if(request.method==='POST'&&action==='untrash')page=await platformStore.untrash(ownerId,id,await readJsonBody(request))
       else if(request.method==='POST'&&action==='unpublish')page=await platformStore.unpublish(ownerId,id,await readJsonBody(request))
-      else if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request,256*1024))
+      else if (request.method === 'PUT' && !action) page = await platformStore.save(ownerId, id, await readJsonBody(request,1500*1024))
       else if (request.method === 'POST' && action === 'duplicate') page = await platformStore.duplicate(ownerId, id)
-      else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request,256*1024))
+      else if (request.method === 'POST' && action === 'restore') page = await platformStore.restore(ownerId, id, await readJsonBody(request,1500*1024))
       else if (request.method === 'POST' && action === 'publish') {
         await platformStore.read(ownerId, id)
         if(!freePublishing)return sendJson(response, 409, { message: 'Publicação bloqueada: a integração Asaas e a confirmação de pagamento ainda não estão configuradas. Seu rascunho está preservado.' })
@@ -576,7 +591,7 @@ async function handleApi(request, response, url) {
   return sendJson(response, 404, { message: 'Rota não encontrada.' })
 }
 
-async function serveStatic(response, pathname) {
+async function serveStatic(response, pathname, request) {
   const candidate = pathname === '/' ? '/index.html' : pathname
   const cleanPath = normalize(candidate).replace(/^(\.\.(\/|\\|$))+/, '')
   let filePath = resolve(join(staticDir, cleanPath))
@@ -584,9 +599,11 @@ async function serveStatic(response, pathname) {
   try { if (!(await stat(filePath)).isFile()) throw new Error('NOT_FILE') }
   catch { filePath = join(staticDir, 'index.html') }
   const fileStats = await stat(filePath)
+  if(['.mp4','.webm'].includes(extname(filePath))&&request?.headers.range){const match=/^bytes=(\d*)-(\d*)$/.exec(request.headers.range);let start,end;if(match&&(match[1]||match[2])){start=match[1]?Number(match[1]):Math.max(0,fileStats.size-Number(match[2]));end=match[1]?(match[2]?Math.min(fileStats.size-1,Number(match[2])):fileStats.size-1):fileStats.size-1}if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end<start||start>=fileStats.size){response.writeHead(416,{'Content-Range':`bytes */${fileStats.size}`});return response.end()}response.writeHead(206,{'Content-Type':mimeTypes[extname(filePath)],'Accept-Ranges':'bytes','Cache-Control':'public, max-age=31536000, immutable','Content-Length':end-start+1,'Content-Range':`bytes ${start}-${end}/${fileStats.size}`});return createReadStream(filePath,{start,end}).pipe(response)}
   response.writeHead(200, {
     'Cache-Control': filePath.endsWith('index.html') ? 'no-cache' : 'public, max-age=31536000, immutable',
     'Content-Length': fileStats.size,
+    'Accept-Ranges': ['.mp4','.webm'].includes(extname(filePath))?'bytes':'none',
     'Content-Type': mimeTypes[extname(filePath)] ?? 'application/octet-stream',
   })
   createReadStream(filePath).pipe(response)
@@ -599,18 +616,19 @@ createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
     if (['/studio', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-      response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+      response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
     if(isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
       if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
-      response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
+      response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
-    if(request.method==='GET'&&(/^\/studio\/preview\/[a-f0-9-]{36}$/.test(url.pathname)||url.pathname==='/studio/modelos/infancia_pt')&&url.searchParams.get('embedded')==='1'){
+    if(request.method==='GET'&&(/^\/studio\/preview\/[a-f0-9-]{36}$/.test(url.pathname)||['/studio/modelos/infancia_pt','/studio/modelos/sabor_pt'].includes(url.pathname))&&url.searchParams.get('embedded')==='1'){
       response.setHeader('X-Frame-Options','SAMEORIGIN')
-      response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+      response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
     }
     if (url.pathname === '/health.json') return await handleApi(request, response, url)
     if(['/api/public/meta/events','/api/public/traffic'].includes(url.pathname))return await handleApi(request,response,url)
+    if(url.pathname==='/api/platform/imports')return await handleApi(request,response,url)
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))
       apiQueue = task.catch(() => undefined)
@@ -620,7 +638,7 @@ createServer(async (request, response) => {
       const store = await loadStore()
       if (store.pages?.[url.pathname.replace(/^\/|\/$/g, '')]?.published === false) return sendJson(response, 404, { message: 'Página indisponível.' })
     }
-    return await serveStatic(response, decodeURIComponent(url.pathname))
+    return await serveStatic(response, decodeURIComponent(url.pathname),request)
   } catch (error) {
     console.error(error)
     return sendJson(response, error?.message === 'PAYLOAD_TOO_LARGE' ? 413 : 500, { message: 'Não foi possível concluir a solicitação.' })

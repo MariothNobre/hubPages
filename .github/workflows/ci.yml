@@ -77,6 +77,8 @@ jobs:
           node scripts/test-visitor-session.mjs
           node scripts/test-studio-slug.mjs
           node scripts/test-studio-tracking.mjs
+          node scripts/test-page-import.mjs
+          node scripts/test-import-store.mjs
           node scripts/test-platform.mjs
           node scripts/test-page-address.mjs
           node scripts/test-admin.mjs
@@ -90,6 +92,7 @@ jobs:
           HUBPAGES_TEST_DATABASE_URL: postgres://hubpages:ci-only-isolated-password@127.0.0.1:5432/hubpages_ci
           HUBPAGES_TEST_PUBLICATION: 'true'
         run: |
+          node scripts/test-import-store.mjs
           node scripts/test-customers.mjs
           node scripts/test-workspace.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-workspace.mjs

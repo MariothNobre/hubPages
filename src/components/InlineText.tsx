@@ -6,7 +6,7 @@ export function InlineText({ as = 'span', value, label, onChange, onSelect, clas
   const element = useRef<HTMLElement>(null)
   useLayoutEffect(() => {
     const node=element.current
-    if(node && document.activeElement!==node && node.textContent!==value) node.textContent=value
+    if(node && (node.getRootNode() instanceof ShadowRoot?(node.getRootNode() as ShadowRoot).activeElement:document.activeElement)!==node && node.textContent!==value) node.textContent=value
   },[value])
   const commit = (node: HTMLElement) => {
     const text=(multiline ? node.innerText : (node.textContent||'').replace(/\n/g,' ')).replace(/\r/g,'').slice(0,max)
