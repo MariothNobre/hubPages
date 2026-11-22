@@ -61,3 +61,4 @@
 .sales-v2-offer__books>.sales-gallery-slot>:is(img,.presentation-video){position:static;inset:auto;transform:none;width:var(--hp-gallery-width,100%);max-width:100%;height:var(--hp-gallery-height,auto)}
 .sales-v2-offer__books[data-gallery-count="1"]>.sales-gallery-slot{left:50%;transform:translateX(-50%) rotate(-2deg)}
 @media(max-width:760px){.sales-v2-offer__books>.sales-gallery-slot.offer-main-cover{left:22%}}
+.sales-v2-offer__books[data-gallery-count="1"]>.sales-gallery-slot.offer-main-cover{left:50%}
