@@ -46,8 +46,7 @@ if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isStudioPublication&&(process.env.HUBPAGES_FREE_PUBLISH_ENABLED==='true'||isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true')
 const customDomainsEnabled=process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&isStudioPublication
 const customDomainStore=customDomainsEnabled?await createDomainStore(process.env.DATABASE_URL,{read:loadStore,write:saveStore}):null
-const allowedDomainHosts=(process.env.HUBPAGES_CUSTOM_DOMAIN_ALLOWED_HOSTS||'').split(',').map(h=>h.trim().toLowerCase()).filter(h=>h==='site.sistera.com.br')
-const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:[...allowedDomainHosts,...(isDevPublication?[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean):[])]}):null
+const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219'}):null
 if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
 const domainUpstream=domainRouter({service:customDomains,production:isProductionStudio,devFallback:process.env.HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER==='true'})
 
@@ -345,7 +344,7 @@ async function handleApi(request, response, url) {
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const token = parseCookies(request)[customerCookie]
     try {
-      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled}, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled}, domainPolicy:customDomainsEnabled?{requiresConnectedParent:false,individualDnsProof:true}:null, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
       if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
       if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
         const key = `${url.pathname}:${request.socket.remoteAddress}`
@@ -445,7 +444,7 @@ async function handleApi(request, response, url) {
         const page = await platformStore.create(ownerId, templateInput(await readJsonBody(request,1500*1024)))
         return sendJson(response, 201, pageView(page))
       }
-      const domainRoute=url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})\/(check|activate|disconnect))?$/)
+      const domainRoute=url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})\/(check|activate|disconnect|cancel))?$/)
       if(domainRoute){if(!customDomains)throw new PlatformError(404,'Domínios próprios ainda não estão habilitados neste ambiente.');const[,pageId,domainId,action]=domainRoute;await platformStore.read(ownerId,pageId);if(!action&&request.method==='GET')return sendJson(response,200,{domains:await customDomains.list(ownerId,pageId)});if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'});if(!action)return sendJson(response,201,await customDomains.create(ownerId,pageId,await readJsonBody(request,2000)));return sendJson(response,200,await customDomains[action](ownerId,pageId,domainId))}
       const match = url.pathname.match(/^\/api\/platform\/pages\/([a-f0-9-]{36})(?:\/(duplicate|restore|publish|unpublish|untrash|address-availability|address-suggestion|publication-review|tracking|metrics|purge))?$/)
       if (!match) return sendJson(response, 404, { message: 'Recurso não encontrado.' })

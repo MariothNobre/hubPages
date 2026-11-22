@@ -2,7 +2,7 @@
 
 ## Domínios e subdomínios
 
-Preserve a regra de negócio em `docs/DOMINIOS_PROPRIOS.md` e `server/domain-policy.mjs`: subdomínios de uma base ativa/verificada da mesma conta não têm quota total fixa. Cada hostname exige prova DNS/HTTPS própria. Não herdar bases de outra conta nem liberar serviços de infraestrutura. Quotas de novos domínios independentes e limites de solicitações/concorrência permanecem distintos da quantidade total de subdomínios. Execute `scripts/test-custom-domains.mjs` (arquivo e PostgreSQL CI) ao alterar esta regra.
+Preserve a regra em `docs/DOMINIOS_PROPRIOS.md`: qualquer subdomínio público válido pode iniciar a conexão, sem lista de liberações pontuais, reserva de sufixo ou exigência de domínio pai já conectado. Bloquear somente os hostnames exatos dos serviços existentes. Cada hostname exige prova DNS/HTTPS própria antes de ativar. A base ativa/verificada da mesma conta em `server/domain-policy.mjs` serve apenas para isenção de quota total de subdomínios, não para autorizar o primeiro passo. Não herdar provas ou isenções de outra conta. Quotas de novos domínios independentes e limites de solicitações/concorrência permanecem separados. Execute `scripts/test-custom-domains.mjs` (arquivo/PostgreSQL CI) e `scripts/test-custom-domain-http.mjs` (DEV/produção offline) ao alterar a regra.
 
 ## Importação de páginas de vendas
 

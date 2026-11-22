@@ -10,13 +10,12 @@ const origin='https://dev.hubpages.com.br',ipv4='179.199.148.219',ownerA=randomU
 assert.equal(domainName(' https://OFERTA.Exemplo.com.br/ '),'oferta.exemplo.com.br')
 assert.equal(domainName('ação.com.br'),'xn--ao-siap.com.br')
 for(const name of ['http://exemplo.com.br','https://exemplo.com.br/admin','127.0.0.1','localhost','site.local','exemplo.com.br:8080','*.exemplo.com.br','app.sistera.com.br','dev.hubpages.com.br','exemplo.com.br?token=x','user@exemplo.com.br'])assert.throws(()=>domainName(name))
-assert.equal(domainName('teste.sistera.com.br',{allowedReserved:['teste.sistera.com.br']}),'teste.sistera.com.br')
-assert.throws(()=>domainName('app.sistera.com.br',{allowedReserved:['teste.sistera.com.br']}))
-assert.equal(domainName('site.sistera.com.br',{allowedReserved:['site.sistera.com.br']}),'site.sistera.com.br')
-assert.throws(()=>domainName('app.sistera.com.br',{allowedReserved:['site.sistera.com.br']}),e=>e.status===422&&e.message.includes('O formato está correto'))
-assert.throws(()=>domainName('site.sistera.com.br/caminho',{allowedReserved:['site.sistera.com.br']}),e=>e.message.includes('sem caminho'))
-assert.equal(domainName('campanha.sistera.com.br',{connectedBases:['sistera.com.br']}),'campanha.sistera.com.br')
-assert.throws(()=>domainName('app.sistera.com.br',{connectedBases:['sistera.com.br'],allowedReserved:['app.sistera.com.br']}),e=>e.status===422)
+assert.equal(domainName('teste.sistera.com.br'),'teste.sistera.com.br')
+assert.throws(()=>domainName('app.sistera.com.br'))
+for(const host of ['site.sistera.com.br','infancia.sistera.com.br','novo.sistera.com.br','oferta.hubpages.com.br','campanha.outrodominio.com.br','a.b.outrodominio.com.br'])assert.equal(domainName(host),host)
+for(const host of ['hubpages.com.br','www.hubpages.com.br','dev.hubpages.com.br','sistera.com.br','www.sistera.com.br','app.sistera.com.br'])assert.throws(()=>domainName(host),e=>e.status===422&&e.message.includes('já é utilizado'))
+assert.throws(()=>domainName('site.sistera.com.br/caminho'),e=>e.message.includes('sem caminho'))
+assert.equal(domainName('campanha.sistera.com.br'),'campanha.sistera.com.br')
 const claim={hostname:'oferta.exemplo.com.br',zone:'exemplo.com.br',token:'token-isolado'}
 assert.equal(dnsRecords({...claim,zone:null},ipv4)[0].shortName,null,'never invent a short host when DNS zone discovery failed');assert.equal(dnsRecords(claim,ipv4)[0].shortName,'_hubpages.oferta');assert.equal(dnsRecords({...claim,hostname:claim.zone},ipv4)[1].shortName,'@')
 const resolver={resolveTxt:async()=>[['hubpages-verifi','cation=token-isolado']],resolve4:async()=>[ipv4],resolve6:async()=>{throw Object.assign(Error(),{code:'ENODATA'})},resolveNs:async name=>name==='exemplo.com.br'?['ns470.hostgator.com.br']:[]}
@@ -45,6 +44,7 @@ try{
  let waiting=service({probeTls:async()=>false});d=await waiting.check(ownerA,page.id,d.id);assert.equal(d.tls,false);assert.equal(await svc.certificateAllowed(d.hostname),true,'ask can authorize the initial TLS handshake after proof');assert.equal(await svc.binding(d.hostname),null)
  svc=service();d=await svc.check(ownerA,page.id,d.id);await assert.rejects(svc.check(ownerA,page.id,d.id),e=>e.status===429)
  d=await svc.activate(ownerA,page.id,d.id);assert.equal(d.enabled,true);assert.equal(d.live,false,'connecting a draft does not publish it')
+ await assert.rejects(svc.cancel(ownerA,page.id,d.id),e=>e.status===409,'a linked domain must be explicitly disconnected, never cancelled as pending')
  await assert.rejects(svc.publication(await svc.binding(d.hostname)),e=>e.status===404)
  page=await platform.publish(ownerA,page.id,{revision:page.revision,origin})
  const card=(await svc.cards(ownerA,[page]))[0];assert.equal(card.customDomains[0].hostname,d.hostname);assert.ok(!JSON.stringify(card.customDomains).includes('token'));assert.equal((await svc.cards(ownerB,[other]))[0].customDomains.length,0,'owner-specific summaries');
@@ -57,13 +57,18 @@ try{
  assert.deepEqual((await svc.cards(ownerA,[page]))[0].customDomains,[]);
  const oldToken=(await store.read(ownerA,page.id,d.id)).token
  const moved=await svc.create(ownerA,second.id,{hostname:d.hostname});assert.equal(moved.id,d.id);assert.notEqual((await store.read(ownerA,second.id,d.id)).token,oldToken);assert.equal(moved.enabled,false)
- const siteService=service({allowedReserved:['site.sistera.com.br'],findZone:async()=>({zone:'sistera.com.br',nameservers:[]})}),site=await siteService.create(ownerA,second.id,{hostname:'site.sistera.com.br',provider:'hostgator'});assert.equal(site.verified,false);assert.equal(site.dns,null,'an empty DNS configuration must not block the first step');assert.equal(site.records[0].name,'_hubpages.site.sistera.com.br');assert.equal(site.records[1].name,'site.sistera.com.br')
+ const siteService=service({findZone:async()=>({zone:'sistera.com.br',nameservers:[]})}),site=await siteService.create(ownerA,second.id,{hostname:'site.sistera.com.br',provider:'hostgator'});assert.equal(site.verified,false);assert.equal(site.dns,null,'an empty DNS configuration must not block the first step');assert.equal(site.records[0].name,'_hubpages.site.sistera.com.br');assert.equal(site.records[1].name,'site.sistera.com.br')
  await siteService.check(ownerA,second.id,site.id);await siteService.activate(ownerA,second.id,site.id)
  for(let i=0;i<15;i++){const child=await svc.create(ownerA,second.id,{hostname:`produto-${i}.sistera.com.br`});assert.equal(child.verified,false);assert.equal(child.enabled,false);assert.equal((await store.read(ownerA,second.id,child.id)).subdomainOf,'sistera.com.br')}
  await assert.rejects(svc.create(ownerA,second.id,{hostname:'app.sistera.com.br'}),e=>e.status===422)
- await assert.rejects(svc.create(ownerB,other.id,{hostname:'de-outra-conta.sistera.com.br'}),e=>e.status===422,'a different account does not inherit the connected domain')
+ const independent=await svc.create(ownerB,other.id,{hostname:'infancia.sistera.com.br'});assert.equal(independent.verified,false);assert.equal(independent.enabled,false);assert.equal((await store.read(ownerB,other.id,independent.id)).subdomainOf,null,'preparing a subdomain does not inherit another account’s domain or quota exemption');await assert.rejects(svc.activate(ownerB,other.id,independent.id),e=>e.status===422)
+ await assert.rejects(svc.cancel(ownerA,other.id,independent.id),e=>e.status===404)
+ const pendingToken=(await store.read(ownerB,other.id,independent.id)).token;await svc.cancel(ownerB,other.id,independent.id);assert.ok(!(await svc.list(ownerB,other.id)).some(d=>d.id===independent.id));await assert.rejects(service().check(ownerB,other.id,independent.id),e=>e.status===409);await assert.rejects(svc.activate(ownerB,other.id,independent.id),e=>e.status===422);await assert.rejects(store.update(ownerB,other.id,independent.id,{verified:true}),e=>e.status===409)
+ const destination=await platform.create(ownerB,{title:'Destino da configuração cancelada',blocks:[]}),restarted=await svc.create(ownerB,destination.id,{hostname:independent.hostname});assert.equal(restarted.enabled,false);assert.notEqual((await store.read(ownerB,destination.id,restarted.id)).token,pendingToken,'cancelled hostname can move to another page only with a new proof')
  await svc.create(ownerA,second.id,{hostname:'primeiro.novo-dominio.net'});await assert.rejects(svc.create(ownerA,second.id,{hostname:'segundo.outro-dominio.net'}),e=>e.status===422,'unrelated-domain quota remains in force')
- await siteService.disconnect(ownerA,second.id,site.id);await assert.rejects(service().create(ownerA,second.id,{hostname:'depois.sistera.com.br'}),e=>e.status===422,'a disconnected anchor does not grant new subdomains')
+ await siteService.disconnect(ownerA,second.id,site.id);const after=await service().create(ownerA,second.id,{hostname:'depois.sistera.com.br'});assert.equal(after.verified,false);assert.equal((await store.read(ownerA,second.id,after.id)).subdomainOf,null,'preparation is allowed without a connected parent; it does not grant the connected-domain quota exemption')
+ const race=await svc.create(ownerA,page.id,{hostname:'race.outrodominio.net'});let release,begin;const waitingDns=new Promise(resolve=>{release=resolve}),begun=new Promise(resolve=>{begin=resolve});const checking=service({checkDns:async()=>{begin();return waitingDns}}).check(ownerA,page.id,race.id);await begun;await svc.cancel(ownerA,page.id,race.id);release(ready);await assert.rejects(checking,e=>e.status===409);assert.equal((await store.read(ownerA,page.id,race.id)).verified,false,'a late DNS response cannot revive a cancelled configuration')
+ const generation=await service().create(ownerA,page.id,{hostname:race.hostname});let finish,started;const gate=new Promise(resolve=>{finish=resolve}),startSignal=new Promise(resolve=>{started=resolve});const oldCheck=service({checkDns:async()=>{started();return gate}}).check(ownerA,page.id,generation.id);await startSignal;await svc.cancel(ownerA,page.id,generation.id);const fresh=await service().create(ownerA,page.id,{hostname:race.hostname});finish(ready);await assert.rejects(oldCheck,e=>e.status===409);assert.equal((await store.read(ownerA,page.id,fresh.id)).verified,false,'late verification of an old token cannot authorize a restarted configuration');assert.notEqual(fresh.records[0].value,generation.records[0].value)
  const limited=service();for(let i=0;i<20;i++)await limited.create(ownerB,other.id,{hostname:d.hostname});await assert.rejects(limited.create(ownerB,other.id,{hostname:d.hostname}),e=>e.status===429,'request rate stays bounded without a total subdomain cap')
  console.log('PASS: custom domain validation, DNS TXT/A/AAAA, owner/page isolation, TLS admission, activation, expiry, unpublish, disconnect and safe reconnection ('+(database?'PostgreSQL':'file')+')')
 }finally{await store.close();await platform.close();if(pool)await pool.end()}

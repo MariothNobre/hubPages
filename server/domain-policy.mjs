@@ -1,5 +1,6 @@
 // Business rule: subdomains of an active, verified domain have no fixed quantity cap.
 // New, unrelated domains retain their existing quotas. Each hostname needs its own proof.
+// This is ONLY a quota rule: preparing a new subdomain must not require a connected parent.
 export function connectedDomainBases(rows,now=Date.now()){
  return [...new Set(rows.filter(d=>d.verified&&d.enabled&&d.tls&&!d.disconnectedAt&&Date.parse(d.readyUntil)>now).map(d=>d.zone||d.hostname))]
 }
