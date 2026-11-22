@@ -12,8 +12,8 @@ dump="$backup_dir/verified-$stamp.dump"
 "${compose[@]}" exec -T hubpages-db pg_dump -U hubpages -d hubpages -Fc > "$dump"
 [[ -s "$dump" ]] || { echo 'Backup vazio; publicação interrompida.' >&2; exit 1; }
 restore="hubpages-dev-restore-$stamp"
-trap 'docker rm -f "$restore" >/dev/null 2>&1 || true' EXIT
-docker run -d --name "$restore" --network none --memory 256m --cpus 0.25 --tmpfs /var/lib/postgresql/data:rw,size=512m -e POSTGRES_USER=hubpages -e POSTGRES_DB=hubpages -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-bookworm >/dev/null
+trap 'docker inspect "$restore" --format "Restore temporary state: oom={{.State.OOMKilled}} exit={{.State.ExitCode}}" 2>/dev/null || true; docker rm -fv "$restore" >/dev/null 2>&1 || true' EXIT
+docker run -d --name "$restore" --network none --memory 256m --cpus 0.25 --mount type=volume,destination=/var/lib/postgresql/data -e POSTGRES_USER=hubpages -e POSTGRES_DB=hubpages -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-bookworm >/dev/null
 for attempt in $(seq 1 40); do
   if docker exec "$restore" sh -c 'test "$(cat /proc/1/comm)" = postgres && pg_isready -U hubpages -d hubpages' >/dev/null 2>&1; then break; fi
   sleep 2

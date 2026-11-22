@@ -507,3 +507,9 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Marcadores restritos persistem no rascunho/prévia/publicação. Camada derivada sem capturar cliques; Desfazer e duplicação remapeando vínculos preservados. Sem migração de banco, exceção por domínio ou relaxamento de rede/scripts.
 - QA sintético: lista real importada com 13 elementos, fundo próprio com 449 px e todos os filhos dentro, F5 persistido. Crescimento normal moveu a lista em 220 px; fundo isolado manteve exatamente sua posição. Fundo vinculado cobriu a lista em desktop e 390×844; Undo e seleção direta aprovados. Evidências em docs/evidence/hp046.
 - Importador, editor, contratos PT/ES, Undo, legado, lint/build e integração em arquivo DEV/produção sintética aprovados. PostgreSQL será validado no CI. Servidor e tabs encerrados, viewport restaurado; nenhuma conta real editada. Somente DEV; entrega após CI/deploy em HP-047.
+
+## HP-046A — Armazenamento do teste de restauração DEV
+
+- Deploy 45017596646 falhou duas vezes antes da troca da aplicação: pg_restore perdeu conexão com seu PostgreSQL temporário. O código/CI passou; a versão anterior permaneceu ativa.
+- O teste usava tmpfs de 512 MB dentro do limite total de memória de 256 MB; arquivos do banco concorriam com a memória do processo. Substituído por volume Docker anônimo exclusivo e efêmero, removido com o próprio contêiner no trap. Mantidos --network none, 256 MB e 0,25 CPU. Nenhum mount/banco da aplicação ou Sistera é tocado. Backup protegido continua preservado.
+- Acrescentado diagnóstico restrito OOM/exit no encerramento, sem logar dados ou credenciais. O sucesso do restore integral continua obrigatório para prosseguir; não há bypass.
