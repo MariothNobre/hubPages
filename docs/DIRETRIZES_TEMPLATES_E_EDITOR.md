@@ -68,3 +68,7 @@ Registrar paletas com IDs estáveis em shared/template-themes.mjs. Persistir som
 - Para toda importação futura, aplicar o catálogo de padrões em [IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md](IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md).
 - Estilos inline vazios não são URLs externas. Wrappers Astro com HTML no servidor devem preservar filhos por meio de contêineres inertes. Identificadores CSS `data-v-*`/`data-astro-cid-*` precisam de allowlist limitada, sem transportar código ou props.
 - Uma captura só é considerada válida depois de conferir slots editáveis e conteúdo visível no Studio, inclusive após recarregar. Corrigir por padrão tecnológico, com fixture offline e regressão, sem condicionais por domínio.
+
+## Edição de objetos e campos — HP-040
+
+Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânticas aninhadas passam a blocos sem perder o scaffold. Marcadores internos limitados identificam objetos, visibilidade e remoção de fundo; não liberam scripts ou atributos arbitrários. Textos usam identificadores estáveis e cores hexadecimais validadas; os spans de cor herdam tipografia para não reduzir preços. Mídias persistem alinhamento por espaço. Dimensões e deslocamento preservam o transform original. Duplicações remapeiam objetos, textos, botões e mídias para manter edição independente. Testes offline em test-page-import.mjs e test-import-editor.cjs; persistência/publicação em test-workspace.mjs, arquivo e PostgreSQL CI.

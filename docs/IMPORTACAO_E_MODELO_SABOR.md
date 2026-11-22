@@ -59,3 +59,7 @@ Evidências locais sintéticas: `docs/evidence/hp036/`. A captura local foi impo
 As especificações e caminhos das artes localizadas estão em [ARTES_SABOR.md](ARTES_SABOR.md).
 
 Compatibilidade e recursos reutilizáveis para outras origens: [IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md](IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md).
+
+## Edição de objetos e campos — HP-040
+
+Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânticas aninhadas passam a blocos sem perder o scaffold. Marcadores internos limitados identificam objetos, visibilidade e remoção de fundo; não liberam scripts ou atributos arbitrários. Textos usam identificadores estáveis e cores hexadecimais validadas; os spans de cor herdam tipografia para não reduzir preços. Mídias persistem alinhamento por espaço. Dimensões e deslocamento preservam o transform original. Duplicações remapeiam objetos, textos, botões e mídias para manter edição independente. Testes offline em test-page-import.mjs e test-import-editor.cjs; persistência/publicação em test-workspace.mjs, arquivo e PostgreSQL CI.

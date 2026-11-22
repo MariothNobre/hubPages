@@ -88,6 +88,7 @@ if(spanish)helper=helper.replace('teaser:block.body,','teaser:block.body,body:bl
 const output=`// Generated from the approved original. Source SHA256: ${createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex')}
 import { Fragment, useEffect, useRef, useState, cloneElement } from 'react'
 import type { ReactElement, ReactNode, CSSProperties } from 'react'
+import {ColorText} from './TextColors'
 import { InlineText } from './InlineText'
 import { CanvasMedia } from './CanvasMedia'
 import { StudioMediaGallery } from './StudioMediaGallery'
