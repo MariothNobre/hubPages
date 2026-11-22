@@ -4,7 +4,7 @@ Versão 0.12.1 / HP-056/057. Recurso inicialmente entregue apenas no DEV em HP-0
 
 ## Guia de uso
 
-Correção 0.12.1: `site.sistera.com.br`, informado pelo proprietário, está explicitamente liberado para conexão nos dois ambientes. A exceção não inclui `app.sistera.com.br`, os domínios centrais nem outros nomes reservados. A mensagem de endereço reservado agora explica que o formato está correto; não confunde reserva com caminho/parâmetros. O primeiro passo gera as instruções mesmo sem A/TXT configurados. A liberação do nome não comprova propriedade: TXT, apontamento e HTTPS continuam obrigatórios antes da ativação.
+Regra 0.12.2: **qualquer subdomínio público válido pode iniciar a conexão**, nos dois ambientes, sem domínio pai previamente conectado e sem aprovação individual da administração. Exemplos: infancia.sistera.com.br, site.sistera.com.br, campanha.seudominio.com.br. Não há reserva genérica por sufixo, nem exceção pontual por nome. O primeiro passo gera instruções mesmo sem A/TXT configurados. Isso não comprova propriedade nem publica a página: TXT, apontamento e HTTPS próprios continuam obrigatórios antes da ativação.
 
 Na página do Studio, abra Endereço → Conectar meu domínio.
 
@@ -16,7 +16,7 @@ Na página do Studio, abra Endereço → Conectar meu domínio.
 
 O endereço personalizado serve a raiz do hostname. **Subdomínios de domínio ativo e verificado da mesma conta não têm limite fixo de quantidade**, por página ou conta. Cada hostname exige seu próprio TXT, apontamento e HTTPS. Novos domínios independentes conservam a quota de 3 por página e 10 por conta; ela não conta os subdomínios associados à base já conectada. Há até 20 solicitações de preparo por minuto por conta, sem limite total de subdomínios. Desconectar libera o nome; reconectar gera prova nova.
 
-A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, usa-se o hostname já verificado, sem inventar um domínio pai. Uma conta não herda a base de outra, nem uma conexão expirada/desligada libera novos subdomínios. Os domínios centrais HubPages, a infraestrutura hstgr.cloud e os endereços sistera.com.br/www/app continuam protegidos. site.sistera.com.br é a entrada adicional autorizada pelo proprietário, sem conceder acesso automático aos serviços existentes.
+A base é a zona DNS da conexão ativa/verificada; se ela não foi descoberta, usa-se o hostname já verificado, sem inventar um domínio pai. Ela serve somente para isenção de quota, nunca como requisito para preparar um endereço. Uma conta não herda a prova ou a isenção de outra, nem uma conexão expirada/desligada concede novas isenções. Apenas os nomes exatos dos serviços atuais são protegidos: hubpages.com.br, www.hubpages.com.br, dev.hubpages.com.br, sistera.com.br, www.sistera.com.br e app.sistera.com.br. Seus demais subdomínios seguem o fluxo normal de prova própria, sem liberação manual.
 
 ## Implementação e isolamento
 

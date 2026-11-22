@@ -10,7 +10,7 @@ const origin=process.env.HUBPAGES_DEV_PUBLIC_ORIGIN,hostname=process.env.HUBPAGE
 if(process.env.HUBPAGES_ENV!=='development'||origin!=='https://dev.hubpages.com.br'||process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED!=='true'||hostname!=='teste.sistera.com.br'||!process.env.DATABASE_URL)throw Error('Domain demo is restricted to the explicitly authorized DEV test host.')
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:1})
 const fallback={publicOrigin:origin,credentialKey:process.env.HUBPAGES_SESSION_SECRET,read:async()=>(await pool.query('SELECT payload FROM hubpages_state WHERE id=1')).rows[0].payload,write:async value=>{await pool.query('UPDATE hubpages_state SET payload=$1 WHERE id=1',[value])}}
-const platform=await createPlatformStore(process.env.DATABASE_URL,fallback),store=await createDomainStore(process.env.DATABASE_URL,fallback),service=customDomainService({platform,store,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4,allowedReserved:[hostname]})
+const platform=await createPlatformStore(process.env.DATABASE_URL,fallback),store=await createDomainStore(process.env.DATABASE_URL,fallback),service=customDomainService({platform,store,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4})
 try{
  let saved;try{saved=JSON.parse(await readFile(marker,'utf8'))}catch(error){if(error.code!=='ENOENT')throw error}
  let row=(await pool.query("SELECT id,extra FROM hubpages_studio_pages WHERE owner_id='legacy-owner' AND draft->'templateTexts'->>'hpDomainDemo'='dev-domain-v1' LIMIT 1")).rows[0]
