@@ -19,6 +19,7 @@ import { createPlatformStore } from './platform-store.mjs'
 import { templates, templateInput } from './templates.mjs'
 import { createIdentityStore } from './identity-store.mjs'
 import { customerAuth, customerCookie, termsVersion } from './customer-auth.mjs'
+import { createSaasAuthority, saasDevEnabled } from './saas-authority.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -49,6 +50,7 @@ const customDomainStore=customDomainsEnabled?await createDomainStore(process.env
 const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219'}):null
 if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
 const domainUpstream=domainRouter({service:customDomains,production:isProductionStudio,devFallback:process.env.HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER==='true'})
+const saasAuthority=saasDevEnabled(process.env,devPublicOrigin)?await createSaasAuthority({connectionString:process.env.DATABASE_URL,checkpointPath:process.env.HUBPAGES_SAAS_CHECKPOINT_PATH||'/data/saas-dev-preflight.json'}):null
 
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
@@ -344,7 +346,7 @@ async function handleApi(request, response, url) {
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const token = parseCookies(request)[customerCookie]
     try {
-      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled}, domainPolicy:customDomainsEnabled?{requiresConnectedParent:false,individualDnsProof:true}:null, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled,saasAdmin:Boolean(saasAuthority)}, domainPolicy:customDomainsEnabled?{requiresConnectedParent:false,individualDnsProof:true}:null, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
       if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
       if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
         const key = `${url.pathname}:${request.socket.remoteAddress}`
@@ -365,6 +367,23 @@ async function handleApi(request, response, url) {
       if (error.status) return sendJson(response, error.status, { message: error.message })
       throw error
     }
+  }
+  if(url.pathname.startsWith('/api/saas/')) {
+    if(!saasAuthority)return sendJson(response,404,{message:'Módulo indisponível neste ambiente.'})
+    response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
+    try {
+      const customer=await customers?.resolve(parseCookies(request)[customerCookie])
+      const identity=await saasAuthority.identity(customer,!customer&&hasValidSession(request))
+      if(!identity)return sendJson(response,401,{message:'Entre na sua conta para continuar.'})
+      if(url.pathname==='/api/saas/session'&&request.method==='GET')return sendJson(response,200,identity)
+      const routes={'/api/saas/admin/dashboard':['admin.dashboard.read',()=>saasAuthority.dashboard()],'/api/saas/admin/users':['admin.users.read',async()=>({users:await saasAuthority.users()})],'/api/saas/admin/audit':['admin.audit.read',async()=>({events:await saasAuthority.events(url.searchParams.get('before'))})]}
+      const route=routes[url.pathname]
+      if(!route)return sendJson(response,404,{message:'Recurso não encontrado.'})
+      if(request.method!=='GET')return sendJson(response,405,{message:'Método não permitido.'})
+      if(!identity.permissions.includes(route[0])&&canAttemptLogin('saas-denied:'+identity.subject))await saasAuthority.audit(identity.subject,'permission.denied',route[0],'denied')
+      await saasAuthority.require(identity,route[0])
+      return sendJson(response,200,await route[1]())
+    }catch(error){if(error.status)return sendJson(response,error.status,{message:error.message});throw error}
   }
   if (url.pathname.startsWith('/api/platform/')) {
     response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
@@ -630,11 +649,11 @@ createServer(async (request, response) => {
     if(['/api/domains/tls','/api/domains/route'].includes(url.pathname)&&request.method==='GET'){const upstream=await domainUpstream(String(url.searchParams.get('domain')||'').toLowerCase());if(upstream&&url.pathname.endsWith('/route'))response.setHeader('X-HubPages-Upstream',upstream);return sendJson(response,upstream?200:403,{allowed:Boolean(upstream)})}
     const centralHost=request.headers.host===new URL(devPublicOrigin).host||allowedOrigins.has('https://'+request.headers.host)||request.headers.host===`localhost:${port}`||request.headers.host===`127.0.0.1:${port}`
     if(!centralHost){const hostname=String(request.headers.host||'').toLowerCase();if(!customDomains)return sendJson(response,404,{message:'Página não encontrada.'});const proof=url.pathname==='/.well-known/hubpages-connection',binding=await customDomains.binding(hostname,{proof});if(!binding)return sendJson(response,404,{message:'Página não encontrada.'});if(proof&&request.method==='GET')return sendJson(response,200,{connection:isProductionStudio?'hubpages-prod':'hubpages-dev',hostname,claim:binding.id});request.customDomain=binding;if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(!url.pathname.startsWith('/api/public/')&&!(request.method==='GET'&&(url.pathname==='/'||/^\/assets\/[a-zA-Z0-9_./-]+$/.test(url.pathname)||url.pathname==='/favicon.ico')))return sendJson(response,404,{message:'Página não encontrada.'})}
-    if (['/studio', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
+    if (['/studio', '/studio/administracao', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
-    if(request.customDomain||isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
+    if(request.customDomain||isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/studio/administracao','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
       if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
