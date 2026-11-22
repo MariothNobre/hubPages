@@ -1,5 +1,6 @@
 import {createDomainStore} from './custom-domain-store.mjs'
 import {customDomainService} from './custom-domains.mjs'
+import {domainRouter} from './domain-router.mjs'
 const importAttempts=new Map();let activeImports=0
 import {importSalesPage} from './import-page.mjs'
 import {importMediaKey} from './platform-store.mjs'
@@ -43,10 +44,11 @@ const isStudioPublication=isDevPublication||isProductionStudio
 const unifiedStudio=isStudioPublication&&process.env.HUBPAGES_STUDIO_UNIFIED_ENABLED==='true'
 if(unifiedStudio)await platformStore.adoptLegacy()
 const freePublishing=isStudioPublication&&(process.env.HUBPAGES_FREE_PUBLISH_ENABLED==='true'||isDevPublication&&process.env.HUBPAGES_DEV_FREE_PUBLISH_ENABLED==='true')
-const customDomainsEnabled=process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&isDevPublication
+const customDomainsEnabled=process.env.HUBPAGES_CUSTOM_DOMAINS_ENABLED==='true'&&isStudioPublication
 const customDomainStore=customDomainsEnabled?await createDomainStore(process.env.DATABASE_URL,{read:loadStore,write:saveStore}):null
-const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean)}):null
+const customDomains=customDomainStore?customDomainService({store:customDomainStore,platform:platformStore,ipv4:process.env.HUBPAGES_CUSTOM_DOMAIN_IPV4||'179.199.148.219',allowedReserved:isDevPublication?[process.env.HUBPAGES_CUSTOM_DOMAIN_TEST_HOST].filter(Boolean):[]}):null
 if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
+const domainUpstream=domainRouter({service:customDomains,production:isProductionStudio,devFallback:process.env.HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER==='true'})
 
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
@@ -424,7 +426,8 @@ async function handleApi(request, response, url) {
       if(url.pathname==='/api/platform/trash'&&request.method==='GET')return sendJson(response,200,{pages:await platformStore.list(ownerId,true)})
       if (url.pathname === '/api/platform/pages' && request.method === 'GET') {
         const metrics=await platformStore.summary(ownerId)
-        return sendJson(response,200,{pages:(await platformStore.list(ownerId)).map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{customDomainsEnabled,provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
+        const listed=await platformStore.list(ownerId),pages=customDomains?await customDomains.cards(ownerId,listed):listed
+        return sendJson(response,200,{pages:pages.map(p=>({...p,...metrics[p.id]})),preferences:await platformStore.preferences(ownerId),billing:{customDomainsEnabled,provider:'asaas',configured:false,temporaryFreePublishing:freePublishing,publicOrigin:devPublicOrigin,environment:isProductionStudio?'production':'development'},legacyPages:unifiedStudio?[]:isAdmin?[...salesPageSlugs].map(slug=>({slug,label:salesPageLabels[slug],published:state.pages?.[slug]?.published!==false})):[],role:isAdmin?'admin':'customer'})
       }
       if(url.pathname==='/api/platform/imports'&&request.method==='POST'){
         const body=await readJsonBody(request,8000)
@@ -624,9 +627,9 @@ createServer(async (request, response) => {
   securityHeaders(response)
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
-    if(url.pathname==='/api/domains/tls'&&request.method==='GET'){const allowed=customDomains&&await customDomains.certificateAllowed(String(url.searchParams.get('domain')||'').toLowerCase());return sendJson(response,allowed?200:403,{allowed:Boolean(allowed)})}
+    if(['/api/domains/tls','/api/domains/route'].includes(url.pathname)&&request.method==='GET'){const upstream=await domainUpstream(String(url.searchParams.get('domain')||'').toLowerCase());if(upstream&&url.pathname.endsWith('/route'))response.setHeader('X-HubPages-Upstream',upstream);return sendJson(response,upstream?200:403,{allowed:Boolean(upstream)})}
     const centralHost=request.headers.host===new URL(devPublicOrigin).host||allowedOrigins.has('https://'+request.headers.host)||request.headers.host===`localhost:${port}`||request.headers.host===`127.0.0.1:${port}`
-    if(!centralHost){const hostname=String(request.headers.host||'').toLowerCase();if(!customDomains)return sendJson(response,404,{message:'Página não encontrada.'});const proof=url.pathname==='/.well-known/hubpages-connection',binding=await customDomains.binding(hostname,{proof});if(!binding)return sendJson(response,404,{message:'Página não encontrada.'});if(proof&&request.method==='GET')return sendJson(response,200,{connection:'hubpages-dev',hostname,claim:binding.id});request.customDomain=binding;response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(!url.pathname.startsWith('/api/public/')&&!(request.method==='GET'&&(url.pathname==='/'||/^\/assets\/[a-zA-Z0-9_./-]+$/.test(url.pathname)||url.pathname==='/favicon.ico')))return sendJson(response,404,{message:'Página não encontrada.'})}
+    if(!centralHost){const hostname=String(request.headers.host||'').toLowerCase();if(!customDomains)return sendJson(response,404,{message:'Página não encontrada.'});const proof=url.pathname==='/.well-known/hubpages-connection',binding=await customDomains.binding(hostname,{proof});if(!binding)return sendJson(response,404,{message:'Página não encontrada.'});if(proof&&request.method==='GET')return sendJson(response,200,{connection:isProductionStudio?'hubpages-prod':'hubpages-dev',hostname,claim:binding.id});request.customDomain=binding;if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(!url.pathname.startsWith('/api/public/')&&!(request.method==='GET'&&(url.pathname==='/'||/^\/assets\/[a-zA-Z0-9_./-]+$/.test(url.pathname)||url.pathname==='/favicon.ico')))return sendJson(response,404,{message:'Página não encontrada.'})}
     if (['/studio', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")

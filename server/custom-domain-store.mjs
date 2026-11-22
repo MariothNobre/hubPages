@@ -13,6 +13,7 @@ export async function createDomainStore(connectionString,fallback){
  }
  const owned=(rows,ownerId,pageId,id)=>{const d=rows.find(v=>v.id===id&&v.ownerId===ownerId&&v.pageId===pageId);if(!d)throw new PlatformError(404,'Conexão de domínio não encontrada.');return d}
  return{
+  forOwner:async ownerId=>pool?(await pool.query('SELECT document FROM hubpages_studio_domains WHERE owner_id=$1',[ownerId])).rows.map(r=>r.document):operation(async db=>(await db.all()).filter(d=>d.ownerId===ownerId)),
   list:(ownerId,pageId)=>operation(async db=>(await db.all()).filter(d=>d.ownerId===ownerId&&d.pageId===pageId)),
   create:(ownerId,pageId,hostname,info)=>operation(async db=>{const rows=await db.all(),existing=rows.find(d=>d.ownerId===ownerId&&d.hostname===hostname);if(existing&&!existing.disconnectedAt){if(existing.pageId!==pageId)throw new PlatformError(409,'Este domínio já está ligado a outra página sua. Desconecte-o nela antes de continuar.');return existing}if(rows.filter(d=>d.ownerId===ownerId&&!d.disconnectedAt).length>=10||rows.filter(d=>d.pageId===pageId&&!d.disconnectedAt).length>=3)throw new PlatformError(422,'Você pode conectar até 3 endereços por página e 10 por conta.');const d={id:existing?.id||randomUUID(),ownerId,pageId,hostname,token:randomBytes(24).toString('hex'),...info,verified:false,enabled:false,tls:false,dns:null,createdAt:new Date().toISOString(),readyUntil:null};await db.put(d);return d},true),
   read:(ownerId,pageId,id)=>operation(async db=>owned(await db.all(),ownerId,pageId,id)),

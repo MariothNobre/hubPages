@@ -84,6 +84,8 @@ jobs:
           node scripts/test-import-editor.cjs
           node scripts/test-custom-domains.mjs
           node scripts/test-custom-domain-http.mjs
+          node scripts/test-domain-router.mjs
+          node scripts/test-domain-cards.cjs
           node scripts/test-import-store.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-platform.mjs

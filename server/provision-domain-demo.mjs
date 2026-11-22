@@ -25,8 +25,9 @@ try{
    page=await platform.save('legacy-owner',page.id,{revision:page.revision,draft:{...page.draft,visitedSteps:[7],reviewedSignature:reviewSignature(page.draft,review.assetVersion)}})
    page=await platform.publish('legacy-owner',page.id,{revision:page.revision,origin,requireReview:true})
   }else page=await platform.read('legacy-owner',row.id)
-  const existing=(await store.list('legacy-owner',page.id)).find(d=>d.hostname===hostname)
-  if(existing?.disconnectedAt){console.log('Domain demo disconnected by the owner; connection preserved as disabled.')}
+  const existing=(await store.forOwner('legacy-owner')).find(d=>d.hostname===hostname)
+  if(existing&&existing.pageId!==page.id){console.log('Domain demo moved to another page by the owner; current binding preserved.')}
+  else if(existing?.disconnectedAt){console.log('Domain demo disconnected by the owner; connection preserved as disabled.')}
   else{
    const claim=await service.create('legacy-owner',page.id,{hostname,provider:'hostgator'})
    await writeFile(marker,JSON.stringify({pageId:page.id,claimId:claim.id,hostname}),{mode:0o600})

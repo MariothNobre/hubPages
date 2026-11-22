@@ -39,7 +39,7 @@ export async function checkDomainDns(claim,ipv4,resolver=dnsResolver()){
 export async function probeDomainTls(claim,ipv4){
   return new Promise(resolve=>{
     const request=https.get({hostname:claim.hostname,servername:claim.hostname,path:'/.well-known/hubpages-connection',port:443,timeout:12000,lookup:(_host,options,cb)=>options.all?cb(null,[{address:ipv4,family:4}]):cb(null,ipv4,4)},response=>{
-      let body='';response.on('data',chunk=>{body+=chunk;if(body.length>2048){resolve(false);request.destroy()}});response.on('end',()=>{try{const data=JSON.parse(body);resolve(response.statusCode===200&&data.connection==='hubpages-dev'&&data.claim===claim.id&&data.hostname===claim.hostname)}catch{resolve(false)}});response.on('error',()=>resolve(false))
+      let body='';response.on('data',chunk=>{body+=chunk;if(body.length>2048){resolve(false);request.destroy()}});response.on('end',()=>{try{const data=JSON.parse(body);resolve(response.statusCode===200&&['hubpages-dev','hubpages-prod'].includes(data.connection)&&data.claim===claim.id&&data.hostname===claim.hostname)}catch{resolve(false)}});response.on('error',()=>resolve(false))
     });request.on('timeout',()=>{resolve(false);request.destroy()});request.on('error',()=>resolve(false))
   })
 }

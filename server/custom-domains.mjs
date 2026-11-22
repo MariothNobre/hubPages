@@ -18,6 +18,7 @@ export function customDomainService({store,platform,ipv4,checkDns=checkDomainDns
   })
  }
  return{
+  async cards(ownerId,pages){const connections=await store.forOwner(ownerId);return pages.map(page=>({...page,customDomains:connections.filter(d=>d.pageId===page.id&&valid(d)&&d.enabled&&d.tls).map(d=>({id:d.id,hostname:d.hostname,url:'https://'+d.hostname}))}))},
   async list(ownerId,pageId){return Promise.all((await store.list(ownerId,pageId)).map(view))},
   async create(ownerId,pageId,input){const hostname=domainName(input.hostname,{allowedReserved});return network(ownerId,async()=>{const zone=await findZone(hostname);return view(await store.create(ownerId,pageId,hostname,{...zone,provider:['hostinger','hostgator','registrobr','godaddy','cloudflare','outro'].includes(input.provider)?input.provider:dnsProvider(zone.nameservers),detectedProvider:dnsProvider(zone.nameservers)}))})},
   check,

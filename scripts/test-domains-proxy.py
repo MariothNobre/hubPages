@@ -16,9 +16,20 @@ for conflict in ['{ on_demand_tls { ask http://existing/ } }\n' + sites, 'https:
         raise AssertionError('Must preserve an existing catch-all or TLS policy')
     except ValueError:
         pass
+for before in [sites, module.configure(sites)]:
+    shared = module.configure(before, production=True)
+    assert sites in shared
+    assert module.configure(shared) == shared
+    assert module.configure(shared, production=True) == shared
+    assert 'ask http://hubpages-prod:8080/api/domains/tls' in shared
+    assert 'request_header -X-HubPages-Upstream' in shared
+    assert 'uri /api/domains/route?domain={host}' in shared
+    assert 'header_up -X-HubPages-Upstream' in shared
+    assert shared.count('https:// {') == 1
+    assert 'X-Robots-Tag' not in module.SHARED_SITE
 print('PASS: idempotent DEV-only proxy addition preserves all existing sites and rejects conflicting TLS/routes')
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) > 1:
-        Path(sys.argv[1]).write_text(module.configure(sites))
+        Path(sys.argv[1]).write_text(module.configure(sites, production=True))

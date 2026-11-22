@@ -1,6 +1,6 @@
 # Domínio próprio — DEV
 
-Versão 0.12.0-dev.1 / HP-052. Publicação deste recurso autorizada somente no DEV. A produção continua em 0.11.1, com a funcionalidade desabilitada. Teste real autorizado: teste.sistera.com.br, DNS HostGator.
+Versão 0.12.0 / HP-054. Recurso inicialmente entregue apenas no DEV em HP-052/053; promoção para produção autorizada em 22/11/2026. Cada ambiente conserva seu banco, páginas, usuários e vínculos. Teste real autorizado no DEV: teste.sistera.com.br, DNS HostGator.
 
 ## Guia de uso
 
@@ -16,14 +16,21 @@ O endereço personalizado serve a raiz do hostname. Até 3 nomes por página e 1
 
 ## Implementação e isolamento
 
-- Flag HUBPAGES_CUSTOM_DOMAINS_ENABLED só é aceita em development. Sem flag, não cria tabela nem rotas ativas. Configuração efetiva anunciada no JSON da plataforma. Nenhuma variável de produção foi alterada.
+- Flag HUBPAGES_CUSTOM_DOMAINS_ENABLED exige um ambiente Studio válido (DEV ou produção), origem configurada e plataforma habilitada. Sem flag, não cria tabela nem rotas ativas. Configuração efetiva anunciada no JSON da plataforma. A produção recebe a flag na promoção autorizada.
 - Migração 010 aditiva no PostgreSQL DEV: hubpages_studio_domains referencia a página e guarda prova/estado DNS/TLS. Unicidade global apenas para conexão verificada; pendência sem prova não reserva o domínio para sempre. Permissões por proprietário e página em todas as ações.
 - Revalidação DNS a cada 15 minutos em lotes das conexões mais antigas; lease máximo de 24 horas. Divergência conhecida revoga a conexão; falha transitória não estende o lease anterior. Quatro verificações externas simultâneas no máximo, uma por conta, com intervalo por conexão.
 - Certificados Caddy on-demand usam autorização por consulta indexada ao banco, sem DNS no endpoint de autorização. Propriedade TXT e apontamento exclusivo precisam estar aprovados. Probe HTTPS fixa o IP da HubPages, valida o certificado e não segue redirects. Nenhum fetch arbitrário ou porta customizada.
-- Rota adicional de domínios DEV no proxy compartilhado: preserva os blocos existentes, recusa conflito de política/catch-all, valida com Caddy e guarda backup protegido antes de reload. Health de DEV, produção e Sistera antes/depois; rollback do acréscimo em falha. Não muda serviços/recursos dos sistemas existentes.
+- Rota adicional no proxy compartilhado preserva os blocos existentes, recusa conflito de política/catch-all, valida com Caddy e guarda backup protegido antes de reload. A promoção converte apenas os blocos gerenciados DEV para roteamento por ambiente: produção autoriza seus próprios nomes primeiro, consultando o DEV somente para nomes não pertencentes à produção. Destinos internos são fixos; cabeçalhos enviados pelo visitante são descartados. Domínios da produção não dependem da disponibilidade do DEV. Health de DEV, produção e Sistera antes/depois e rollback do acréscimo em falha.
 - Domínios próprios não expõem /studio, /admin, /entrar nem APIs privadas. Apenas publicação atual, assets públicos e prova de conexão. Sem cookies de login compartilhados entre hostnames.
 - Pixel/CAPI e métricas aceitam somente o domínio e a publicação ligados à página. Métricas agregam ao mesmo ID; cada acesso continua contando. Mídias públicas mantêm o snapshot; chamadas cruzadas entre páginas são recusadas.
-- Os domínios do DEV recebem noindex. O endereço HubPages da página continua independente; a conexão não modifica snapshots nem copia páginas/usuários entre ambientes.
+- Os domínios do DEV recebem noindex. A produção serve a página sem a regra global de noindex do DEV. O endereço HubPages da página continua independente; a conexão não modifica snapshots nem copia páginas/usuários entre ambientes.
+
+## Cards, compartilhamento e desvinculação
+
+- Minhas páginas, em Cards ou Lista: informa **Domínio próprio vinculado**, mostra os endereços ativos, abre a página publicada em nova aba e oculta somente nesse card o atalho HubPages. Rascunhos mostram orientação para publicar. Vínculos sem prova válida, expirados ou desligados não são apresentados como ativos.
+- **Desvincular domínio** abre confirmação customizada. Após confirmar, o nome fica livre, sua autorização TLS é removida e o card volta ao link HubPages. Para usar em outra página, conecte nela com a nova prova TXT. A publicação e os conteúdos existentes são preservados.
+- Assistente: card do domínio ativo em verde claro, inclusive selecionado/hover, e passo 5 **Use seu domínio** marcado com ✓ após vínculo válido.
+- Publicação: **Seu link para compartilhar** mostra o domínio próprio no ar e também o endereço HubPages. Os dois são clicáveis em nova aba.
 
 ## Testes
 
@@ -41,7 +48,7 @@ Esse endereço está vinculado à página técnica de teste. Para usá-lo em out
 
 Certificado Let's Encrypt YE2, CN teste.sistera.com.br, válido até 20/02/2027, autorizado pelo cliente TLS. A publicação recebe `noindex, nofollow, noarchive`. Solicitação de certificado para hostname sem prova retorna 403. Renovação/emissão permanece sob o Caddy e sua política de autorização.
 
-Produção permanece em 0.11.1. A conexão real foi testada na HostGator; os demais provedores têm guias e validação DNS comum, sem alegar teste real em cada conta/provedor.
+Na entrega HP-053 a produção permaneceu em 0.11.1; a promoção posterior é registrada em HP-055. A conexão real foi testada na HostGator; os demais provedores têm guias e validação DNS comum, sem alegar teste real em cada conta/provedor.
 
 ## Fontes oficiais
 
@@ -51,3 +58,4 @@ Produção permanece em 0.11.1. A conexão real foi testada na HostGator; os dem
 - GoDaddy: https://www.godaddy.com/pt-br/help/adicionar-um-registro-txt-19232
 - Cloudflare: https://developers.cloudflare.com/dns/manage-dns-records/how-to/create-dns-records/
 - Caddy: https://caddyserver.com/docs/caddyfile/options#on-demand-tls e https://caddyserver.com/docs/caddyfile/directives/tls
+- Roteamento: https://caddyserver.com/docs/caddyfile/directives/forward_auth e https://caddyserver.com/docs/caddyfile/directives/reverse_proxy
