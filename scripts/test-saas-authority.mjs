@@ -29,7 +29,7 @@ await writeFile(checkpoint,JSON.stringify({principal:'legacy-owner',ownerId:'leg
 const base='http://localhost:4201';let child;let stderr=''
 async function start(flag=true,environment='development'){
  stderr=''
- child=spawn(process.execPath,['server/index.mjs'],{env:{...process.env,DATABASE_URL:target.href,DATA_FILE:file,STATIC_DIR:resolve('dist'),PORT:'4201',APP_ORIGINS:base,HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ENV:environment,HUBPAGES_PLATFORM_ENABLED:'true',HUBPAGES_CUSTOMER_SIGNUP_ENABLED:'true',HUBPAGES_SESSION_SECRET:'local-only-saas-session-secret',HUBPAGES_SAAS_ADMIN_ENABLED:String(flag),HUBPAGES_SAAS_CHECKPOINT_PATH:checkpoint},stdio:['ignore','pipe','pipe']})
+ child=spawn(process.execPath,['server/index.mjs'],{env:{...process.env,DATABASE_URL:target.href,DATA_FILE:file,STATIC_DIR:resolve('dist'),PORT:'4201',APP_ORIGINS:base,HUBPAGES_DEV_PUBLIC_ORIGIN:base,HUBPAGES_ENV:environment,HUBPAGES_PLATFORM_ENABLED:'true',HUBPAGES_CUSTOM_DOMAINS_ENABLED:'true',HUBPAGES_CUSTOMER_SIGNUP_ENABLED:'true',HUBPAGES_SESSION_SECRET:'local-only-saas-session-secret',HUBPAGES_SAAS_ADMIN_ENABLED:String(flag),HUBPAGES_SAAS_CHECKPOINT_PATH:checkpoint},stdio:['ignore','pipe','pipe']})
  child.stderr.on('data',d=>{stderr+=d.toString()})
  await new Promise((done,reject)=>{const timer=setTimeout(()=>reject(new Error('Server did not start: '+stderr)),30000);child.stdout.once('data',()=>{clearTimeout(timer);done()});child.once('exit',code=>{clearTimeout(timer);reject(new Error('Server exit '+code+': '+stderr))})})
 }
