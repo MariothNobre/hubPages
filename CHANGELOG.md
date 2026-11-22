@@ -5,6 +5,64 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.11.0] - 2026-11-22
+
+- Altura vertical dos blocos por arraste, teclado, pixels e tamanho automático, em templates e importações.
+- Salvamento, Desfazer, revisão e publicação preservados; mínimo responsivo evita recortes do conteúdo.
+- Promoção autorizada das melhorias acumuladas do DEV para produção; dados dos ambientes permanecem separados.
+- Restore PROD com volume temporário em disco; app HubPages PROD com limite de 2 GiB e CPU mantida em 0,25.
+## [0.10.3-dev.2] - 2026-11-22 (somente DEV)
+
+- Entrega os recursos de 0.10.3-dev.1 após corrigir o armazenamento do teste de restauração: volume anônimo temporário em disco em lugar de tmpfs, mantendo rede desabilitada e limites de CPU/memória.
+- Restore integral aprovado antes da implantação; produção e Sistera preservados.
+## [0.10.3-dev.1] - 2026-11-22 (somente DEV)
+
+- Fundo completo de listas e caixas agrupadas, incluindo contêineres sem pintura própria.
+- Modos para empurrar o conteúdo ou estender somente o fundo sem deslocar textos.
+- Atalho para cobrir o grupo seguinte, com geometria responsiva, Desfazer e persistência.
+- Seleção direta do grupo corrigida quando há camadas de fundo compartilhado.
+## [0.10.2-dev.1] - 2026-11-22 (somente DEV)
+
+- Cabeçalhos para arrastar e × para fechar as duas janelas de ferramentas, com suporte a toque/teclado e limites da tela.
+- Fechar cores preserva o foco para continuar digitando; mover as janelas não altera o conteúdo.
+- Cor de fundo da caixa inteira, com amostras, seletor personalizado, transparência, Desfazer e persistência na prévia/publicação.
+
+## [0.10.1-dev.1] - 2026-11-22 (somente DEV)
+
+- Completa a edição direta de caixas: excluir fundo atrás do texto, recolher ferramentas sem perder a alça, ajustar caixas/textos por bloco e retornar ao modo de texto ao fechar a seleção.
+- Divide rascunhos importados antigos em seções ao abrir e preserva contêineres na inserção/exclusão de blocos; permite adicionar itens aos grupos.
+- Fecha a barra de cores fora do campo de texto e remove realces do editor da prévia/publicação.
+- Corrige dimensões/alinhamento da galeria, inclusive a validação do servidor que descartava estilos. Mantém dimensões originais quando não configuradas.
+- Acrescenta controles contextuais de mídias usadas como fundo no CSS. Regressões de DOM, geometria, eventos, salvamento e publicação.
+
+## [0.10.0-dev.1] - 2026-11-22 (somente DEV)
+
+- Seleção de objetos/camadas nas importações; excluir objeto, remover fundo ou caixa preservando conteúdo, mover/redimensionar e desfazer.
+- Divisão de seções semânticas, organização de importações anteriores, quantidade/visibilidade e duplicação independente de itens.
+- Cor por campo de texto em templates e importações, preservando tipografia na prévia e publicação.
+- Alinhamento individual de imagens, fotos e vídeos com controles abaixo da troca de mídia.
+- Identificação de template/nome ou importação/URL nos cards e listagem. Sem migração ou alteração de produção.
+
+## [0.9.1-dev.1] - 2026-11-21 (somente DEV)
+
+- Corrige a importação de páginas com blocos `<style>` vazios: o importador deixa de solicitar um arquivo inexistente `/undefined`. Folhas de estilo externas continuam sendo copiadas e validadas normalmente.
+- Preserva conteúdo estático em contêineres Astro e identificadores de CSS com escopo, sem executar componentes remotos. Impede captura vazia sem slots editáveis.
+- Recursos e diretrizes reutilizáveis registrados no guia de compatibilidade tecnológica.
+- Regressão automatizada para estilos vazios e teste real com `https://codigodivinochurch.site/`.
+
+## [0.9.0-dev.1] - 2026-11-21 (somente DEV)
+
+- Importação de uma página HTTPS pública autorizada, com assistente de sete etapas, conteúdo editável, mídias locais atuais, âncoras e seis temas de cores.
+- Segundo modelo compartilhado **Sabor**, baseado na página de teste autorizada Coma Bem em Minutos, com textos e artes localizados em português brasileiro e miniaturas reais.
+- Rodapé original nas importações, sem marca HubPages adicional. Exceção exclusiva para o modelo Sabor de autoria autorizada.
+- Persistência, revisão obrigatória, preview, checkout/Pixel individual, duplicação, desfazer e publicação DEV integrados. Captura limitada e saneada, sem scripts ou pixels externos; produção não alterada.
+
+## [0.8.0-dev.1] - 2026-11-21 (somente DEV)
+
+- Modelo 01 renomeado Aurora no catálogo, com paleta Original e mais cinco combinações: Oceano, Lavanda, Bosque, Solar e Rosé.
+- Card com amostras de cores e fluxo em duas etapas: escolha de paleta, prévia completa e aplicação à página atual sem substituir conteúdo.
+- Tema individual por rascunho, com persistência, prévia, duplicação, desfazer, pendências e revisão antes de publicar. Original preservado nas páginas existentes; sem migração de banco.
+
 ## [0.7.1] - 2026-11-21
 
 - Checkout: autosave aguarda URL completa sem popups repetidos; links padrão e individuais mantêm foco e digitação durante salvamento. Validação HTTPS da API preservada.

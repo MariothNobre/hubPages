@@ -5,7 +5,7 @@
 .studio-direct-editor .sales-v2-faq details[open] summary .canvas-inline-text{transform:none!important}
 .studio-direct-editor .sales-v2-price strong{line-height:1.1}
 .studio-direct-editor .canvas-media-edit{position:relative;min-width:0;isolation:isolate}
-.studio-direct-editor .canvas-media-edit>.canvas-media-replace{position:absolute!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;z-index:8!important;width:max-content!important;max-width:calc(100% - 12px)!important;height:auto!important;min-height:44px!important;padding:9px 12px!important;border:1px solid #92adae!important;border-radius:10px!important;font:700 12px/1.4 system-ui!important;color:#123f4b!important;background:#fffffff2!important;box-shadow:0 5px 18px #093c4a26;white-space:normal;text-align:center;cursor:pointer}
+.studio-direct-editor .canvas-media-edit>.canvas-media-replace{position:absolute!important;top:var(--hp-media-tools-y,50%)!important;left:var(--hp-media-tools-x,50%)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;z-index:8!important;width:max-content!important;max-width:calc(100% - 12px)!important;height:auto!important;min-height:44px!important;padding:9px 12px!important;border:1px solid #92adae!important;border-radius:10px!important;font:700 12px/1.4 system-ui!important;color:#123f4b!important;background:#fffffff2!important;box-shadow:0 5px 18px #093c4a26;white-space:normal;text-align:center;cursor:pointer}
 .studio-direct-editor .canvas-media-edit>.canvas-media-replace:hover{background:#fff1e7!important;border-color:#cb7858!important}
 .studio-direct-editor .canvas-media-edit>.legacy-image-resize{position:absolute!important;top:auto!important;left:auto!important;right:5px!important;bottom:5px!important;transform:none!important;width:22px!important;height:22px!important;min-height:0!important;padding:0!important;border:2px solid white!important;border-radius:5px!important;background:#217eeb!important;z-index:9}
 .canvas-media-edit>video{display:block;width:100%;max-width:100%}
@@ -33,9 +33,9 @@
 .sales-v2-offer__books[data-gallery-count="1"]{min-height:480px}.sales-v2-offer__books[data-gallery-count="1"]>.offer-main-cover{left:50%;transform:translateX(-50%) rotate(-2deg)}
 .studio-direct-editor .sales-v2-offer__books.is-editing-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-height:0;align-items:center}
 .studio-direct-editor .is-editing-gallery>.canvas-media-edit{position:relative;min-width:0;background:#faf6ed;border:1px dashed #acc5bf;border-radius:10px;overflow:hidden}
-.studio-direct-editor .is-editing-gallery .canvas-media-edit>:is(img,video){position:static!important;width:100%!important;max-width:100%!important;height:240px!important;object-fit:contain;transform:none!important;inset:auto!important;box-shadow:none;border-radius:6px}
+.studio-direct-editor .is-editing-gallery .canvas-media-edit>:is(img,video,.presentation-video){position:static!important;width:var(--hp-gallery-width,100%)!important;max-width:100%!important;height:var(--hp-gallery-height,240px)!important;object-fit:contain;transform:none!important;inset:auto!important;box-shadow:none;border-radius:6px}
 .studio-structure>div{display:grid;grid-template-columns:1fr 1fr;gap:10px}.studio-structure p{font-size:.82rem;line-height:1.6;color:#4f6972}.studio-structure input[type=number]{max-width:120px}.studio-structure label{font-size:.85rem}
-@media(max-width:760px){.studio-direct-editor .sales-v2-offer__books.is-editing-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-direct-editor .is-editing-gallery .canvas-media-edit>:is(img,video){height:200px!important}.studio-direct-editor .sales-v2-tasting__book--stack{gap:7px}.studio-direct-editor .sales-v2-tasting__book--stack>.canvas-media-edit{border-width:2px}.studio-direct-editor .sales-v2-tasting__book--stack .canvas-media-replace{font-size:10px!important;padding:5px!important}.studio-structure>div{grid-template-columns:1fr}}
+@media(max-width:760px){.studio-direct-editor .sales-v2-offer__books.is-editing-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-direct-editor .is-editing-gallery .canvas-media-edit>:is(img,video,.presentation-video){height:var(--hp-gallery-height,200px)!important}.studio-direct-editor .sales-v2-tasting__book--stack{gap:7px}.studio-direct-editor .sales-v2-tasting__book--stack>.canvas-media-edit{border-width:2px}.studio-direct-editor .sales-v2-tasting__book--stack .canvas-media-replace{font-size:10px!important;padding:5px!important}.studio-structure>div{grid-template-columns:1fr}}
 
 .studio-page-cover video{width:100%;height:100%;object-fit:contain}
 .sales-v2-author__photo video,.sales-v2-solution__visual video,.sales-v2-bonus-cover video,.sales-v2-book video{display:block;width:100%;max-width:100%;height:auto;object-fit:contain}
@@ -49,3 +49,16 @@
 .studio-direct-editor .sales-v2-preview__viewer figcaption{position:relative;display:block;min-height:2em;margin:0 0 8px}
 
 .studio-save-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.studio-save-actions button:first-child{background:#fff0e6;border-color:#e9a37d;color:#863c23}.studio-save-actions button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Custom dimensions stay inside each cover's original fan position. */
+.sales-v2-offer__books>.sales-gallery-slot{position:absolute;width:190px}
+.sales-v2-offer__books>.sales-gallery-slot.offer-main-cover{width:290px;left:25%;top:7%;z-index:7;transform:rotate(-2deg)}
+.sales-v2-offer__books>.sales-gallery-slot:nth-child(2){left:0;top:4%;z-index:4;transform:rotate(-11deg)}
+.sales-v2-offer__books>.sales-gallery-slot:nth-child(3){right:5%;top:0;z-index:3;transform:rotate(9deg)}
+.sales-v2-offer__books>.sales-gallery-slot:nth-child(4){left:2%;bottom:1%;z-index:5;transform:rotate(-7deg)}
+.sales-v2-offer__books>.sales-gallery-slot:nth-child(5){right:2%;bottom:2%;z-index:2;transform:rotate(8deg)}
+.sales-v2-offer__books>.sales-gallery-slot:nth-child(6){left:36%;bottom:-5%;z-index:6;transform:rotate(3deg)}
+.sales-v2-offer__books>.sales-gallery-slot>:is(img,.presentation-video){position:static;inset:auto;transform:none;width:var(--hp-gallery-width,100%);max-width:100%;height:var(--hp-gallery-height,auto)}
+.sales-v2-offer__books[data-gallery-count="1"]>.sales-gallery-slot{left:50%;transform:translateX(-50%) rotate(-2deg)}
+@media(max-width:760px){.sales-v2-offer__books>.sales-gallery-slot.offer-main-cover{left:22%}}
+.sales-v2-offer__books[data-gallery-count="1"]>.sales-gallery-slot.offer-main-cover{left:50%}

@@ -7,7 +7,7 @@ Aplicável a todos os novos templates e às derivações do modelo Infância em 
 - Toda edição acontece no canvas. Textos, títulos, preços, rótulos e metadados da degustação são editáveis no próprio contexto.
 - O editor nunca navega para um checkout. Use `EditorAction`: elemento editável sem href, controle individual Exibido/Oculto e seleção do botão correto. Links funcionam na prévia privada e na publicação.
 - Elementos desabilitados continuam disponíveis na edição e ficam ausentes no HTML público. Autor e degustação têm controles globais; cada botão tem sua própria visibilidade.
-- Preserve o layout aprovado por padrão. Quantidades, ordem, estilo e conteúdos só mudam quando o usuário configura. O cabeçalho de vendas não mostra a marca da plataforma; o rodapé mostra a logo sem link e com tooltip **Feito com HubPages.com.br**.
+- Preserve o layout aprovado por padrão. Quantidades, ordem, estilo e conteúdos só mudam quando o usuário configura. O cabeçalho de vendas não mostra a marca da plataforma; nos modelos de autoria HubPages, o rodapé mostra a logo sem link e com tooltip **Feito com HubPages.com.br**.
 - Isole estilos do editor. Preços devem herdar a tipografia correta, inclusive a moeda e a barra móvel. Nunca aplique a rotação do ícone de FAQ ao título editável. Ícones de navegação/fechar/expandir são controles, não campos de texto.
 
 ## Mídias e armazenamento
@@ -46,3 +46,40 @@ A publicação exige assinatura de revisão atual, validada no servidor junto da
 
 
 Todo campo de checkout deve usar CheckoutLinkInput e o preflight compartilhado checkoutLinkProblem: orientação discreta durante digitação, sem popup automático por URL incompleta, buffer de foco para preservar cursor e validação HTTPS estrita antes de persistir. Links incompletos ficam no editor aberto até serem corrigidos.
+
+
+## Temas de cores por modelo — Aurora
+
+Registrar paletas com IDs estáveis em shared/template-themes.mjs. Persistir somente a escolha na própria página; seleção exploratória na janela não altera o rascunho. Usar o mesmo renderizador na prévia/edição/publicação, preservar o original quando ausente e incluir a escolha na revisão e nas pendências. Não usar filtros sobre fotografias para simular paletas. Manter textos e mídias ao trocar apenas cores. Novos modelos devem registrar suas próprias paletas compatíveis, respeitar contraste e reduced-motion e validar IDs na API.
+
+
+## Importações — HP-036
+
+- A importação preserva o rodapé e as informações da origem. Não acrescenta logo, atribuição ou link HubPages. A autoria é preservada no servidor; editar o rascunho não pode transformar uma importação comum em modelo de autoria HubPages.
+- Única exceção autorizada: o modelo **Sabor**, preparado a partir de `https://comericoenminutos.online/`, página de autoria do proprietário. Somente essa derivação curada permite a marca HubPages no rodapé, sem link. Uma importação comum até desse mesmo endereço continua sem a marca adicional.
+- Capturar somente o documento solicitado e seus recursos visuais. Preservar âncoras; não seguir links de navegação, executar scripts da origem ou copiar seus pixels. Destinos de compra originais ficam disponíveis para consulta/adoção explícita. Cada página mantém seu checkout e suas credenciais Meta.
+- Usar `ImportedCanvas`: HTML e CSS saneados em Shadow DOM, textos editáveis no contexto, controles de mídia centralizados, seções ordenáveis/duplicáveis/removíveis e desfazer. Formulários não submetem à origem; widgets dependentes de scripts próprios podem precisar de reconstrução. Essa restrição deve ser explicada antes da captura.
+- Seis temas por importação: cores originais + cinco combinações HubPages; nomes automáticos `Nome do modelo · Nome da paleta`. A paleta altera cores de HTML/CSS, não os pixels das fotos e capas.
+- Mídias importadas pertencem ao espaço atual da página. Ao substituir/remover, aplicar a mesma limpeza e proteção da publicação já existente. Assets fixos do catálogo são recursos compartilhados do modelo, não biblioteca pessoal de uploads antigos.
+- Captura: HTTPS público, DNS e redirecionamentos verificados, 2 MB de HTML, 8 MB por recurso, 45 MB totais, até 70 mídias/40 seções/40 folhas CSS. Uma captura global por vez, uma tentativa por minuto por conta, prazo de 45 s na API. Sem buscas recursivas por outras páginas.
+
+## Compatibilidade tecnológica reutilizável
+
+- Para toda importação futura, aplicar o catálogo de padrões em [IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md](IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md).
+- Estilos inline vazios não são URLs externas. Wrappers Astro com HTML no servidor devem preservar filhos por meio de contêineres inertes. Identificadores CSS `data-v-*`/`data-astro-cid-*` precisam de allowlist limitada, sem transportar código ou props.
+- Uma captura só é considerada válida depois de conferir slots editáveis e conteúdo visível no Studio, inclusive após recarregar. Corrigir por padrão tecnológico, com fixture offline e regressão, sem condicionais por domínio.
+
+## Edição de objetos e campos — HP-040
+
+Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânticas aninhadas passam a blocos sem perder o scaffold. Marcadores internos limitados identificam objetos, visibilidade e remoção de fundo; não liberam scripts ou atributos arbitrários. Textos usam identificadores estáveis e cores hexadecimais validadas; os spans de cor herdam tipografia para não reduzir preços. Mídias persistem alinhamento por espaço. Dimensões e deslocamento preservam o transform original. Duplicações remapeiam objetos, textos, botões e mídias para manter edição independente. Testes offline em test-page-import.mjs e test-import-editor.cjs; persistência/publicação em test-workspace.mjs, arquivo e PostgreSQL CI.
+
+## Complementação de edição — HP-042
+
+A barra de cores é contextual ao campo; fechar fora dela respeita eventos compostos de Shadow DOM. Formas de fundo podem ser removidas por interseção geométrica sem excluir o texto. Ajuste de caixas é explícito por bloco/página, sem apagar fundos arbitrariamente. Recolher ferramentas mantém a seleção e libera o redimensionamento. Importações antigas com seções são organizadas ao abrir o rascunho, com undo; inserção/exclusão reconcilia slots preservando o scaffold. Grupos aceitam inclusão e cópias em linhas livres de grades de builders. Estilos de mídia devem ser esparsos e persistidos na API: não aplicar dimensões padrão apenas por escolher alinhamento. Referências CSS a assets locais podem expor troca/alinhamento de fundos sem executar scripts. Conferir também prévia pública sem realces do editor. Casos de regressão em test-import-editor.cjs e test-workspace.mjs. Guia detalhado: EDICAO_VISUAL_E_CORES.md.
+
+## Ferramentas flutuantes — HP-044
+
+Usar FloatingTools para janelas de edição: cabeçalho de arraste por ponteiro e teclado, × acessível, manutenção do foco na digitação e limites visíveis após resize. Movimentos de ferramentas são estado de interface, não conteúdo/Undo. Fundo de caixa é estilo local validado em hex, ou transparente, sem alterar textos/dimensões; preservar prioridade CSS no editor e na renderização pública. A prévia não deve conter janelas do editor. Regressões de ponteiro/fechamento/clamp e fundo em test-import-editor.cjs; persistência e publicação em test-workspace.mjs.
+
+## Altura de blocos — HP-048
+Usar BlockHeightControl e blockHeightStyle compartilhados. Persistir Layout.height esparso, 0–6000 px; mínimo responsivo preserva conteúdo. Alça com prévia local e commit único no fim, teclado, cancelamento e Automática. Ferramentas somente no editor; tamanho aplicado na prévia/publicação. Preservar originais sem configuração, Undo e geradores determinísticos PT/ES. Testes em test-import-editor.cjs e test-workspace.mjs.

@@ -43,5 +43,11 @@ pnpm build
 7. [Direção visual e checklist de conteúdo](docs/07-DIRECAO-VISUAL-E-CONTEUDO.md)
 8. [Painel administrativo e primeiro acesso](docs/08-PAINEL-ADMINISTRATIVO.md)
 
+9. [Importação e modelo Sabor — DEV](docs/IMPORTACAO_E_MODELO_SABOR.md)
+
+10. [Compatibilidade tecnológica do importador](docs/IMPORTACAO_COMPATIBILIDADE_TECNOLOGICA.md)
+
+11. [Edição visual, cores e alinhamento](docs/EDICAO_VISUAL_E_CORES.md)
+
 Consulte o [CHANGELOG](CHANGELOG.md) para acompanhar versões e entregas.
 

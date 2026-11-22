@@ -49,6 +49,9 @@ fi
 "${compose[@]}" exec -T hubpages-prod node server/verify-production-studio.mjs
 bash deploy/verify-prod-restore.sh
 "${compose[@]}" exec -T hubpages-db psql -U hubpages -d hubpages -v ON_ERROR_STOP=1 -c "SELECT id, (SELECT count(*) FROM jsonb_object_keys(payload->'pages')) AS pages FROM hubpages_state;"
+resources="$(docker inspect "$("${compose[@]}" ps -q hubpages-prod)" --format '{{.HostConfig.Memory}} {{.HostConfig.NanoCpus}}')"
+[[ "$resources" == '2147483648 250000000' ]] || { echo 'Unexpected HubPages production resource limits.' >&2; exit 1; }
+echo "HubPages PROD resources verified: $resources"
 curl -fsS https://hubpages.com.br/health.json
 curl -fsS https://app.sistera.com.br/api/health >/dev/null
 

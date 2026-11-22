@@ -1,3 +1,10 @@
+import {BlockHeightControl} from './BlockHeightControl'
+import {blockHeightStyle} from './block-height'
+import './text-colors.css'
+import {ColorText,TextColorProvider} from './TextColors'
+import {ImportedCanvas} from './ImportedCanvas'
+import { themeVariables,templateTheme } from '../../shared/template-themes.mjs'
+import '../template-themes.css'
 import { StudioStructure } from './StudioStructure'
 import { StudioMediaGallery } from './StudioMediaGallery'
 import { CanvasMedia } from './CanvasMedia'
@@ -12,6 +19,7 @@ const LegacySalesTemplate=lazy(()=>import('./LegacySalesTemplate').then(m=>({def
 const LegacySalesTemplateEs=lazy(()=>import('./LegacySalesTemplateEs').then(m=>({default:m.LegacySalesTemplateEs})))
 export interface CanvasEditing {
   undo?:()=>void;undoAvailable?:boolean;undoBusy?:boolean
+  duplicateObject?:(index:number,nodeId:string)=>Promise<void>
   duplicate?:(index:number)=>void
   configure?:(index:number)=>void
   notice?:(message:string)=>void
@@ -24,9 +32,10 @@ export interface CanvasEditing {
   resize: (index:number,value:Partial<Layout>)=>void
 }
 function layout(value: Layout = {}): CSSProperties {
-  return { width: `${value.width ?? 100}%`, padding: `${value.padding ?? 32}px`, margin: `${value.margin ?? 16}px auto`, gap: `${value.gap ?? 24}px`, fontSize: `${value.fontSize ?? 18}px`, fontFamily: value.font==='serif' ? 'Georgia,serif' : value.font==='rounded' ? 'Verdana,sans-serif' : 'inherit', textAlign: value.align ?? 'left', background: value.background ?? '#ffffff', '--block-columns': value.columns ?? 1, '--heading-size': `${value.headingSize ?? 36}px` } as CSSProperties
+  return { ...blockHeightStyle(value.height),width: `${value.width ?? 100}%`, padding: `${value.padding ?? 32}px`, margin: `${value.margin ?? 16}px auto`, gap: `${value.gap ?? 24}px`, fontSize: `${value.fontSize ?? 18}px`, fontFamily: value.font==='serif' ? 'Georgia,serif' : value.font==='rounded' ? 'Verdana,sans-serif' : 'inherit', textAlign: value.align ?? 'left', background: value.background ?? '#ffffff', '--block-columns': value.columns ?? 1, '--heading-size': `${value.headingSize ?? 36}px` } as CSSProperties
 }
-export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = false, editing }: { draft: Draft; selected?: number; onSelect?: (index: number) => void; onMove?: (from: number, to: number) => void; interactive?: boolean; editing?:CanvasEditing }) {
+export function StudioCanvas(props:Parameters<typeof CanvasBody>[0]){return <TextColorProvider draft={props.draft} editing={props.editing}><CanvasBody {...props}/></TextColorProvider>}
+function CanvasBody({ draft, selected, onSelect, onMove, interactive = false, editing,hideChrome=false }: { draft: Draft; selected?: number; onSelect?: (index: number) => void; onMove?: (from: number, to: number) => void; interactive?: boolean; editing?:CanvasEditing;hideChrome?:boolean }) {
   const [sample, setSample] = useState<number | null>(null)
   const samples = draft.blocks.filter((b) => b.kind === 'sample'&&(editing||b.enabled!==false)).slice(0,draft.sectionCounts?.sample)
   useEffect(() => {
@@ -34,8 +43,8 @@ export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = 
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setSample(null); if (e.key === 'ArrowRight') setSample((v) => v === null ? null : (v+1)%samples.length); if (e.key === 'ArrowLeft') setSample((v) => v === null ? null : (v-1+samples.length)%samples.length) }
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key)
   }, [sample, samples.length])
-  const text=(index:number,field:string,value:string,label:string,as='p',className='',multiline=false,max=5000)=>editing ? <InlineText as={as} value={value} label={label} className={className} multiline={multiline} max={max} onSelect={()=>editing.select(index,field)} onChange={(value)=>editing.text(index,field,value)} /> : <StaticText as={as} value={value} className={className}/>
-  const picture=(index:number,src:string,title:string,style?:Layout)=> <CanvasMedia index={index} src={src} title={title} type={index<0?draft.mediaType:draft.blocks[index]?.mediaType} editing={editing} attributes={{style:{width:String(style?.imageWidth??100)+'%',height:style?.imageHeight??360,objectFit:style?.imageFit??'contain'}}}/>
+  const text=(index:number,field:string,value:string,label:string,as='p',className='',multiline=false,max=5000)=>editing ? <InlineText colorKey={index<0?`field:${field}`:`block:${draft.blocks[index].id}:${field}`} as={as} value={value} label={label} className={className} multiline={multiline} max={max} onSelect={()=>editing.select(index,field)} onChange={(value)=>editing.text(index,field,value)} /> : <StaticText as={as} value={value} className={className} colorKey={index<0?`field:${field}`:`block:${draft.blocks[index].id}:${field}`}/>
+  const picture=(index:number,src:string,title:string,style?:Layout)=> <CanvasMedia mediaAlign={style?.imageAlign??(index<0?draft.style?.imageAlign:draft.blocks[index]?.style?.imageAlign)} index={index} src={src} title={title} type={index<0?draft.mediaType:draft.blocks[index]?.mediaType} editing={editing} attributes={{style:{width:String(style?.imageWidth??100)+'%',height:style?.imageHeight??360,objectFit:style?.imageFit??'contain'}}}/>
   const buy = (block?: Block,index=-1,scope='hero') => {
     const config=block?undefined:draft.templateButtons?.[scope]
     const enabled=block?block.showButton!==false:config?.enabled!==false
@@ -44,22 +53,23 @@ export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = 
     const label = block?.buttonLabel || config?.label || draft.ctaLabel || 'Comprar agora'
     const value = block?.style || draft.style
     const style = { width:`${value?.buttonWidth ?? 100}%`,padding:`${value?.buttonPadding ?? 16}px` }
-    if(editing)return <EditorAction editing={editing} index={index} scope={block?'block':scope} enabled={enabled} className="canvas-buy canvas-buy-edit" style={style} label={<InlineText value={label} label={`Editar texto do botão ${block?`da seção ${index+1}`:scope}`} max={100} onSelect={()=>editing.select(index,block?'buttonLabel':`button:${scope}`)} onChange={value=>editing.text(index,block?'buttonLabel':`buttonLabel:${scope}`,value)}/>}/>
-    return href && interactive ? <a className="canvas-buy" style={style} href={href} target="_blank" rel="noopener noreferrer">{label}</a> : <button className="canvas-buy" style={style} type="button" disabled>{label}</button>
+    if(editing)return <EditorAction editing={editing} index={index} scope={block?'block':scope} enabled={enabled} className="canvas-buy canvas-buy-edit" style={style} label={<InlineText colorKey={block?`block:${block.id}:buttonLabel`:`button:${scope}`} value={label} label={`Editar texto do botão ${block?`da seção ${index+1}`:scope}`} max={100} onSelect={()=>editing.select(index,block?'buttonLabel':`button:${scope}`)} onChange={value=>editing.text(index,block?'buttonLabel':`buttonLabel:${scope}`,value)}/>}/>
+    return href && interactive ? <a className="canvas-buy" style={style} href={href} target="_blank" rel="noopener noreferrer">{<ColorText id={block?`block:${block.id}:buttonLabel`:`button:${scope}`}>{label}</ColorText>}</a> : <button className="canvas-buy" style={style} type="button" disabled>{label}</button>
   }
   const drop = (event: DragEvent, index: number) => { if (!onMove || event.dataTransfer.files.length) return; event.preventDefault(); const value=event.dataTransfer.getData('application/x-hubpages-block'); if (/^\d+$/.test(value)) onMove(Number(value),index) }
-  if(draft.template==='infancia_es')return <Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplateEs draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense>
-  if(draft.template==='infancia_pt')return <Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplate draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense>
+  if(draft.imported){const extraIndices=draft.blocks.flatMap((b,i)=>b.importHtml?[]:[i]),translate=(index:number)=>index<0?index:extraIndices[index],extraEditing=editing?{...editing,select:(index:number,kind:string)=>editing.select(translate(index),kind),text:(index:number,field:string,value:string)=>editing.text(translate(index),field,value),image:(index:number,file?:File,slot?:string)=>editing.image(translate(index),file,slot),resize:(index:number,value:Partial<Layout>)=>editing.resize(translate(index),value),button:(index:number,scope:string,enabled:boolean)=>editing.button(translate(index),scope,enabled),duplicate:(index:number)=>editing.duplicate?.(translate(index)),configure:(index:number)=>editing.configure?.(translate(index))}:undefined;return <><ImportedCanvas draft={draft} editing={editing} selected={selected} onMove={onMove}/>{extraIndices.length>0&&<StudioCanvas draft={{...draft,imported:undefined,template:'essencial',blocks:extraIndices.map(i=>draft.blocks[i])}} selected={selected===undefined?undefined:extraIndices.indexOf(selected)} onSelect={index=>onSelect?.(translate(index))} onMove={(from,to)=>onMove?.(translate(from),translate(to))} interactive={interactive} editing={extraEditing} hideChrome/>}</>}
+  if(draft.template==='infancia_es')return <div className="aurora-theme" data-color-theme={templateTheme(draft.colorTheme).id} style={themeVariables(draft.colorTheme) as CSSProperties}><Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplateEs draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense></div>
+  if(draft.template==='infancia_pt')return <div className="aurora-theme" data-color-theme={templateTheme(draft.colorTheme).id} style={themeVariables(draft.colorTheme) as CSSProperties}><Suspense fallback={<p role="status">Carregando modelo…</p>}><LegacySalesTemplate draft={draft} editing={editing} onMove={onMove} onSelect={onSelect} selected={selected}/></Suspense></div>
   return <div className={`studio-canvas template-${draft.template} ${editing?'is-inline-editing':''}`} style={{ '--draft-color': draft.color } as CSSProperties} lang={draft.locale}>
-    {(draft.redLine||editing) && <div className="canvas-redline">{text(-1,'redLine',draft.redLine||'','Editar faixa de destaque','span','',false,300)}</div>}
-    <header className="canvas-header">{buy(undefined,-1,'header')}</header>
-    <section className="canvas-hero" style={layout(draft.style)} onClick={() => onSelect?.(-1)} tabIndex={onSelect ? 0 : undefined} onKeyDown={(e) => { if (e.target===e.currentTarget && e.key==='Enter') onSelect?.(-1) }}>
+    {!hideChrome&&(draft.redLine||editing) && <div className="canvas-redline">{text(-1,'redLine',draft.redLine||'','Editar faixa de destaque','span','',false,300)}</div>}
+    {!hideChrome&&<header className="canvas-header">{buy(undefined,-1,'header')}</header>}
+    {!hideChrome&&<section className="canvas-hero" style={{...layout(draft.style),position:editing?'relative':undefined}} onClick={() => onSelect?.(-1)} tabIndex={onSelect ? 0 : undefined} onKeyDown={(e) => { if (e.target===e.currentTarget && e.key==='Enter') onSelect?.(-1) }}>
       <div>{text(-1,'eyebrow',draft.eyebrow||'','Editar chamada acima do título','p','canvas-eyebrow',false,300)}{text(-1,'title',draft.title,'Editar título principal','h1','',false,240)}{text(-1,'description',draft.description,'Editar apresentação','p','',true,3000)}{(draft.originalPrice||editing)&&text(-1,'originalPrice',draft.originalPrice||'','Editar preço anterior','s','',false,80)}{(draft.priceLabel||editing)&&text(-1,'priceLabel',draft.priceLabel||'','Editar preço da oferta','strong','canvas-price',false,80)}{buy()}{samples.length>0&&<EditorAction editing={editing} scope="sampleHero" enabled={draft.sampleEnabled!==false&&draft.templateButtons?.sampleHero?.enabled!==false} className="sales-v2-preview-button" label="Ver degustação" onActivate={()=>setSample(0)}/>}</div>
-      {picture(-1,draft.imageUrl,draft.title,draft.style)}
-    </section>
+      {picture(-1,draft.imageUrl,draft.title,draft.style)}{editing&&<BlockHeightControl value={draft.style?.height} onChange={height=>editing.resize(-1,{height})}/>}
+    </section>}
     <div className="canvas-block-grid">{draft.blocks.map((block,index) => !editing&&block.enabled===false?null:<div key={block.id || index} style={{width:`${block.style?.width ?? 100}%`}} className={`canvas-block ${selected===index ? 'is-selected' : ''} animation-${block.style?.animation ?? 'none'}`} data-block-id={block.id} onDragOver={(e) => { if (onMove && !e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={(e) => drop(e,index)}>
       {onSelect && <div className="canvas-block-tools"><button type="button" draggable onDragStart={(e) => { e.dataTransfer.setData('application/x-hubpages-block',String(index)); e.dataTransfer.effectAllowed='move' }} aria-label={`Arrastar seção ${index+1}`}>⠿ Arrastar</button><button type="button" onClick={() => onSelect(index)}>Editar seção {index+1}</button>{editing?.duplicate&&<button type="button" onClick={()=>editing.duplicate?.(index)}>Duplicar bloco</button>}{editing?.update&&<details className="block-settings"><summary>Configurar bloco</summary><StudioStructure draft={draft} scope={block.sourceRole||block.templateRole||block.kind} targetId={block.id} update={editing.update} notice={editing.notice||(()=>{})}/></details>}<button type="button" disabled={index===0} onClick={() => onMove?.(index,index-1)} aria-label="Mover seção para cima">↑</button><button type="button" disabled={index===draft.blocks.length-1} onClick={() => onMove?.(index,index+1)} aria-label="Mover seção para baixo">↓</button></div>}
-      <section className={`canvas-section kind-${block.kind ?? 'content'}`} style={{...layout(block.style),width:'100%'}} onClick={() => onSelect?.(index)}>
+      <section className={`canvas-section kind-${block.kind ?? 'content'}`} style={{...layout(block.style),width:'100%',position:editing?'relative':undefined}} onClick={() => onSelect?.(index)}>
         {block.kind==='divider' ? <hr /> : block.kind==='spacer' ? <div style={{minHeight:block.style?.padding ?? 32}} aria-label="Espaçamento" /> : <>
           {block.kind==='offer'?<StudioMediaGallery draft={draft} editing={editing} label="Galeria da coleção"/>:(block.imageUrl||editing&&selected===index)&&picture(index,block.imageUrl,block.title,block.style)}
           <div className="canvas-section-copy">{block.kind==='faq'&&!editing ? <details><summary>{block.title}</summary><p>{block.body}</p></details> : <>{text(index,'title',block.title,`Editar título da seção ${index+1}`,'h2','',false,240)}{text(index,'body',block.body,`Editar texto da seção ${index+1}`,'p','canvas-columns',true)}</>}
@@ -67,14 +77,16 @@ export function StudioCanvas({ draft, selected, onSelect, onMove, interactive = 
           {block.kind==='offer' && <>{text(index,'originalPrice',draft.originalPrice||'','Editar preço anterior da oferta','s','',false,80)}{text(index,'priceLabel',draft.priceLabel||'','Editar preço da oferta na seção','strong','canvas-price',false,80)}</>}
           {block.kind!=='author' && buy(block,index)}</div>
         </>}
+      {editing&&<BlockHeightControl value={block.style?.height} onChange={height=>editing.resize(index,{height})}/>}
       </section>
     </div>)}</div>
-    <footer className="canvas-footer"><StudioAttribution/>{text(-1,'name',draft.name,'Editar nome no rodapé','p','',false,120)}</footer>
+    {!hideChrome&&<footer className="canvas-footer"><StudioAttribution/>{text(-1,'name',draft.name,'Editar nome no rodapé','p','',false,120)}</footer>}
     {sample!==null && samples[sample] && <div className="canvas-modal" role="dialog" aria-modal="true" aria-label="Degustação do conteúdo"><div className="canvas-modal-panel"><header><div>{text(draft.blocks.indexOf(samples[sample]),'sampleSource',samples[sample].sampleSource??'Conteúdo','Editar origem da página de degustação','p')}{text(draft.blocks.indexOf(samples[sample]),'title',samples[sample].title,'Editar título da página de degustação','h2')}</div><button autoFocus type="button" onClick={() => setSample(null)}>Fechar degustação</button></header><p>{sample+1} de {samples.length}</p>{picture(draft.blocks.indexOf(samples[sample]),samples[sample].imageUrl,samples[sample].title,{imageHeight:650})}{text(draft.blocks.indexOf(samples[sample]),'body',samples[sample].body,'Editar descrição da página de degustação','p','',true)}<nav><button onClick={() => setSample((sample-1+samples.length)%samples.length)}>Anterior</button><button onClick={() => setSample((sample+1)%samples.length)}>Próxima</button></nav>{buy(samples[sample])}</div></div>}
   </div>
 }
-function StaticText({as,value,className}:{as:string;value:string;className:string}) {
-  if(as==='h1')return <h1 className={className}>{value||'Título da sua página'}</h1>
+function StaticText({as,value:raw,className,colorKey}:{as:string;value:string;className:string;colorKey:string}) {
+  const value=<ColorText id={colorKey}>{raw}</ColorText>
+  if(as==='h1')return <h1 className={className}>{raw?value:'Título da sua página'}</h1>
   if(as==='h2')return <h2 className={className}>{value}</h2>
   if(as==='strong')return <strong className={className}>{value}</strong>
   if(as==='s')return <s className={className}>{value}</s>
