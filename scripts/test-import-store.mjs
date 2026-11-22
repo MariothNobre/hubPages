@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto'
 import {readFile} from 'node:fs/promises'
 import pg from 'pg'
 import {createPlatformStore,importMediaKey} from '../server/platform-store.mjs'
-import {reviewSignature} from '../shared/studio-wizard.mjs'
+import {reviewSignature,pendingChanges} from '../shared/studio-wizard.mjs'
 import {templateInput} from '../server/templates.mjs'
 const origin='https://dev.hubpages.com.br',owner='legacy-owner',slot=randomUUID()
 let database=process.env.HUBPAGES_TEST_DATABASE_URL||'',pool,state={pages:{}}
@@ -22,7 +22,7 @@ try{
  page=await store.publish(owner,page.id,{revision:page.revision,origin,requireReview:true})
  const first=await store.publicResolve(origin+'/isolated_import');assert.equal(first.draft.colorTheme,'oceano');assert.equal((await store.publicImage(first.id,slot)).content.toString(),'original');assert.ok(!JSON.stringify(first.draft).includes('/api/platform/pages/'))
  await store.putImage(owner,page.id,slot,'image/png',Buffer.from('replacement'))
- assert.equal((await store.publicImage(first.id,slot)).content.toString(),'original','live snapshot is preserved during edits')
+ assert.equal((await store.publicImage(first.id,slot)).content.toString(),'original','live snapshot is preserved during edits');const changed=await store.review(owner,page.id);assert.ok(pendingChanges(page.draft,changed.publishedDraft,changed.changedImageSlots).some(change=>change.id===slot+':imageUrl'),'replacing imported media appears in publication notifications')
  await assert.rejects(store.publish(owner,page.id,{revision:page.revision,origin,requireReview:true}),/Revisão/)
  const copy=await store.duplicate(owner,page.id);assert.equal(copy.origin,'imported');assert.ok(copy.draft.importedAssets[0].imageUrl.includes(copy.id));assert.equal((await store.getImage(owner,copy.id,slot)).content.toString(),'replacement')
  page=await store.read(owner,page.id);const nextReview=await store.review(owner,page.id)

@@ -23,7 +23,7 @@ export function pendingChanges(draft,published,changedImageSlots=[]) {
     add(block.id+':layout',`Layout: ${name}`,[old.style||{},old.layoutOverrides||[],!!old.layoutCustomized],[block.style||{},block.layoutOverrides||[],!!block.layoutCustomized])
   }
   for(const [id,block]of before)if(!after.has(id))changes.push({id:'remove:'+id,label:`Seção removida: ${snippet(block.title)}`,detail:'Esta seção deixará de aparecer depois da publicação.'})
-  for(const slot of changedImageSlots){const media=after.get(slot)||(draft.offerGallery||[]).find(m=>m.id===slot);const id=slot==='hero'?'imageUrl':slot+':imageUrl';if(!changes.some(c=>c.id===id)&& (slot==='hero'?String(draft.imageUrl).includes('/images/hero'):String(media?.imageUrl).includes('/images/'+slot)))changes.push({id,label:slot==='hero'?'Imagem principal':`Imagem: ${snippet(media?.title)||'seção'}`,detail:'O arquivo de imagem foi substituído neste espaço.'})}
+  for(const slot of changedImageSlots){const media=after.get(slot)||(draft.offerGallery||[]).find(m=>m.id===slot)||(draft.importedAssets||[]).find(m=>m.id===slot);const id=slot==='hero'?'imageUrl':slot+':imageUrl';if(!changes.some(c=>c.id===id)&& (slot==='hero'?String(draft.imageUrl).includes('/images/hero'):String(media?.imageUrl).includes('/images/'+slot)))changes.push({id,label:slot==='hero'?'Imagem principal':`Imagem: ${snippet(media?.title)||'seção'}`,detail:'O arquivo de imagem foi substituído neste espaço.'})}
   return changes
 }
 export function reviewSignature(draft,assetVersion='') {
