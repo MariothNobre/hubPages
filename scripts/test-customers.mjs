@@ -191,7 +191,7 @@ try {
   assert.equal(adminLogin.status, 200)
   const adminPages = await (await request('/api/platform/pages', 'GET', undefined, cookieOf(adminLogin))).json()
   assert.equal(adminPages.pages.length, 1); assert.equal(adminPages.legacyPages.length, 2)
-  if(publishingTests){const blocked=await request(`/api/platform/pages/${seed.id}/publish`,'POST',{revision:legacy.platform.pages[seed.id].revision},cookieOf(adminLogin));assert.equal(blocked.status,409);assert.match((await blocked.json()).message,/domínio próprio verificado/)}
+  if(publishingTests){const blocked=await request(`/api/platform/pages/${seed.id}/publish`,'POST',{revision:legacy.platform.pages[seed.id].revision},cookieOf(adminLogin));assert.equal(blocked.status,409);assert.match((await blocked.json()).message,/origem de página não está habilitada/)}
   let actual = JSON.parse(await readFile(file, 'utf8'))
   if (testDatabase) {
     const pool = new pg.Pool({ connectionString: testDatabase })
