@@ -5,6 +5,17 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.12.0] - 2026-11-22
+
+- Domínio próprio nos cards e na listagem, com atalho de visita e confirmação para desvincular e liberar o endereço para outra página. O link HubPages fica oculto somente no card enquanto há vínculo ativo.
+- Card de conexão verde claro, passo 5 marcado com ✓ após ativação e ambos os endereços na etapa Publicação.
+- Promoção completa do recurso de domínios para produção, com PostgreSQL separado, prova TXT/HTTPS e roteamento fixo por ambiente. Dados e conexões DEV não são copiados para produção.
+
+## [0.12.0-dev.1] - 2026-11-22 (entrega inicial somente DEV)
+
+- Assistente de domínio próprio em cinco passos, com guias de DNS, cópia de registros e diagnósticos TXT/A/HTTPS.
+- Verificação de propriedade, conexão segura automática, vínculo à página publicada e desconexão, preservando revisão, mídias, Pixel e métricas.
+- Persistência isolada, controle de proprietário, revalidação e rota DEV protegida para domínios próprios. Produção permanece sem o recurso.
 ## [0.11.1] - 2026-11-22
 
 - Libera a captura e publicação de páginas importadas autorizadas nos endereços da HubPages em produção, removendo os dois bloqueios antigos de ambiente.

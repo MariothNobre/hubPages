@@ -52,6 +52,7 @@ bash deploy/verify-prod-restore.sh
 resources="$(docker inspect "$("${compose[@]}" ps -q hubpages-prod)" --format '{{.HostConfig.Memory}} {{.HostConfig.NanoCpus}}')"
 [[ "$resources" == '2147483648 250000000' ]] || { echo 'Unexpected HubPages production resource limits.' >&2; exit 1; }
 echo "HubPages PROD resources verified: $resources"
+bash deploy/configure-custom-domains-dev.sh prod
 curl -fsS https://hubpages.com.br/health.json
 curl -fsS https://app.sistera.com.br/api/health >/dev/null
 
