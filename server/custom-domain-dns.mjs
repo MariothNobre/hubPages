@@ -4,13 +4,15 @@ import {isIP} from 'node:net'
 import https from 'node:https'
 import {PlatformError} from './platform-error.mjs'
 
-export function domainName(input,{allowedReserved=[]}={}){
+export function domainName(input,{allowedReserved=[],connectedBases=[]}={}){
   if(typeof input!=='string'||input.length>280)throw new PlatformError(422,'Digite somente o domínio, como oferta.seusite.com.br.')
   let value=input.trim().toLowerCase().replace(/\.$/,'')
   if(value.startsWith('https://'))value=value.slice(8).replace(/\/$/,'')
   if(/[\/\\?:#@%\s]/u.test(value))throw new PlatformError(422,'Digite apenas o domínio, sem caminho, senha, porta ou parâmetros.')
   value=domainToASCII(value)
-  if(!value||value.length>243||isIP(value)||!value.includes('.')||value.split('.').some(label=>!(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)))||/^\d+$/.test(value.split('.').at(-1))||/(^|\.)(localhost|local|internal|lan|test|invalid|example)$/.test(value)||/(^|\.)(hubpages\.com\.br|sistera\.com\.br|hstgr\.cloud)$/.test(value)&&!allowedReserved.includes(value))throw new PlatformError(422,'Use um domínio próprio registrado, sem caminho, porta ou parâmetros. Os endereços da plataforma são reservados.')
+  if(!value||value.length>243||isIP(value)||!value.includes('.')||value.split('.').some(label=>!(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)))||/^\d+$/.test(value.split('.').at(-1))||/(^|\.)(localhost|local|internal|lan|test|invalid|example)$/.test(value))throw new PlatformError(422,'Use um domínio próprio registrado, como oferta.seusite.com.br.')
+  const infrastructure=/(^|\.)(hubpages\.com\.br|hstgr\.cloud)$/.test(value)||['sistera.com.br','www.sistera.com.br','app.sistera.com.br'].includes(value)
+  if(infrastructure||/(^|\.)sistera\.com\.br$/.test(value)&&!allowedReserved.includes(value)&&!connectedBases.some(base=>value.endsWith('.'+base)))throw new PlatformError(422,`O endereço ${value} é reservado para os serviços da plataforma. O formato está correto, mas este endereço precisa ser liberado pela administração antes de continuar.`)
   return value
 }
 export function dnsResolver(){return new Resolver({timeout:1800,tries:1})}
