@@ -35,7 +35,7 @@ export async function importSalesPage(source,{fetchResource=fetchImportResource,
  const urls=[];css.walk(ast,{visit:'Url',enter(node,item,list){urls.push({node,item,list})}});for(const {node,item,list}of urls){const id=await asset(new URL(node.value,base).href);const replacement=css.parse(id?`var(--hp-asset-${id})`:'none',{context:'value'}).children;list.replace(item,replacement)}return prefix+css.generate(ast)}
  if(sheets.length>40)throw new PlatformError(422,'Esta página possui mais de 40 folhas de estilo. Use um endereço de oferta mais enxuto.')
  let styles='';for(const source of sheets){try{if(Object.hasOwn(source,'inline'))styles+=await sheet(source.inline,page.url);else{sheetCount++;const result=await fetcher(new URL(source.url,page.url).href,450000);styles+=await sheet(result.content.toString('utf8'),new URL(source.url,page.url).href)}}catch(error){if(error instanceof PlatformError&&/45 MB|70 mídias/.test(error.message))throw error;throw new PlatformError(422,'Não foi possível copiar os estilos visuais da página. Confira o endereço e tente novamente.')}}
- const transform=async node=>{if(node.tagName)node.attrs=(node.attrs||[]).filter(a=>!a.name.startsWith('data-hp-'));if(['script','noscript','style','link','template','object','embed','base','meta'].includes(node.tagName)){if(node.tagName==='script')report.removedScripts++;return null}
+ const transform=async node=>{if(['astro-island','astro-slot','astro-static-slot'].includes(node.tagName)&&!(node.childNodes||[]).some(c=>c.tagName||c.nodeName==='#text'&&c.value.trim()))return null;if(node.tagName)node.attrs=(node.attrs||[]).filter(a=>!a.name.startsWith('data-hp-'));if(['script','noscript','style','link','template','object','embed','base','meta'].includes(node.tagName)){if(node.tagName==='script')report.removedScripts++;return null}
   if(['form','input','select','textarea','option'].includes(node.tagName)){const placeholder=attr(node,'placeholder');node.tagName=node.tagName==='form'?'div':'span';node.nodeName=node.tagName;if(placeholder&&!node.childNodes?.length)node.childNodes=[{nodeName:'#text',value:placeholder}]}
   if(node.nodeName==='#text'){if(!node.value.trim())return node;let preserve=false;for(let parent=node.parentNode;parent;parent=parent.parentNode)if(['pre','code'].includes(parent.tagName))preserve=true;if(!preserve)node.value=node.value.replace(/[ \t\r\n]+/g,' ');return{nodeName:'span',tagName:'span',namespaceURI:'http://www.w3.org/1999/xhtml',attrs:[{name:'data-hp-text',value:'t-'+randomUUID()},...(preserve?[{name:'data-hp-pre',value:'pre'}]:[])],childNodes:[node]}}
   if(node.tagName==='img'||node.tagName==='video'||node.tagName==='iframe'){
@@ -53,13 +53,19 @@ export async function importSalesPage(source,{fetchResource=fetchImportResource,
   const inline=attr(node,'style');if(inline)set(node,'style',await inlineStyle(inline))
   const children=[];for(const child of node.childNodes||[]){const next=await transform(child);if(next)children.push(next)}node.childNodes=children;return node
  }
+ // Semantic sections are edit units, even when a builder nests them under runtime wrappers.
+ const candidates=new Set(),containers=new Set()
+ function sections(node,inside=false){if(node.tagName==='section'&&!inside){candidates.add(node);for(let p=node.parentNode;p&&p!==body;p=p.parentNode)containers.add(p);return}for(const child of node.childNodes||[])sections(child,inside)}
+ sections(contentRoot)
+ const useSections=candidates.size>=2&&candidates.size<=32
  const blocks=[],excluded=new Set(['script','noscript','style','link','template','base','meta'])
  const addBlock=async sources=>{const nodes=[];for(const source of sources){const node=await transform(source);if(node)nodes.push(node)}const fragment={nodeName:'#document-fragment',childNodes:nodes};const html=safeImportHtml(serialize(fragment));if(!html.trim())return null;const first=nodes.find(n=>n.tagName),heading=first&&find(first,n=>/^h[1-6]$/.test(n.tagName));blocks.push({id:randomUUID(),kind:'content',title:text(heading||fragment).replace(/\s+/g,' ').trim().slice(0,120)||`Seção ${blocks.length+1}`,body:'',imageUrl:'',showButton:false,importHtml:html,style:{}});return{nodeName:'div',tagName:'div',namespaceURI:'http://www.w3.org/1999/xhtml',attrs:[{name:'data-hp-slot',value:String(blocks.length-1)}],childNodes:[]}}
  const path=new Set();for(let current=contentRoot;current&&current!==body;current=current.parentNode)path.add(current)
  const contentElements=(contentRoot.childNodes||[]).filter(n=>n.tagName&&!excluded.has(n.tagName)),group=Math.max(1,Math.ceil(contentElements.length/30))
  async function scaffold(node){if(node.tagName&&excluded.has(node.tagName))return null;if(node.nodeName==='#text')return node.value.trim()?await addBlock([node]):node
-  if(node===contentRoot){const children=[];for(let i=0;i<contentElements.length;i+=group){const placeholder=await addBlock(contentElements.slice(i,i+group));if(placeholder)children.push(placeholder)}node.childNodes=children}
-  else if(path.has(node)||node===body){const children=[];for(const child of node.childNodes||[]){const next=await scaffold(child);if(next)children.push(next)}node.childNodes=children}
+  if(useSections&&candidates.has(node))return addBlock([node])
+  if(node===contentRoot&&!useSections){const children=[];for(let i=0;i<contentElements.length;i+=group){const placeholder=await addBlock(contentElements.slice(i,i+group));if(placeholder)children.push(placeholder)}node.childNodes=children}
+  else if(path.has(node)||node===body||useSections&&containers.has(node)){const children=[];for(const child of node.childNodes||[]){const next=await scaffold(child);if(next)children.push(next)}node.childNodes=children}
   else return addBlock([node])
   if(node.tagName){node.attrs=(node.attrs||[]).filter(a=>!a.name.startsWith('data-hp-'));const value=attr(node,'style');if(value)set(node,'style',await inlineStyle(value))}return node
  }

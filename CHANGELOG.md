@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.10.0-dev.1] - 2026-11-22 (somente DEV)
+
+- Seleção de objetos/camadas nas importações; excluir objeto, remover fundo ou caixa preservando conteúdo, mover/redimensionar e desfazer.
+- Divisão de seções semânticas, organização de importações anteriores, quantidade/visibilidade e duplicação independente de itens.
+- Cor por campo de texto em templates e importações, preservando tipografia na prévia e publicação.
+- Alinhamento individual de imagens, fotos e vídeos com controles abaixo da troca de mídia.
+- Identificação de template/nome ou importação/URL nos cards e listagem. Sem migração ou alteração de produção.
+
 ## [0.9.1-dev.1] - 2026-11-21 (somente DEV)
 
 - Corrige a importação de páginas com blocos `<style>` vazios: o importador deixa de solicitar um arquivo inexistente `/undefined`. Folhas de estilo externas continuam sendo copiadas e validadas normalmente.

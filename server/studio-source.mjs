@@ -1,0 +1,1 @@
+export function studioSource(draft){const names={infancia_pt:'Aurora',infancia_es:'Aurora · Espanhol',sabor_pt:'Sabor',essencial:'Essencial',colecao:'Coleção'};return draft.imported&&draft.template==='imported'?{kind:'import',name:'Importada',url:draft.imported.sourceUrl}:{kind:'template',name:names[draft.template]||draft.imported?.modelName||'Personalizado'}}

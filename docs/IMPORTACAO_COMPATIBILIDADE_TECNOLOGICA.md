@@ -38,3 +38,7 @@ Importações mantêm suas informações e rodapé sem acrescentar a marca HubPa
 ## Caso que originou estas diretrizes
 
 Origem autorizada: `https://codigodivinochurch.site/`. O erro de CSS vinha da tentativa de baixar `/undefined`, gerada por um estilo inline vazio. Depois da correção de leitura, a validação no navegador detectou a remoção do wrapper Astro que continha o main. O wrapper foi convertido em HTML inerte e os identificadores CSS necessários foram preservados. A captura real identificou 45 mídias sem falha de download. Evidências e identificação da entrega ficam em `STEP_BY_STEP.md`.
+
+## Edição de objetos e campos — HP-040
+
+Consultar [EDICAO_VISUAL_E_CORES.md](EDICAO_VISUAL_E_CORES.md). Seções semânticas aninhadas passam a blocos sem perder o scaffold. Marcadores internos limitados identificam objetos, visibilidade e remoção de fundo; não liberam scripts ou atributos arbitrários. Textos usam identificadores estáveis e cores hexadecimais validadas; os spans de cor herdam tipografia para não reduzir preços. Mídias persistem alinhamento por espaço. Dimensões e deslocamento preservam o transform original. Duplicações remapeiam objetos, textos, botões e mídias para manter edição independente. Testes offline em test-page-import.mjs e test-import-editor.cjs; persistência/publicação em test-workspace.mjs, arquivo e PostgreSQL CI.

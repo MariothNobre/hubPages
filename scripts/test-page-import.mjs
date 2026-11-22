@@ -47,3 +47,8 @@ console.log('PASS: inert Astro wrappers preserve slots and scoped styles without
 assert.ok(astro.draft.blocks[0].importHtml.includes('data-astro-cid-abc123'))
 await assert.rejects(importSalesPage('https://source.example.test/',{fetchResource:async url=>({url,headers:{'content-type':'text/html'},content:Buffer.from('<html><body><unknown-shell><main><section><h1>Oferta inacessível</h1></section></main></unknown-shell></body></html>')})}),/estrutura.*aplicativo/)
 console.log('PASS: scoped Astro IDs are preserved and an empty sanitized scaffold cannot be reported as a successful import')
+
+const nestedSections='<html><body><header><p>Marca</p></header><main><div><div>'+Array.from({length:20},(_,i)=>'<section><h2>Parte '+i+'</h2><div><p>Conteúdo '+i+'</p></div></section>').join('')+'</div></div></main><footer><p>Rodapé</p></footer></body></html>'
+const nested=await importSalesPage('https://source.example.test/',{fetchResource:async url=>({url,headers:{'content-type':'text/html'},content:Buffer.from(nestedSections)})})
+assert.equal(nested.draft.blocks.length,22);assert.ok(nested.draft.blocks.some(b=>b.importHtml.includes('Parte 19')));assert.match(nested.draft.imported.rootHtml,/data-hp-slot="21"/)
+console.log('PASS: deeply nested semantic sections become independent editable blocks with original header/footer')

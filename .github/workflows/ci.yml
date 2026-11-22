@@ -78,6 +78,7 @@ jobs:
           node scripts/test-studio-slug.mjs
           node scripts/test-studio-tracking.mjs
           node scripts/test-page-import.mjs
+          node scripts/test-import-editor.cjs
           node scripts/test-import-store.mjs
           node scripts/test-platform.mjs
           node scripts/test-page-address.mjs
