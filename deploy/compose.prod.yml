@@ -26,6 +26,9 @@ services:
       HUBPAGES_PLATFORM_ENABLED: 'true'
       HUBPAGES_CUSTOMER_SIGNUP_ENABLED: 'true'
       HUBPAGES_FREE_PUBLISH_ENABLED: 'true'
+      HUBPAGES_CUSTOM_DOMAINS_ENABLED: 'true'
+      HUBPAGES_CUSTOM_DOMAIN_IPV4: 179.199.148.219
+      HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER: 'true'
       HUBPAGES_PUBLIC_ORIGIN: https://hubpages.com.br
       APP_ORIGINS: https://hubpages.com.br,https://www.hubpages.com.br
       HUBPAGES_ADMIN_EMAIL: ${HUBPAGES_ADMIN_EMAIL:-}

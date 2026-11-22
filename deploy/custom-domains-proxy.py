@@ -22,8 +22,43 @@ https:// {
 }
 # END HUBPAGES DEV DOMAIN ROUTE'''
 
+SHARED_TLS = TLS.replace('DEV DOMAIN', 'DOMAIN').replace('hubpages-dev:8080', 'hubpages-prod:8080')
+SHARED_SITE = '''# BEGIN HUBPAGES DOMAIN ROUTE
+https:// {
+  tls {
+    on_demand
+  }
+  encode zstd gzip
+  route {
+    request_header -X-HubPages-Upstream
+    forward_auth hubpages-prod:8080 {
+      uri /api/domains/route?domain={host}
+      copy_headers X-HubPages-Upstream
+    }
+    reverse_proxy {http.request.header.X-HubPages-Upstream} {
+      header_up -X-HubPages-Upstream
+    }
+  }
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    -Server
+  }
+}
+# END HUBPAGES DOMAIN ROUTE'''
 
-def configure(source):
+
+def configure(source, production=False):
+    shared = '# BEGIN HUBPAGES DOMAIN'
+    if shared in source:
+        if source.count(SHARED_TLS) != 1 or source.count(SHARED_SITE) != 1:
+            raise ValueError('Configuração compartilhada alterada; revisão necessária.')
+        return source
+    if production:
+        before = configure(source)
+        if before.count(TLS) != 1 or before.count(SITE) != 1:
+            raise ValueError('Configuração DEV alterada; revisão necessária.')
+        return before.replace(TLS, SHARED_TLS).replace(SITE, SHARED_SITE)
     tls_start = '# BEGIN HUBPAGES DEV DOMAIN TLS'
     route_start = '# BEGIN HUBPAGES DEV DOMAIN ROUTE'
     if (tls_start in source) != (route_start in source):
@@ -77,4 +112,4 @@ def configure(source):
 if __name__ == '__main__':
     import sys
     from pathlib import Path
-    Path(sys.argv[2]).write_text(configure(Path(sys.argv[1]).read_text()))
+    Path(sys.argv[2]).write_text(configure(Path(sys.argv[1]).read_text(), production='--production' in sys.argv))

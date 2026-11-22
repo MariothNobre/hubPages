@@ -42,12 +42,14 @@ try{
  d=await svc.activate(ownerA,page.id,d.id);assert.equal(d.enabled,true);assert.equal(d.live,false,'connecting a draft does not publish it')
  await assert.rejects(svc.publication(await svc.binding(d.hostname)),e=>e.status===404)
  page=await platform.publish(ownerA,page.id,{revision:page.revision,origin})
+ const card=(await svc.cards(ownerA,[page]))[0];assert.equal(card.customDomains[0].hostname,d.hostname);assert.ok(!JSON.stringify(card.customDomains).includes('token'));assert.equal((await svc.cards(ownerB,[other]))[0].customDomains.length,0,'owner-specific summaries');
  const publicPage=await svc.publication(await svc.binding(d.hostname));assert.equal(publicPage.url,'https://oferta.exemplo.com.br');assert.equal(publicPage.draft.title,'Oferta privada');assert.equal(publicPage.id,page.publication.id)
  const competing=await svc.create(ownerB,other.id,{hostname:d.hostname});await assert.rejects(svc.check(ownerB,other.id,competing.id),e=>e.status===409)
  const transient=service({checkDns:async()=>({...ready,ready:false,transient:true,ownership:false})});await transient.check(ownerA,page.id,d.id);assert.ok(await svc.binding(d.hostname),'a transient DNS outage retains the previous bounded lease')
  await store.update(ownerA,page.id,d.id,{readyUntil:'2000-01-01T00:00:00Z'});assert.equal(await svc.binding(d.hostname),null);assert.equal(await svc.certificateAllowed(d.hostname),false)
  svc=service();await svc.check(ownerA,page.id,d.id);page=await platform.unpublish(ownerA,page.id,{revision:page.revision});await assert.rejects(svc.publication(await svc.binding(d.hostname)),e=>e.status===404)
  await svc.disconnect(ownerA,page.id,d.id);assert.equal(await svc.binding(d.hostname),null);assert.equal(await svc.certificateAllowed(d.hostname),false)
+ assert.deepEqual((await svc.cards(ownerA,[page]))[0].customDomains,[]);
  const oldToken=(await store.read(ownerA,page.id,d.id)).token
  const moved=await svc.create(ownerA,second.id,{hostname:d.hostname});assert.equal(moved.id,d.id);assert.notEqual((await store.read(ownerA,second.id,d.id)).token,oldToken);assert.equal(moved.enabled,false)
  console.log('PASS: custom domain validation, DNS TXT/A/AAAA, owner/page isolation, TLS admission, activation, expiry, unpublish, disconnect and safe reconnection ('+(database?'PostgreSQL':'file')+')')
