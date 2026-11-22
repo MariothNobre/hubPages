@@ -70,3 +70,9 @@ Todos os ajustes de conteúdo usam o Desfazer e ficam no rascunho até revisão/
 4. Desfazer restaura a alteração. F5 mantém o fundo e seu vínculo. Confira a prévia e publique após a revisão; a página pública existente só muda ao publicar. Duplicar blocos remapeia vínculos internos; cópias isoladas não referenciam a caixa original.
 
 QA em docs/evidence/hp046: lista real com 13 elementos, fundo completo, F5, Undo, desktop e 390×844. Testes usam páginas sintéticas, sem editar conta real. Publicação do sistema somente DEV.
+
+## Altura vertical dos blocos — HP-048 / 0.11.0
+
+No rodapé de cada bloco em Conteúdo, use ↕ Altura: arraste para cima/baixo ou use as setas do teclado. Também pode informar pixels; Automática (0) devolve a altura natural. Layout do bloco oferece o mesmo ajuste. A altura é mínima para preservar o conteúdo quando o texto quebra linhas no celular; reduzir não recorta textos/imagens. Blocos de origem com grades internas continuam respeitando as dimensões dos seus elementos: ajuste também as caixas internas quando necessário.
+
+O gesto salva ao soltar e gera uma ação de Desfazer. O campo segue o salvamento automático. O valor é preservado no F5, na duplicação e na prévia; a página no ar só muda ao publicar após revisar. Controles não aparecem no site publicado. Aplicação comum aos templates PT/ES, blocos adicionais e importados; nenhum valor é imposto a páginas existentes.

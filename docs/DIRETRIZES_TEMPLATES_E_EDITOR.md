@@ -80,3 +80,6 @@ A barra de cores é contextual ao campo; fechar fora dela respeita eventos compo
 ## Ferramentas flutuantes — HP-044
 
 Usar FloatingTools para janelas de edição: cabeçalho de arraste por ponteiro e teclado, × acessível, manutenção do foco na digitação e limites visíveis após resize. Movimentos de ferramentas são estado de interface, não conteúdo/Undo. Fundo de caixa é estilo local validado em hex, ou transparente, sem alterar textos/dimensões; preservar prioridade CSS no editor e na renderização pública. A prévia não deve conter janelas do editor. Regressões de ponteiro/fechamento/clamp e fundo em test-import-editor.cjs; persistência e publicação em test-workspace.mjs.
+
+## Altura de blocos — HP-048
+Usar BlockHeightControl e blockHeightStyle compartilhados. Persistir Layout.height esparso, 0–6000 px; mínimo responsivo preserva conteúdo. Alça com prévia local e commit único no fim, teclado, cancelamento e Automática. Ferramentas somente no editor; tamanho aplicado na prévia/publicação. Preservar originais sem configuração, Undo e geradores determinísticos PT/ES. Testes em test-import-editor.cjs e test-workspace.mjs.

@@ -32,8 +32,8 @@ services:
       HUBPAGES_BOOTSTRAP_TOKEN_HASH: ${HUBPAGES_BOOTSTRAP_TOKEN_HASH:-}
       HUBPAGES_SESSION_SECRET: ${HUBPAGES_SESSION_SECRET:-}
     cpus: 0.25
-    mem_limit: 128m
-    mem_reservation: 32m
+    mem_limit: 2g
+    mem_reservation: 128m
     pids_limit: 100
     networks:
       hubpages_proxy:

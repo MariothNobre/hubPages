@@ -1,3 +1,5 @@
+import {BlockHeightControl} from './BlockHeightControl'
+import {blockHeightStyle} from './block-height'
 import './text-colors.css'
 import {ColorText,TextColorProvider} from './TextColors'
 import {ImportedCanvas} from './ImportedCanvas'
@@ -30,7 +32,7 @@ export interface CanvasEditing {
   resize: (index:number,value:Partial<Layout>)=>void
 }
 function layout(value: Layout = {}): CSSProperties {
-  return { width: `${value.width ?? 100}%`, padding: `${value.padding ?? 32}px`, margin: `${value.margin ?? 16}px auto`, gap: `${value.gap ?? 24}px`, fontSize: `${value.fontSize ?? 18}px`, fontFamily: value.font==='serif' ? 'Georgia,serif' : value.font==='rounded' ? 'Verdana,sans-serif' : 'inherit', textAlign: value.align ?? 'left', background: value.background ?? '#ffffff', '--block-columns': value.columns ?? 1, '--heading-size': `${value.headingSize ?? 36}px` } as CSSProperties
+  return { ...blockHeightStyle(value.height),width: `${value.width ?? 100}%`, padding: `${value.padding ?? 32}px`, margin: `${value.margin ?? 16}px auto`, gap: `${value.gap ?? 24}px`, fontSize: `${value.fontSize ?? 18}px`, fontFamily: value.font==='serif' ? 'Georgia,serif' : value.font==='rounded' ? 'Verdana,sans-serif' : 'inherit', textAlign: value.align ?? 'left', background: value.background ?? '#ffffff', '--block-columns': value.columns ?? 1, '--heading-size': `${value.headingSize ?? 36}px` } as CSSProperties
 }
 export function StudioCanvas(props:Parameters<typeof CanvasBody>[0]){return <TextColorProvider draft={props.draft} editing={props.editing}><CanvasBody {...props}/></TextColorProvider>}
 function CanvasBody({ draft, selected, onSelect, onMove, interactive = false, editing,hideChrome=false }: { draft: Draft; selected?: number; onSelect?: (index: number) => void; onMove?: (from: number, to: number) => void; interactive?: boolean; editing?:CanvasEditing;hideChrome?:boolean }) {
@@ -61,13 +63,13 @@ function CanvasBody({ draft, selected, onSelect, onMove, interactive = false, ed
   return <div className={`studio-canvas template-${draft.template} ${editing?'is-inline-editing':''}`} style={{ '--draft-color': draft.color } as CSSProperties} lang={draft.locale}>
     {!hideChrome&&(draft.redLine||editing) && <div className="canvas-redline">{text(-1,'redLine',draft.redLine||'','Editar faixa de destaque','span','',false,300)}</div>}
     {!hideChrome&&<header className="canvas-header">{buy(undefined,-1,'header')}</header>}
-    {!hideChrome&&<section className="canvas-hero" style={layout(draft.style)} onClick={() => onSelect?.(-1)} tabIndex={onSelect ? 0 : undefined} onKeyDown={(e) => { if (e.target===e.currentTarget && e.key==='Enter') onSelect?.(-1) }}>
+    {!hideChrome&&<section className="canvas-hero" style={{...layout(draft.style),position:editing?'relative':undefined}} onClick={() => onSelect?.(-1)} tabIndex={onSelect ? 0 : undefined} onKeyDown={(e) => { if (e.target===e.currentTarget && e.key==='Enter') onSelect?.(-1) }}>
       <div>{text(-1,'eyebrow',draft.eyebrow||'','Editar chamada acima do título','p','canvas-eyebrow',false,300)}{text(-1,'title',draft.title,'Editar título principal','h1','',false,240)}{text(-1,'description',draft.description,'Editar apresentação','p','',true,3000)}{(draft.originalPrice||editing)&&text(-1,'originalPrice',draft.originalPrice||'','Editar preço anterior','s','',false,80)}{(draft.priceLabel||editing)&&text(-1,'priceLabel',draft.priceLabel||'','Editar preço da oferta','strong','canvas-price',false,80)}{buy()}{samples.length>0&&<EditorAction editing={editing} scope="sampleHero" enabled={draft.sampleEnabled!==false&&draft.templateButtons?.sampleHero?.enabled!==false} className="sales-v2-preview-button" label="Ver degustação" onActivate={()=>setSample(0)}/>}</div>
-      {picture(-1,draft.imageUrl,draft.title,draft.style)}
+      {picture(-1,draft.imageUrl,draft.title,draft.style)}{editing&&<BlockHeightControl value={draft.style?.height} onChange={height=>editing.resize(-1,{height})}/>}
     </section>}
     <div className="canvas-block-grid">{draft.blocks.map((block,index) => !editing&&block.enabled===false?null:<div key={block.id || index} style={{width:`${block.style?.width ?? 100}%`}} className={`canvas-block ${selected===index ? 'is-selected' : ''} animation-${block.style?.animation ?? 'none'}`} data-block-id={block.id} onDragOver={(e) => { if (onMove && !e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={(e) => drop(e,index)}>
       {onSelect && <div className="canvas-block-tools"><button type="button" draggable onDragStart={(e) => { e.dataTransfer.setData('application/x-hubpages-block',String(index)); e.dataTransfer.effectAllowed='move' }} aria-label={`Arrastar seção ${index+1}`}>⠿ Arrastar</button><button type="button" onClick={() => onSelect(index)}>Editar seção {index+1}</button>{editing?.duplicate&&<button type="button" onClick={()=>editing.duplicate?.(index)}>Duplicar bloco</button>}{editing?.update&&<details className="block-settings"><summary>Configurar bloco</summary><StudioStructure draft={draft} scope={block.sourceRole||block.templateRole||block.kind} targetId={block.id} update={editing.update} notice={editing.notice||(()=>{})}/></details>}<button type="button" disabled={index===0} onClick={() => onMove?.(index,index-1)} aria-label="Mover seção para cima">↑</button><button type="button" disabled={index===draft.blocks.length-1} onClick={() => onMove?.(index,index+1)} aria-label="Mover seção para baixo">↓</button></div>}
-      <section className={`canvas-section kind-${block.kind ?? 'content'}`} style={{...layout(block.style),width:'100%'}} onClick={() => onSelect?.(index)}>
+      <section className={`canvas-section kind-${block.kind ?? 'content'}`} style={{...layout(block.style),width:'100%',position:editing?'relative':undefined}} onClick={() => onSelect?.(index)}>
         {block.kind==='divider' ? <hr /> : block.kind==='spacer' ? <div style={{minHeight:block.style?.padding ?? 32}} aria-label="Espaçamento" /> : <>
           {block.kind==='offer'?<StudioMediaGallery draft={draft} editing={editing} label="Galeria da coleção"/>:(block.imageUrl||editing&&selected===index)&&picture(index,block.imageUrl,block.title,block.style)}
           <div className="canvas-section-copy">{block.kind==='faq'&&!editing ? <details><summary>{block.title}</summary><p>{block.body}</p></details> : <>{text(index,'title',block.title,`Editar título da seção ${index+1}`,'h2','',false,240)}{text(index,'body',block.body,`Editar texto da seção ${index+1}`,'p','canvas-columns',true)}</>}
@@ -75,6 +77,7 @@ function CanvasBody({ draft, selected, onSelect, onMove, interactive = false, ed
           {block.kind==='offer' && <>{text(index,'originalPrice',draft.originalPrice||'','Editar preço anterior da oferta','s','',false,80)}{text(index,'priceLabel',draft.priceLabel||'','Editar preço da oferta na seção','strong','canvas-price',false,80)}</>}
           {block.kind!=='author' && buy(block,index)}</div>
         </>}
+      {editing&&<BlockHeightControl value={block.style?.height} onChange={height=>editing.resize(index,{height})}/>}
       </section>
     </div>)}</div>
     {!hideChrome&&<footer className="canvas-footer"><StudioAttribution/>{text(-1,'name',draft.name,'Editar nome no rodapé','p','',false,120)}</footer>}
