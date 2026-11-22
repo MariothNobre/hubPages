@@ -13,7 +13,7 @@ const store=await createPlatformStore(database,fallback)
 try{
  const imported={version:1,authorized:true,sourceUrl:'https://example.test/offer',modelName:'Teste',css:'h1{color:var(--hp-c0)}',palette:{c0:'#123456'},rootHtml:'<main><div data-hp-slot="0"></div></main>',report:{}}
  let page=await store.create(owner,{name:'Importação isolada',title:'Oferta',template:'imported',imported,importedAssets:[{id:slot,imageUrl:'',title:'Imagem'}],blocks:[{id:randomUUID(),importHtml:`<section><h1>Oferta</h1><img data-hp-asset="${slot}"></section>`}],[importMediaKey]:[{slot,mime:'image/png',content:Buffer.from('original')}]})
- assert.equal(page.origin,'imported');assert.match(page.draft.importedAssets[0].imageUrl,new RegExp(page.id));assert.equal((await store.getImage(owner,page.id,slot)).content.toString(),'original')
+ assert.equal(reviewSignature(page.draft),reviewSignature(JSON.parse(JSON.stringify(page.draft))),'review signature survives PostgreSQL JSON serialization');assert.equal(page.origin,'imported');assert.match(page.draft.importedAssets[0].imageUrl,new RegExp(page.id));assert.equal((await store.getImage(owner,page.id,slot)).content.toString(),'original')
  await assert.rejects(store.getImage('other-owner',page.id,slot),error=>error.status===404)
  page=await store.save(owner,page.id,{revision:page.revision,draft:{...page.draft,checkoutUrl:'https://pay.example.test/test',publicUrl:origin+'/isolated_import',colorTheme:'oceano'}})
  await assert.rejects(store.publish(owner,page.id,{revision:page.revision,origin,requireReview:true}),/Revisão/)

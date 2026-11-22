@@ -1,5 +1,5 @@
 const canonicalText=value=>{const text=value.trim();if(/^https:\/\//.test(text))try{return new URL(text).toString()}catch{/* Still being edited. */}return text}
-const clean=value=>value===undefined||value===null?'':typeof value==='string'?canonicalText(value).replace(/\/api\/(?:platform\/pages|public\/publications)\/[a-f0-9-]{36}\/images\//g,'@image/'):Array.isArray(value)?value.map(clean):typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,clean(value[key])])):value
+const clean=value=>value===undefined||value===null?'':typeof value==='string'?canonicalText(value).replace(/\/api\/(?:platform\/pages|public\/publications)\/[a-f0-9-]{36}\/images\//g,'@image/'):Array.isArray(value)?value.map(clean):typeof value==='object'?Object.fromEntries(Object.keys(value).filter(key=>value[key]!==undefined).sort().map(key=>[key,clean(value[key])])):value
 const equal=(a,b)=>JSON.stringify(clean(a))===JSON.stringify(clean(b))
 const snippet=value=>typeof value==='string'?value.replace(/\s+/g,' ').slice(0,130):''
 export function pendingChanges(draft,published,changedImageSlots=[]) {
