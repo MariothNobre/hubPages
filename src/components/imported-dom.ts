@@ -46,3 +46,6 @@ export function placeImportedClone(target:Element,clone:Element){
  if(!(clone instanceof HTMLElement))return
  for(const key of ['--grid-row','--m-grid-row','grid-row']){const value=(target as HTMLElement).style?.getPropertyValue(key),match=value?.match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);if(!match)continue;let last=Number(match[2]);for(const sibling of Array.from(target.parentElement?.children||[])){const row=(sibling as HTMLElement).style?.getPropertyValue(key).match(/\/\s*(\d+)\s*$/);if(row)last=Math.max(last,Number(row[1]))}clone.style.setProperty(key,last+'/'+(last+Math.max(1,Number(match[2])-Number(match[1]))),'important')}
 }
+
+export function setImportedBoxBackground(node:HTMLElement,color:string){if(color!=='transparent'&&!/^#[a-f0-9]{6}$/i.test(color))return;node.removeAttribute('data-hp-no-background');objectStyle(node,{background:color})}
+export function boxBackgroundHex(node:HTMLElement){const value=node.style.backgroundColor;if(/^#[a-f0-9]{6}$/i.test(value))return value;const rgb=value.match(/^rgba?\(\s*(\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)/);return rgb?'#'+rgb.slice(1,4).map(n=>Math.min(255,Number(n)).toString(16).padStart(2,'0')).join(''):'#ffffff'}

@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.10.2-dev.1] - 2026-11-22 (somente DEV)
+
+- Cabeçalhos para arrastar e × para fechar as duas janelas de ferramentas, com suporte a toque/teclado e limites da tela.
+- Fechar cores preserva o foco para continuar digitando; mover as janelas não altera o conteúdo.
+- Cor de fundo da caixa inteira, com amostras, seletor personalizado, transparência, Desfazer e persistência na prévia/publicação.
+
 ## [0.10.1-dev.1] - 2026-11-22 (somente DEV)
 
 - Completa a edição direta de caixas: excluir fundo atrás do texto, recolher ferramentas sem perder a alça, ajustar caixas/textos por bloco e retornar ao modo de texto ao fechar a seleção.
