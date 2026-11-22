@@ -5,6 +5,10 @@ Todas as mudanças relevantes deste projeto serão registradas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota versionamento
 semântico.
 
+## [0.10.3-dev.2] - 2026-11-22 (somente DEV)
+
+- Entrega os recursos de 0.10.3-dev.1 após corrigir o armazenamento do teste de restauração: volume anônimo temporário em disco em lugar de tmpfs, mantendo rede desabilitada e limites de CPU/memória.
+- Restore integral aprovado antes da implantação; produção e Sistera preservados.
 ## [0.10.3-dev.1] - 2026-11-22 (somente DEV)
 
 - Fundo completo de listas e caixas agrupadas, incluindo contêineres sem pintura própria.
@@ -119,4 +123,5 @@ semântico.
 - Plano de evolução para uma plataforma dinâmica de criação de páginas de vendas.
 - Compartimentos Docker DEV e produção implantados e validados na VPS.
 - Acesso de deploy restrito instalado; chave administrativa temporária revogada.
+
 

@@ -513,3 +513,13 @@ Os documentos 01–10 preservam o histórico anterior. Este arquivo inicia a gov
 - Deploy 45017596646 falhou duas vezes antes da troca da aplicação: pg_restore perdeu conexão com seu PostgreSQL temporário. O código/CI passou; a versão anterior permaneceu ativa.
 - O teste usava tmpfs de 512 MB dentro do limite total de memória de 256 MB; arquivos do banco concorriam com a memória do processo. Substituído por volume Docker anônimo exclusivo e efêmero, removido com o próprio contêiner no trap. Mantidos --network none, 256 MB e 0,25 CPU. Nenhum mount/banco da aplicação ou Sistera é tocado. Backup protegido continua preservado.
 - Acrescentado diagnóstico restrito OOM/exit no encerramento, sem logar dados ou credenciais. O sucesso do restore integral continua obrigatório para prosseguir; não há bypass.
+
+## HP-047 — Fundos agrupados entregues no DEV
+
+- 2026-11-22 08:38 BRT / 11:38 UTC. PR #25 implementa as caixas (6133998/733a8b3, merge 445c393); PR #26 corrige armazenamento do restore temporário (8b4ec00, merge/runtime final 3c05910482d488701d91fe76620c3cde0e9e73c9). Tag v0.10.3-dev.1 identifica a implementação; v0.10.3-dev.2 identifica runtime final com ajuste operacional.
+- CI PR #25 45017446603, develop inicial 45017596675, PR #26 45017965346 e develop final 45018137858: sucesso. Arquivo e PostgreSQL isolado, editor, saneamento, contratos PT/ES, legado, lint/build aprovados.
+- Deploy final 45018137888 / job 137194813874: sucesso. Restore integral antes da troca, revisões e referências publicadas íntegras; backup protegido /opt/hubpages-backups/dev/verified-20261122T113624Z-2371584.dump. Contêiner temporário sem rede, oom=false; removido com seu volume anônimo. Nenhum bypass do teste ou migração de banco.
+- App e banco healthy; Sabor existente preservado. Recursos efetivos mantidos: memory=2147483648 bytes (2 GiB), nano_cpus=250000000 (0,25 CPU).
+- Verificação externa: DEV /assets/index-D-2kvAnA.js contém os três controles Como aumentar esta caixa?, Estender apenas o fundo, sem empurrar e Cobrir próxima caixa com este fundo. Health DEV/produção/Sistera 200, APIs privadas 401 sem sessão.
+- Produção mantém index-CLHqmcEf.js e main 20047021e738d9313a46a81cbe30d70a9d885d92. Nenhuma edição de conteúdo/conta real no QA, promoção para produção ou alteração do Sistera. Tabs e servidor local encerrados; evidências em docs/evidence/hp046.
+- Uso: Ctrl+F5 no DEV, Conteúdo, clique no texto inferior e selecione sua caixa/lista completa para escolher a cor. Na caixa superior, escolher crescimento normal ou somente do fundo; Cobrir próxima caixa acompanha o grupo inferior sem movê-lo. Desfazer disponível. Conferir Revisão e publicar a página quando desejado.
