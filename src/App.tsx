@@ -2,6 +2,7 @@ import { ContextNotice } from './components/ContextNotice'
 import { Route, Routes } from 'react-router-dom'
 import { SalesPageRoute } from './components/SalesPageRoute'
 import { AdminAccess } from './pages/AdminAccess'
+import { SuperAdminPage } from './pages/SuperAdminPage'
 import { WorkspaceProfile } from './pages/WorkspaceProfile'
 import { TemplatePreviewPage } from './pages/TemplatePreviewPage'
 import { StudioPage } from './pages/StudioPage'
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/perfil" element={<WorkspaceProfile/>}/>
       <Route path="/studio/modelos/:id" element={<TemplatePreviewPage/>}/>
       <Route path="/studio" element={<StudioPage />} />
+      <Route path="/studio/administracao" element={<SuperAdminPage/>}/>
       <Route path="/studio/preview/:id" element={<StudioPreviewPage />} />
       <Route path="/p/:id" element={<PublishedPage />} />
       <Route path="/conta" element={<CustomerAccountPage />} />

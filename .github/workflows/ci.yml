@@ -103,6 +103,7 @@ jobs:
           HUBPAGES_TEST_DATABASE_URL: postgres://hubpages:ci-only-isolated-password@127.0.0.1:5432/hubpages_ci
           HUBPAGES_TEST_PUBLICATION: 'true'
         run: |
+          node scripts/test-saas-authority.mjs
           node scripts/test-import-store.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-custom-domains.mjs

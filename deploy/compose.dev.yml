@@ -22,6 +22,7 @@ services:
       - hubpages_dev_content:/data
     environment:
       HUBPAGES_ENV: development
+      HUBPAGES_SAAS_ADMIN_ENABLED: 'true'
       HUBPAGES_CUSTOM_DOMAINS_ENABLED: 'true'
       HUBPAGES_CUSTOM_DOMAIN_IPV4: 179.199.148.219
       HUBPAGES_CUSTOM_DOMAIN_TEST_HOST: teste.sistera.com.br
