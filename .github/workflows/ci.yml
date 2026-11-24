@@ -84,6 +84,7 @@ jobs:
           node scripts/test-studio-tracking.mjs
           node scripts/test-page-import.mjs
           node scripts/test-import-editor.cjs
+          node scripts/test-editor-tools-dock.cjs
           node scripts/test-custom-domains.mjs
           node scripts/test-custom-domain-http.mjs
           node scripts/test-domain-router.mjs

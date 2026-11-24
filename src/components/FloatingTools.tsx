@@ -1,7 +1,14 @@
-import {useEffect,useRef,useState,type ReactNode,type CSSProperties,type PointerEvent} from 'react'
+import {useContext,useEffect,useRef,useState,type ReactNode,type CSSProperties,type PointerEvent} from 'react'
+import {createPortal} from 'react-dom'
+import {EditorToolsContext} from './editor-tools-context'
 import {clampToolsPosition,type Point} from './floating-tools-position'
 const positions=new Map<string,Point>()
 export function FloatingTools({className,title,label,onClose,children}:{className:string;title:string;label:string;onClose:()=>void;children:ReactNode}){
+ const dock=useContext(EditorToolsContext)
+ if(dock){const target=className.includes('text-color-toolbar')?dock.text:dock.object;return target?createPortal(<section className={className+' editor-tools-group'} aria-label={label} data-hp-editor="true"><details open><summary>{title}</summary><button type="button" className="editor-tools-group-close" onPointerDown={event=>event.preventDefault()} onClick={onClose}>Fechar seleção</button>{children}</details></section>,target):null}
+ return <LegacyFloatingTools className={className} title={title} label={label} onClose={onClose}>{children}</LegacyFloatingTools>
+}
+function LegacyFloatingTools({className,title,label,onClose,children}:{className:string;title:string;label:string;onClose:()=>void;children:ReactNode}){
  const panel=useRef<HTMLDivElement>(null),drag=useRef<{x:number;y:number;left:number;top:number}|null>(null),[position,setPosition]=useState<Point|null>(()=>positions.get(label)||null)
  const place=(point:Point)=>{const rect=panel.current?.getBoundingClientRect();if(rect){const next=clampToolsPosition(point,rect.width,rect.height,window.innerWidth,window.innerHeight);positions.set(label,next);setPosition(next)}}
  useEffect(()=>{const fit=()=>{const rect=panel.current?.getBoundingClientRect();if(rect){const next=clampToolsPosition({left:rect.left,top:rect.top},rect.width,rect.height,window.innerWidth,window.innerHeight);positions.set(label,next);setPosition(next)}};window.addEventListener('resize',fit);return()=>window.removeEventListener('resize',fit)},[label])

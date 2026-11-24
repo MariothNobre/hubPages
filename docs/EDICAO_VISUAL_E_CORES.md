@@ -76,3 +76,11 @@ QA em docs/evidence/hp046: lista real com 13 elementos, fundo completo, F5, Undo
 No rodapé de cada bloco em Conteúdo, use ↕ Altura: arraste para cima/baixo ou use as setas do teclado. Também pode informar pixels; Automática (0) devolve a altura natural. Layout do bloco oferece o mesmo ajuste. A altura é mínima para preservar o conteúdo quando o texto quebra linhas no celular; reduzir não recorta textos/imagens. Blocos de origem com grades internas continuam respeitando as dimensões dos seus elementos: ajuste também as caixas internas quando necessário.
 
 O gesto salva ao soltar e gera uma ação de Desfazer. O campo segue o salvamento automático. O valor é preservado no F5, na duplicação e na prévia; a página no ar só muda ao publicar após revisar. Controles não aparecem no site publicado. Aplicação comum aos templates PT/ES, blocos adicionais e importados; nenhum valor é imposto a páginas existentes.
+
+## Coluna única de ferramentas — HP-062
+
+O editor reúne Layout, Botões/links, Cards/recursos, Adicionar, Caixas/objetos e Cores em uma coluna à direita. A seleção no canvas atualiza o contexto. Cores só aparecem ao editar um texto; objetos importados mostram suas próprias camadas, fundo, dimensões, posição e itens na mesma coluna. Selecione outro bloco para mudar o contexto. Recursos gerais da página continuam disponíveis no grupo Cards e recursos.
+
+Use × para recolher a coluna; a aba lateral Ferramentas permanece disponível para reabrir. A seleção, o canvas e os controles permanecem montados. Recolher/abrir não salva mudanças no conteúdo nem adiciona ações ao Desfazer. No desktop a coluna tem espaço próprio; em telas estreitas fica sobreposta à direita e pode ser recolhida para liberar o canvas. Desfazer fica acessível na parte superior, e cada grupo tem seu próprio recolhimento.
+
+As antigas janelas de objetos e cores são encaminhadas à coluna pelo contexto do editor; a alteração não modifica dados, estilos publicados, uploads, checkout ou publicação. Controles inline de mover/redimensionar continuam junto aos objetos. O recurso serve tanto aos modelos quanto às importações.
