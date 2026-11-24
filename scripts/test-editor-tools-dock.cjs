@@ -22,9 +22,9 @@ require.extensions['.css']=()=>{}
  assert.equal(latest.textColors.title,'#c62828','using dock controls preserves the text selection')
  assert.equal(field.getAttribute('data-text-color'),'#c62828')
  const before=changes
- await act(async()=>tab.click());assert.equal(sidebar.hidden,true);assert.equal(tab.getAttribute('aria-expanded'),'false')
+ await act(async()=>{tab.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true,composed:true}));tab.click()});assert.equal(sidebar.hidden,true);assert.equal(tab.getAttribute('aria-expanded'),'false')
  assert.ok(host.contains(field),'collapsing does not unmount the editable canvas')
- await act(async()=>tab.click());assert.equal(sidebar.hidden,false);assert.equal(changes,before,'show/hide never changes draft or undo')
+ await act(async()=>tab.click());assert.equal(sidebar.hidden,false);assert.equal(changes,before,'show/hide never changes draft or undo');assert.ok(sidebar.querySelector('[aria-label="Cor do texto selecionado"]'),'tab preserves selected text controls');await act(async()=>window.dispatchEvent(new window.Event('hubpages:editor-select-block')));assert.equal(sidebar.querySelector('[aria-label="Cor do texto selecionado"]'),null,'changing block clears the previous text target')
  await act(async()=>sidebar.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})))
  assert.equal(sidebar.hidden,true);await act(async()=>tab.click())
  const object=sidebar.querySelector('[aria-label="Objeto selecionado"]')
