@@ -28,3 +28,5 @@ As proteções de importação continuam iguais: somente o documento autorizado,
 Consultar /api/customer/config para ambiente e features.studio, features.pageImport, features.freePublishing e features.customDomains efetivos. Não substitui teste do fluxo: CI exerce autorização/HTTPS/limites e publicação importada em DEV e produção, com arquivo e PostgreSQL isolado. O teste visual local confirma conteúdo e F5. Entregas e backups em STEP_BY_STEP.md HP-051, HP-055, HP-057 e HP-059.
 
 O domínio teste.sistera.com.br permanece conectado somente ao DEV. A promoção não copia vínculos DNS, páginas ou usuários para produção. Cada domínio de produção deve ser conectado na página desejada no ambiente de produção.
+
+HP-062 / v0.12.3: coluna única contextual de ferramentas disponível nos dois ambientes. Publicação seletiva apenas do editor, sem promover módulos SaaS/administrativos em homologação. Recursos de edição/Undo/autosave e páginas publicadas preservados. Evidências e backups em STEP_BY_STEP.md.

@@ -221,3 +221,9 @@ server/saas-authority.mjs é inicializado somente com HUBPAGES_ENV=development, 
 APIs /api/saas/session e /api/saas/admin/{dashboard,users,audit} resolvem os cookies existentes no servidor, consultam permissões a cada chamada e limitam resultados a 100 cadastros/eventos. Cliente recebe 403 e visitante 401. Negativas auditadas com limite separado por sujeito. hubpages_saas_audit rejeita UPDATE/DELETE/TRUNCATE; somente campos fixos sem corpos ou segredos. Painel /studio/administracao e atalho condicional são apresentação; autorização efetiva reside no backend. Sem ações destrutivas, alteração de papéis ou cobrança nesta fase.
 
 Indicadores distinguem snapshots de páginas e memória do processo de métricas da VPS. Receita é null e integração financeira pendente. Fase seguinte amplia autenticação/SMTP e demais módulos, sem presumir que a primeira tela administrativa conclui o prompt mestre.
+
+## HP-062 — Coluna contextual do editor
+
+EditorToolsDock fornece um único destino de ferramentas e mantém canvas/outlets montados durante recolhimento. FloatingTools encaminha texto e objetos para portais no dock, com fallback preservado fora do editor. DockedCanvasTools integra seleção/organização de importações. Grupos de layout, links, recursos e inserção reaproveitam handlers existentes; posição/dimensões/fundos e Undo mantêm o mesmo contrato de dados. Fora do editor os renderizadores públicos não são alterados.
+
+Sidebar tem espaço próprio no desktop e posição fixa em telas estreitas, cabeçalho/Undo/rodapé fixos e conteúdo rolável. Regras são limitadas às classes do editor; não alteram as cores ou o layout de venda. Mudança de alvo de bloco/mídia limpa a seleção textual antiga; mostrar/recolher não produz alterações de conteúdo. Sem dependência nova, migração, mudança de identidade ou de publicação. Produção recebeu apenas os commits do editor; a arquitetura administrativa em homologação permanece separada.
