@@ -205,3 +205,9 @@ Tema separado system-theme.css, importado após estilos-base, usa tokens hp pró
 Tema do sistema passa a usar coral/laranja na etapa atual, tons pêssego nas etapas prontas, linha/progresso e comandos principais. Microinterações de hover são restritas a mouse com ponteiro fino: elevação/sombra e ícone discreto nos cards, feedback nos botões e seta dos atalhos. Movimento reduzido remove transições/deslocamentos e controles desabilitados não recebem hover animado. CSS continua excluindo conteúdo/canvas e prévias.
 
 Atalhos dos guias têm spans separados para texto/seta, alinhamento flexível e área mínima de 44 px, com foco e navegação por teclado preservados. A timeline recebeu padding para acomodar o badge e as sombras. Alterações só em apresentação: nenhuma rota, regra de publicação, banco, integração ou credencial foi alterada.
+
+## HP-062 — Coluna contextual do editor
+
+EditorToolsDock fornece um único destino de ferramentas e mantém canvas/outlets montados durante recolhimento. FloatingTools encaminha texto e objetos para portais no dock, com fallback preservado fora do editor. DockedCanvasTools integra seleção/organização de importações. Grupos de layout, links, recursos e inserção reaproveitam handlers existentes; posição/dimensões/fundos e Undo mantêm o mesmo contrato de dados. Fora do editor os renderizadores públicos não são alterados.
+
+Sidebar tem espaço próprio no desktop e posição fixa em telas estreitas, cabeçalho/Undo/rodapé fixos e conteúdo rolável. Regras são limitadas às classes do editor; não alteram as cores ou o layout de venda. Mudança de alvo de bloco/mídia limpa a seleção textual antiga; mostrar/recolher não produz alterações de conteúdo. Sem dependência nova, migração, mudança de identidade ou de publicação. Produção recebeu apenas os commits do editor; a arquitetura administrativa em homologação permanece separada.
