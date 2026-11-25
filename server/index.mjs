@@ -20,6 +20,7 @@ import { templates, templateInput } from './templates.mjs'
 import { createIdentityStore } from './identity-store.mjs'
 import { customerAuth, customerCookie, termsVersion } from './customer-auth.mjs'
 import { createSaasAuthority, saasDevEnabled } from './saas-authority.mjs'
+import {createAsaasSandbox} from './asaas-sandbox.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -51,6 +52,9 @@ const customDomains=customDomainStore?customDomainService({store:customDomainSto
 if(customDomains&&process.env.DATABASE_URL){const renew=()=>{void customDomains.renew().catch(()=>{})};setTimeout(renew,30000).unref();setInterval(renew,900000).unref()}
 const domainUpstream=domainRouter({service:customDomains,production:isProductionStudio,devFallback:process.env.HUBPAGES_CUSTOM_DOMAIN_DEV_ROUTER==='true'})
 const saasAuthority=saasDevEnabled(process.env,devPublicOrigin)?await createSaasAuthority({connectionString:process.env.DATABASE_URL,checkpointPath:process.env.HUBPAGES_SAAS_CHECKPOINT_PATH||'/data/saas-dev-preflight.json'}):null
+
+const asaasSandbox=saasAuthority?await createAsaasSandbox({connectionString:process.env.DATABASE_URL,secret:sessionSecret,origin:devPublicOrigin}):null
+if(asaasSandbox){const drain=()=>void asaasSandbox.drain().catch(()=>{});setInterval(drain,15000).unref();setTimeout(drain,2000).unref()}
 
 const sessionCookie = 'hubpages_admin'
 let credentialRevision = (await loadStore()).admin?.passwordHash ?? ''
@@ -368,6 +372,13 @@ async function handleApi(request, response, url) {
       throw error
     }
   }
+  if(url.pathname==='/api/saas/asaas/webhook'){
+    if(!asaasSandbox)return sendJson(response,404,{message:'Módulo indisponível neste ambiente.'})
+    if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'})
+    if(!await asaasSandbox.authenticate(request.headers['asaas-access-token']))return sendJson(response,401,{message:'Evento não autenticado.'})
+    try{return sendJson(response,200,await asaasSandbox.receive(await readJsonBody(request)))}
+    catch(error){return sendJson(response,error.status||(error instanceof SyntaxError?400:503),{message:error.status?error.message:error instanceof SyntaxError?'Evento inválido.':'Não foi possível registrar o evento. Tente novamente.'})}
+  }
   if(url.pathname.startsWith('/api/saas/')) {
     if(!saasAuthority)return sendJson(response,404,{message:'Módulo indisponível neste ambiente.'})
     response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
@@ -376,6 +387,25 @@ async function handleApi(request, response, url) {
       const identity=await saasAuthority.identity(customer,!customer&&hasValidSession(request))
       if(!identity)return sendJson(response,401,{message:'Entre na sua conta para continuar.'})
       if(url.pathname==='/api/saas/session'&&request.method==='GET')return sendJson(response,200,identity)
+      if(url.pathname.startsWith('/api/saas/admin/asaas/')){
+        await saasAuthority.require(identity,'admin.billing.manage')
+        const action=url.pathname.slice('/api/saas/admin/asaas/'.length)
+        if(action==='status'&&request.method==='GET')return sendJson(response,200,await asaasSandbox.status())
+        if(!['settings','verify','webhook','lab','confirm','reconcile'].includes(action))return sendJson(response,404,{message:'Recurso não encontrado.'})
+        if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'})
+        if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+        const body=await readJsonBody(request)
+        if(!canAttemptLogin('asaas-action:'+identity.subject))return sendJson(response,429,{message:'Muitas tentativas. Aguarde 15 minutos.'})
+        const encoded=customer?.passwordHash||(await loadStore()).admin?.passwordHash
+        if(typeof body.currentPassword!=='string'||body.currentPassword.length>200||!encoded||!verifyEncodedSecret(body.currentPassword,encoded))return sendJson(response,403,{message:'Confirme sua senha atual para configurar o Sandbox.'})
+        loginAttempts.delete('asaas-action:'+identity.subject)
+        if(action==='settings')return sendJson(response,200,await asaasSandbox.save(body,identity.subject))
+        if(action==='verify')return sendJson(response,200,await asaasSandbox.verify())
+        if(action==='webhook'){await asaasSandbox.provision(identity.subject);return sendJson(response,200,await asaasSandbox.status())}
+        if(action==='lab'){await asaasSandbox.lab(identity.subject);return sendJson(response,200,await asaasSandbox.status())}
+        if(action==='confirm'){await asaasSandbox.confirm(identity.subject);return sendJson(response,200,await asaasSandbox.status())}
+        await asaasSandbox.drain();return sendJson(response,200,await asaasSandbox.status())
+      }
       const routes={'/api/saas/admin/dashboard':['admin.dashboard.read',()=>saasAuthority.dashboard()],'/api/saas/admin/users':['admin.users.read',async()=>({users:await saasAuthority.users()})],'/api/saas/admin/audit':['admin.audit.read',async()=>({events:await saasAuthority.events(url.searchParams.get('before'))})]}
       const route=routes[url.pathname]
       if(!route)return sendJson(response,404,{message:'Recurso não encontrado.'})
