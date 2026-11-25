@@ -8,7 +8,7 @@ export function saasDevEnabled(env, origin) {
   (origin === 'https://dev.hubpages.com.br' || /^http:\/\/localhost:\d+$/.test(origin))
 }
 const digest = value => createHash('sha256').update(value).digest('hex')
-const permissions = Object.freeze({super_admin: ['admin.dashboard.read','admin.users.read','admin.audit.read'], customer: []})
+const permissions = Object.freeze({super_admin: ['admin.dashboard.read','admin.users.read','admin.audit.read','admin.billing.manage'], customer: []})
 export const authorityError = (status, message) => Object.assign(new Error(message), {status})
 
 // No client-provided role, email or account identifier is accepted as authority.

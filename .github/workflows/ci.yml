@@ -105,6 +105,7 @@ jobs:
           HUBPAGES_TEST_PUBLICATION: 'true'
         run: |
           node scripts/test-saas-authority.mjs
+          node scripts/test-asaas-sandbox.mjs
           node scripts/test-import-store.mjs
           HUBPAGES_TEST_PRODUCTION=true node scripts/test-import-store.mjs
           node scripts/test-custom-domains.mjs
