@@ -16,11 +16,11 @@ export function secretVault(secret){
 }
 export function sandboxClient(key,transport=fetch){
  return async(path,method='GET',body)=>{
-  if(!/^\/(myAccount\/status|webhooks(?:\/[\w-]+)?|customers|subscriptions(?:\/[\w-]+\/payments)?|payments\/[\w-]+|sandbox\/payment\/[\w-]+\/confirm)(?:\?[\w%=&-]+)?$/.test(path))throw authorityError(422,'Operação Sandbox não permitida.')
+  if(!/^\/(myAccount\/status|webhooks(?:\/[\w-]+)?|customers(?:\/[\w-]+)?|subscriptions(?:\/[\w-]+\/payments)?|payments\/[\w-]+|sandbox\/payment\/[\w-]+\/confirm)(?:\?[\w%=&-]+)?$/.test(path))throw authorityError(422,'Operação Sandbox não permitida.')
   let response
   try{response=await transport(sandboxBase+path,{method,redirect:'error',signal:AbortSignal.timeout(15000),headers:{access_token:key,'User-Agent':'HubPages-Sandbox/1.0',Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})})}
   catch{throw authorityError(502,'O Sandbox não respondeu. Confira o estado antes de repetir a operação.')}
-  if(!response.ok){await response.body?.cancel();throw authorityError(response.status===401||response.status===403?422:502,response.status===401||response.status===403?'Chave Sandbox inválida ou sem permissão.':'O Asaas Sandbox recusou a operação. Consulte os logs na conta Sandbox.')}
+  if(!response.ok){await response.body?.cancel();throw Object.assign(authorityError(response.status===401||response.status===403?422:502,response.status===401||response.status===403?'Chave Sandbox inválida ou sem permissão.':'O Asaas Sandbox recusou a operação. Consulte os logs na conta Sandbox.'),{providerStatus:response.status})}
   const reader=response.body.getReader();let size=0;const chunks=[]
   try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>512*1024)throw new Error('large');chunks.push(Buffer.from(value))}return JSON.parse(Buffer.concat(chunks).toString('utf8'))}
   catch{await reader.cancel().catch(()=>{});throw authorityError(502,'Resposta inválida do Sandbox.')}
@@ -102,6 +102,14 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
   // A persistent attempt marker is committed BEFORE each remote POST. If its outcome
   // is uncertain, recovery only queries by reference; it never blindly retries POST.
   const call=await api(),reference='hubpages-dev-sandbox-lab-v1'
+  // Public example from Asaas documentation; synthetic Sandbox customer only.
+  const testDocument='24971563792'
+  const createStep=async(path,payload,rejectedPhase)=>{try{return await call(path,'POST',payload)}catch(error){
+   // A definitive validation rejection created no resource. Network/5xx/429
+   // outcomes keep their uncertain marker and must only be recovered via GET.
+   if([400,422].includes(error.providerStatus))await pool.query('UPDATE hubpages_asaas_lab SET phase=$1 WHERE id=1',[rejectedPhase])
+   throw error
+  }}
   await pool.query('INSERT INTO hubpages_asaas_lab(id) VALUES(1) ON CONFLICT DO NOTHING')
   let row=(await pool.query('SELECT * FROM hubpages_asaas_lab WHERE id=1')).rows[0]
   if(!row.customer_id){
@@ -111,7 +119,7 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
    if(!customer){
     if(row.phase!=='new')throw authorityError(409,'Tentativa anterior em conciliação. Confira os logs do Sandbox antes de repetir.')
     await pool.query("UPDATE hubpages_asaas_lab SET phase='customer_requested' WHERE id=1")
-    customer=await call('/customers','POST',{name:'HubPages DEV — Cliente fictício',externalReference:reference,notificationDisabled:true})
+    customer=await createStep('/customers',{name:'HubPages DEV — Cliente fictício',cpfCnpj:testDocument,externalReference:reference,notificationDisabled:true},'new')
    }
    if(!validId(customer.id))throw authorityError(502,'Cliente de teste inválido.')
    await pool.query("UPDATE hubpages_asaas_lab SET customer_id=$1,phase='customer_ready' WHERE id=1",[customer.id])
@@ -125,7 +133,7 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
     if(row.phase!=='customer_ready')throw authorityError(409,'Assinatura anterior em conciliação. Confira os logs do Sandbox.')
     await pool.query("UPDATE hubpages_asaas_lab SET phase='subscription_requested' WHERE id=1")
     const nextDueDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
-    subscription=await call('/subscriptions','POST',{customer:row.customer_id,billingType:'UNDEFINED',value:5,nextDueDate,cycle:'MONTHLY',maxPayments:1,externalReference:reference,description:'HubPages DEV — simulação técnica, sem dinheiro real'})
+    subscription=await createStep('/subscriptions',{customer:row.customer_id,billingType:'UNDEFINED',value:5,nextDueDate,cycle:'MONTHLY',maxPayments:1,externalReference:reference,description:'HubPages DEV — simulação técnica, sem dinheiro real'},'customer_ready')
    }
    if(!validId(subscription.id)||subscription.customer!==row.customer_id||Number(subscription.value)!==5)throw authorityError(502,'Assinatura de teste divergente.')
    await transaction(async c=>{await c.query("UPDATE hubpages_asaas_lab SET subscription_id=$1,phase='subscription_ready' WHERE id=1",[subscription.id]);await audit(c,actor,'asaas.lab.created')})

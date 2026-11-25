@@ -12,7 +12,7 @@ const client=sandboxClient(key,async(url,options)=>{called++;assert.equal(url,sa
 await client('/myAccount/status');assert.equal(called,1)
 for(const path of ['https://api.asaas.com/v3/customers','//evil.test','/transfers','/payments/../../transfers'])await assert.rejects(client(path),/não permitida/)
 const refusal=sandboxClient(key,async()=>Response.json({errors:[{description:key}]},{status:401}))
-await assert.rejects(refusal('/myAccount/status'),e=>!e.message.includes(key)&&e.status===422)
+await assert.rejects(refusal('/myAccount/status'),e=>!e.message.includes(key)&&e.status===422&&e.providerStatus===401)
 await assert.rejects(sandboxClient(key,async()=>new Response('x'.repeat(524289)))('/myAccount/status'),/Resposta inválida/)
 const database=process.env.HUBPAGES_TEST_DATABASE_URL
 if(!database){console.log('PASS: Sandbox fixed network, secret isolation, bounded responses and safe errors. PostgreSQL tests run in CI.');process.exit(0)}
@@ -23,7 +23,7 @@ const target=new URL(database);target.searchParams.set('options','-c search_path
 const db=new pg.Pool({connectionString:target.href,max:1})
 await db.query('CREATE TABLE hubpages_schema_migrations(version integer PRIMARY KEY)')
 await db.query(await readFile(new URL('../server/migrations/011-saas-authority.sql',import.meta.url),'utf8'))
-let hook=null,customer=null,subscription=null,payment=null,customerPosts=0,subPosts=0,confirmPosts=0
+let hook=null,customer=null,subscription=null,payment=null,customerPosts=0,subPosts=0,confirmPosts=0,unknownCustomerReply=true,rejectSubscription=true
 const transport=async(url,o)=>{
  assert.ok(url.startsWith(sandboxBase+'/'));assert.equal(o.headers.access_token,key);assert.equal(o.redirect,'error')
  const path=url.slice(sandboxBase.length),body=o.body?JSON.parse(o.body):undefined
@@ -32,9 +32,9 @@ const transport=async(url,o)=>{
  if(path==='/webhooks'&&o.method==='POST'){hook={...body,id:'wh_1'};return Response.json(hook)}
  if(path==='/webhooks/wh_1'&&o.method==='PUT'){hook={...body,id:'wh_1'};return Response.json(hook)}
  if(path.startsWith('/customers?'))return Response.json({data:customer?[customer]:[]})
- if(path==='/customers'&&o.method==='POST'){customerPosts++;customer={...body,id:'cus_1'};return Response.json(customer)}
+ if(path==='/customers'&&o.method==='POST'){customerPosts++;customer={...body,id:'cus_1'};if(unknownCustomerReply){unknownCustomerReply=false;throw new Error('Synthetic lost reply')}return Response.json(customer)}
  if(path.startsWith('/subscriptions?'))return Response.json({data:subscription?[subscription]:[]})
- if(path==='/subscriptions'&&o.method==='POST'){subPosts++;subscription={...body,id:'sub_1'};payment={id:'pay_1',customer:'cus_1',subscription:'sub_1',value:5,status:'PENDING',invoiceUrl:'https://sandbox.asaas.com/i/test'};return Response.json(subscription)}
+ if(path==='/subscriptions'&&o.method==='POST'){if(rejectSubscription){rejectSubscription=false;return Response.json({errors:[{code:'invalid_object',description:'Synthetic validation rejection'}]},{status:400})}subPosts++;subscription={...body,id:'sub_1'};payment={id:'pay_1',customer:'cus_1',subscription:'sub_1',value:5,status:'PENDING',invoiceUrl:'https://sandbox.asaas.com/i/test'};return Response.json(subscription)}
  if(path.startsWith('/subscriptions/sub_1/payments'))return Response.json({data:[payment]})
  if(path==='/payments/pay_1')return Response.json(payment)
  if(path==='/sandbox/payment/pay_1/confirm'&&o.method==='POST'){confirmPosts++;payment.status='RECEIVED';return Response.json(payment)}
@@ -52,7 +52,11 @@ try{
  await service.provision('admin');await service.provision('admin');assert.equal(hook.url,'https://dev.hubpages.com.br/api/saas/asaas/webhook')
  assert.equal(await service.authenticate(hook.authToken),true);assert.equal(await service.authenticate(hook.authToken+'x'),false)
  const publicState=JSON.stringify(await service.status());assert.ok(!publicState.includes(key));assert.ok(!publicState.includes(hook.authToken))
- await service.lab('admin');await service.lab('admin');assert.equal(customerPosts,1);assert.equal(subPosts,1);assert.equal(subscription.maxPayments,1);assert.equal(subscription.value,5)
+ await assert.rejects(service.lab('admin'),/não respondeu/)
+ assert.equal((await db.query('SELECT phase FROM hubpages_asaas_lab WHERE id=1')).rows[0].phase,'customer_requested')
+ await assert.rejects(service.lab('admin'),e=>e.providerStatus===400)
+ assert.equal((await db.query('SELECT phase FROM hubpages_asaas_lab WHERE id=1')).rows[0].phase,'customer_ready')
+ await service.lab('admin');await service.lab('admin');assert.equal(customerPosts,1);assert.equal(customer.cpfCnpj,'24971563792');assert.equal(subPosts,1);assert.equal(subscription.maxPayments,1);assert.equal(subscription.value,5)
  await service.confirm('admin');await service.confirm('admin');assert.equal(confirmPosts,1);assert.equal((await service.status()).lab.paymentStatus,'RECEIVED')
  const event={id:'evt_duplicate',event:'PAYMENT_RECEIVED',payment:{id:'pay_1',value:999,status:'RECEIVED'}}
  await Promise.all([service.receive(event),service.receive(event)]);assert.equal((await db.query('SELECT count(*)::int AS n FROM hubpages_asaas_events WHERE id=$1',[event.id])).rows[0].n,1)
