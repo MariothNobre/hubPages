@@ -21,7 +21,7 @@ const schema='asaas_ci_'+randomBytes(6).toString('hex'),root=new pg.Pool({connec
 await root.query(`CREATE SCHEMA ${schema}`)
 const target=new URL(database);target.searchParams.set('options','-c search_path='+schema)
 const db=new pg.Pool({connectionString:target.href,max:1})
-await db.query('CREATE TABLE hubpages_schema_migrations(version integer PRIMARY KEY)')
+await db.query(await readFile(new URL('../server/migrations/001-customer-identity.sql',import.meta.url),'utf8'))
 await db.query(await readFile(new URL('../server/migrations/011-saas-authority.sql',import.meta.url),'utf8'))
 let hook=null,customer=null,subscription=null,payment=null,customerPosts=0,subPosts=0,confirmPosts=0,unknownCustomerReply=true,rejectSubscription=true
 const transport=async(url,o)=>{
