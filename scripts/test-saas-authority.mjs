@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os'
 import {join,resolve} from 'node:path'
 import pg from 'pg'
 import {saasDevEnabled} from '../server/saas-authority.mjs'
+import {secretVault} from '../server/asaas-sandbox.mjs'
 
 assert.equal(saasDevEnabled({HUBPAGES_ENV:'production',HUBPAGES_SAAS_ADMIN_ENABLED:'true'},'https://hubpages.com.br'),false)
 assert.equal(saasDevEnabled({HUBPAGES_ENV:'development',HUBPAGES_SAAS_ADMIN_ENABLED:'true'},'https://hubpages.com.br'),false)
@@ -68,6 +69,17 @@ try{
  assert.equal((await fetch(base+'/api/saas/admin/asaas/settings',{method:'POST',headers:{Cookie:admin,'Content-Type':'application/json'},body:JSON.stringify({currentPassword:password,key:'bad'})})).status,403)
  assert.equal((await request('/api/saas/admin/asaas/settings','POST',{currentPassword:password,key:'$aact_prod_bad',email:'test@example.test'},admin)).status,422)
  assert.equal((await request('/api/saas/asaas/webhook','POST',{id:'evt_1'})).status,401)
+ // A slow webhook upload cannot hold the global editor/API queue.
+ const vault=secretVault('local-only-saas-session-secret'),hookToken='ci-only-webhook-authentication-token-123'
+ await pool.query('INSERT INTO hubpages_asaas_config(id,key_cipher,webhook_cipher,email) VALUES(1,$1,$2,$3)',[vault.seal('$aact_hmlg_ci_fake_key_only_123456789'),vault.seal(hookToken),'qa@example.test'])
+ let releaseBody
+ const slowBody=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('{'));releaseBody=()=>{controller.enqueue(new TextEncoder().encode('"id":"evt_concurrency","event":"SUBSCRIPTION_CREATED","subscription":{"id":"sub_ci"}}'));controller.close()}}})
+ const slowRequest=fetch(base+'/api/saas/asaas/webhook',{method:'POST',headers:{'asaas-access-token':hookToken,'Content-Type':'application/json'},body:slowBody,duplex:'half'})
+ await new Promise(resolve=>setTimeout(resolve,100))
+ let timeout,available
+ try{available=await Promise.race([request('/api/platform/profile','GET',undefined,admin).then(r=>r.status===200),new Promise(resolve=>{timeout=setTimeout(()=>resolve(false),1500)})])}finally{clearTimeout(timeout);releaseBody()}
+ assert.equal((await slowRequest).status,200)
+ assert.equal(available,true,'Webhook must not block Studio API')
  const audit=await(await request('/api/saas/admin/audit','GET',undefined,admin)).json()
  assert.equal(audit.events.filter(e=>e.action==='role.bootstrap').length,1)
  assert.ok(audit.events.some(e=>e.action==='permission.denied'&&e.outcome==='denied'))

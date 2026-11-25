@@ -672,6 +672,7 @@ async function serveStatic(response, pathname, request) {
 }
 
 let apiQueue = Promise.resolve()
+let asaasQueue = Promise.resolve()
 createServer(async (request, response) => {
   securityHeaders(response)
   try {
@@ -695,6 +696,14 @@ createServer(async (request, response) => {
     if(['/api/public/meta/events','/api/public/traffic'].includes(url.pathname))return await handleApi(request,response,url)
     if(postgresStore&&url.pathname.match(/^\/api\/platform\/pages\/[a-f0-9-]{36}\/domains/))return await handleApi(request,response,url)
     if(url.pathname==='/api/platform/imports')return await handleApi(request,response,url)
+    // Sandbox provider latency must not stall page editing or webhook delivery.
+    if(asaasSandbox&&url.pathname==='/api/saas/asaas/webhook')return await handleApi(request,response,url)
+    if(asaasSandbox&&url.pathname.startsWith('/api/saas/admin/asaas/')){
+      if(request.method==='GET')return await handleApi(request,response,url)
+      const task=asaasQueue.then(()=>handleApi(request,response,url))
+      asaasQueue=task.catch(()=>undefined)
+      return await task
+    }
     if (url.pathname.startsWith('/api/')) {
       const task = apiQueue.then(() => handleApi(request, response, url))
       apiQueue = task.catch(() => undefined)
