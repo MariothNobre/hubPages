@@ -73,7 +73,7 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
  })
  const authenticate=async(token)=>{const row=await config();if(!row||typeof token!=='string'||token.length>256)return false;const a=Buffer.from(token),b=Buffer.from(vault.open(row.webhook_cipher));return a.length===b.length&&timingSafeEqual(a,b)}
  const receive=async(body)=>{
-  if(!body||!validId(body.id)||!webhookEvents.includes(body.event))throw authorityError(422,'Evento Sandbox inválido.')
+  if(!body||typeof body.id!=='string'||!/^evt_[a-zA-Z0-9_&.-]{1,156}$/.test(body.id)||!webhookEvents.includes(body.event))throw authorityError(422,'Evento Sandbox inválido.')
   const resource=body.event.startsWith('PAYMENT_')?body.payment?.id:body.subscription?.id
   if(!validId(resource))throw authorityError(422,'Referência Sandbox inválida.')
   await pool.query('INSERT INTO hubpages_asaas_events(id,event_type,resource_id) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[body.id,body.event,resource])

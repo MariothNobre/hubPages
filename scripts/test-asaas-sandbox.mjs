@@ -58,7 +58,7 @@ try{
  assert.equal((await db.query('SELECT phase FROM hubpages_asaas_lab WHERE id=1')).rows[0].phase,'customer_ready')
  await service.lab('admin');await service.lab('admin');assert.equal(customerPosts,1);assert.equal(customer.cpfCnpj,'24971563792');assert.equal(subPosts,1);assert.equal(subscription.maxPayments,1);assert.equal(subscription.value,5)
  await service.confirm('admin');await service.confirm('admin');assert.equal(confirmPosts,1);assert.equal((await service.status()).lab.paymentStatus,'RECEIVED')
- const event={id:'evt_duplicate',event:'PAYMENT_RECEIVED',payment:{id:'pay_1',value:999,status:'RECEIVED'}}
+ const event={id:'evt_05b708f961d739ea7eba7e4db318f621&368604920',event:'PAYMENT_RECEIVED',payment:{id:'pay_1',value:999,status:'RECEIVED'}}
  await Promise.all([service.receive(event),service.receive(event)]);assert.equal((await db.query('SELECT count(*)::int AS n FROM hubpages_asaas_events WHERE id=$1',[event.id])).rows[0].n,1)
  payment.status='REFUNDED';await service.drain();assert.equal((await service.status()).lab.paymentStatus,'REFUNDED')
  // Replaying a stale RECEIVED message can never restore a refund: GET is authoritative.
