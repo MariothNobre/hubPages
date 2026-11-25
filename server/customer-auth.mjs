@@ -1,6 +1,6 @@
 import { randomBytes, createHash, scryptSync, timingSafeEqual } from 'node:crypto'
 export const customerCookie = 'hubpages_customer'
-export const termsVersion = process.env.HUBPAGES_ENV==='production'?'plataforma-2026-11-21':'homologacao-2026-11-19'
+export const termsVersion = process.env.HUBPAGES_ENV==='production'?'plataforma-2026-11-21':process.env.HUBPAGES_SAAS_ADMIN_ENABLED==='true'?'gold-sandbox-2026-11-25':'homologacao-2026-11-19'
 const duration = 8 * 60 * 60
 const digest = (token) => createHash('sha256').update(token).digest('hex')
 const error = (status, message) => Object.assign(new Error(message), { status })

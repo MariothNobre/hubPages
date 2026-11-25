@@ -21,6 +21,7 @@ import { createIdentityStore } from './identity-store.mjs'
 import { customerAuth, customerCookie, termsVersion } from './customer-auth.mjs'
 import { createSaasAuthority, saasDevEnabled } from './saas-authority.mjs'
 import {createAsaasSandbox} from './asaas-sandbox.mjs'
+import {reservedGoldEmail} from './gold-annual.mjs'
 
 const port = Number(process.env.PORT ?? 8080)
 const staticDir = resolve(process.env.STATIC_DIR ?? '/app/public')
@@ -62,6 +63,8 @@ const revokedAdminSessions=new Map(Object.entries((await loadStore()).revokedAdm
 const sessionDurationSeconds = 60 * 60 * 8
 const maxBodyBytes = 64 * 1024
 const loginAttempts = new Map()
+const goldLimits=new Map()
+function allowGoldAction(subject){const now=Date.now();for(const [key,value]of goldLimits)if(value.until<now)goldLimits.delete(key);let value=goldLimits.get(subject);if(!value){if(goldLimits.size>5000)return false;value={until:now+60000,count:0};goldLimits.set(subject,value)}return ++value.count<=8}
 const onlineSessions = new Map()
 const lastCountedVisits = new Map()
 const salesPageSlugs = new Set(['infancia_alem_das_telas', 'infancia_alem_das_telas_es'])
@@ -99,6 +102,8 @@ async function readJsonBody(request, limit = maxBodyBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
+
+async function readGoldProfileBody(request){const body=await readJsonBody(request);if(asaasSandbox&&reservedGoldEmail(body.email)){const customer=await customers?.resolve(parseCookies(request)[customerCookie]);if(!customer||!reservedGoldEmail(customer.email))throw new PlatformError(409,'Este e-mail é reservado à conta isenta existente.')}return body}
 
 function parseCookies(request) {
   return Object.fromEntries((request.headers.cookie ?? '').split(';').map((item) => item.trim()).filter(Boolean).map((item) => {
@@ -350,7 +355,7 @@ async function handleApi(request, response, url) {
     if (request.method !== 'GET' && !hasAllowedOrigin(request)) return sendJson(response, 403, { message: 'Origem não autorizada.' })
     const token = parseCookies(request)[customerCookie]
     try {
-      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled,...(saasAuthority?{saasAdmin:true}:{})}, domainPolicy:customDomainsEnabled?{requiresConnectedParent:false,individualDnsProof:true}:null, environment: isProductionStudio?'production':'development', emailDeliveryConfigured: false })
+      if (request.method === 'GET' && url.pathname === '/api/customer/config') return sendJson(response, 200, { termsVersion, registrationEnabled: process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED === 'true', features:{studio:unifiedStudio,pageImport:Boolean(platformStore),freePublishing,customDomains:customDomainsEnabled,...(saasAuthority?{saasAdmin:true}:{})}, domainPolicy:customDomainsEnabled?{requiresConnectedParent:false,individualDnsProof:true}:null, environment: isProductionStudio?'production':'development', ...(asaasSandbox?{gold:{enabled:true,plan:await asaasSandbox.gold.plan()}}:{}), emailDeliveryConfigured: false })
       if (request.method === 'GET' && url.pathname === '/api/customer/session') { const user = await customers.resolve(token); return sendJson(response, 200, { authenticated: Boolean(user), ...(user ? { user: await customers.readProfile(token) } : {}) }) }
       if (request.method === 'POST' && ['/api/customer/register', '/api/customer/login'].includes(url.pathname)) {
         const key = `${url.pathname}:${request.socket.remoteAddress}`
@@ -358,13 +363,14 @@ async function handleApi(request, response, url) {
         const body = await readJsonBody(request)
         if (url.pathname.endsWith('/register') && process.env.HUBPAGES_CUSTOMER_SIGNUP_ENABLED !== 'true') return sendJson(response, 403, { message: 'Cadastro ainda não liberado neste ambiente.' })
         const state = await loadStore()
+        if(asaasSandbox&&url.pathname.endsWith('/register')&&reservedGoldEmail(body.email))return sendJson(response,409,{message:'Esta conta isenta é reservada. Use o acesso existente ou procure a administração.'})
         const result = url.pathname.endsWith('/register') ? await customers.register(body, state.admin?.email ?? adminEmail) : await customers.login(body)
         loginAttempts.delete(key)
         return sendJson(response, url.pathname.endsWith('/register') ? 201 : 200, { user: result.user }, { 'Set-Cookie': result.cookie })
       }
       if (request.method === 'POST' && url.pathname === '/api/customer/logout') return sendJson(response, 200, { authenticated: false }, { 'Set-Cookie': await customers.logout(token) })
       if (request.method === 'GET' && url.pathname === '/api/customer/profile') return sendJson(response, 200, await customers.readProfile(token))
-      if (request.method === 'PUT' && url.pathname === '/api/customer/profile') { const state = await loadStore(); return sendJson(response, 200, await customers.updateProfile(token, await readJsonBody(request), state.admin?.email ?? adminEmail)) }
+      if (request.method === 'PUT' && url.pathname === '/api/customer/profile') { const state = await loadStore(); return sendJson(response, 200, await customers.updateProfile(token, await readGoldProfileBody(request), state.admin?.email ?? adminEmail)) }
       return sendJson(response, 404, { message: 'Recurso não encontrado.' })
     } catch (error) {
       if (error.code === '23505') return sendJson(response, 409, { message: 'Este e-mail não está disponível.' })
@@ -386,12 +392,23 @@ async function handleApi(request, response, url) {
       const customer=await customers?.resolve(parseCookies(request)[customerCookie])
       const identity=await saasAuthority.identity(customer,!customer&&hasValidSession(request))
       if(!identity)return sendJson(response,401,{message:'Entre na sua conta para continuar.'})
+      if(url.pathname.startsWith('/api/saas/gold/')){
+        const action=url.pathname.slice('/api/saas/gold/'.length)
+        if(action==='access'&&request.method==='GET')return sendJson(response,200,await asaasSandbox.gold.status(identity))
+        if(!['checkout','refresh'].includes(action))return sendJson(response,404,{message:'Recurso não encontrado.'})
+        if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'})
+        if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
+        if(!allowGoldAction(identity.subject))return sendJson(response,429,{message:'Aguarde um minuto antes de conferir novamente.'})
+        const body=await readJsonBody(request)
+        return sendJson(response,200,action==='checkout'?await asaasSandbox.gold.checkout(customer,identity,body):await asaasSandbox.gold.sync(identity))
+      }
       if(url.pathname==='/api/saas/session'&&request.method==='GET')return sendJson(response,200,identity)
       if(url.pathname.startsWith('/api/saas/admin/asaas/')){
         await saasAuthority.require(identity,'admin.billing.manage')
         const action=url.pathname.slice('/api/saas/admin/asaas/'.length)
+        if(action==='gold'&&request.method==='GET')return sendJson(response,200,await asaasSandbox.gold.adminStatus())
         if(action==='status'&&request.method==='GET')return sendJson(response,200,await asaasSandbox.status())
-        if(!['settings','verify','webhook','lab','confirm','reconcile'].includes(action))return sendJson(response,404,{message:'Recurso não encontrado.'})
+        if(!['settings','verify','webhook','lab','confirm','reconcile','gold-price','gold-confirm'].includes(action))return sendJson(response,404,{message:'Recurso não encontrado.'})
         if(request.method!=='POST')return sendJson(response,405,{message:'Método não permitido.'})
         if(!hasAllowedOrigin(request))return sendJson(response,403,{message:'Origem não autorizada.'})
         const body=await readJsonBody(request)
@@ -399,6 +416,8 @@ async function handleApi(request, response, url) {
         const encoded=customer?.passwordHash||(await loadStore()).admin?.passwordHash
         if(typeof body.currentPassword!=='string'||body.currentPassword.length>200||!encoded||!verifyEncodedSecret(body.currentPassword,encoded))return sendJson(response,403,{message:'Confirme sua senha atual para configurar o Sandbox.'})
         loginAttempts.delete('asaas-action:'+identity.subject)
+        if(action==='gold-price'){await asaasSandbox.gold.price(body,identity.subject);return sendJson(response,200,await asaasSandbox.gold.adminStatus())}
+        if(action==='gold-confirm'){await asaasSandbox.gold.confirm(body.accountId,identity.subject);return sendJson(response,200,await asaasSandbox.gold.adminStatus())}
         if(action==='settings')return sendJson(response,200,await asaasSandbox.save(body,identity.subject))
         if(action==='verify')return sendJson(response,200,await asaasSandbox.verify())
         if(action==='webhook'){await asaasSandbox.provision(identity.subject);return sendJson(response,200,await asaasSandbox.status())}
@@ -442,15 +461,20 @@ async function handleApi(request, response, url) {
     try {
       if(url.pathname==='/api/platform/preferences'&&['GET','PUT'].includes(request.method))return sendJson(response,200,await platformStore.preferences(ownerId,request.method==='PUT'?(await readJsonBody(request)):undefined))
       if(url.pathname==='/api/platform/profile'){
-        if(request.method==='GET')return sendJson(response,200,{role:isAdmin?'admin':'customer',...(customer?await customers.readProfile(parseCookies(request)[customerCookie]):{name:state.admin?.name||'',email:state.admin?.email||adminEmail})})
+        if(request.method==='GET')return sendJson(response,200,{role:isAdmin?'admin':'customer',...(asaasSandbox?{goldPlan:true}:{}),...(customer?await customers.readProfile(parseCookies(request)[customerCookie]):{name:state.admin?.name||'',email:state.admin?.email||adminEmail})})
         if(request.method==='PUT'){
           const body=await readJsonBody(request)
+          if(asaasSandbox&&customer&&reservedGoldEmail(body.email)&&!reservedGoldEmail(customer.email))throw new PlatformError(409,'Este e-mail é reservado à conta isenta existente.')
           if(customer)return sendJson(response,200,await customers.updateProfile(parseCookies(request)[customerCookie],body,state.admin?.email||adminEmail))
           if(typeof body.currentPassword!=='string'||!verifyEncodedSecret(body.currentPassword,state.admin.passwordHash))return sendJson(response,403,{message:'Senha atual incorreta.'})
           if(typeof body.name!=='string'||body.name.length>120||typeof body.email!=='string'||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)||body.email.length>254||body.newPassword&&(typeof body.newPassword!=='string'||body.newPassword.length<12||body.newPassword.length>200))throw new PlatformError(422,'Confira nome, e-mail e a nova senha (mínimo de 12 caracteres).')
           state.admin.name=body.name.trim();state.admin.email=body.email.trim().toLowerCase();if(body.newPassword)state.admin.passwordHash=hashSecret(body.newPassword);await saveStore(state);credentialRevision=state.admin.passwordHash
           return sendJson(response,200,{name:state.admin.name,email:state.admin.email,role:'admin'})
         }
+      }
+      if(asaasSandbox){
+        const identity=await saasAuthority.identity(customer,isAdmin),goldAccess=await asaasSandbox.gold.access(identity)
+        if(!goldAccess.allowed)return sendJson(response,402,{message:'Ative seu Plano Gold anual para acessar o Studio.',code:'GOLD_PAYMENT_REQUIRED',paymentUrl:'/studio/assinatura'})
       }
       if(url.pathname==='/api/platform/metrics'&&request.method==='GET')return sendJson(response,200,{metrics:await platformStore.summary(ownerId)})
       const modelPreview=url.pathname.match(/^\/api\/platform\/templates\/([a-z_]+)\/preview$/);if(modelPreview&&request.method==='GET'&&templates.some(model=>model.id===modelPreview[1]))return sendJson(response,200,{draft:validateDraft({...templateInput({template:modelPreview[1]}),checkoutUrl:'#oferta'})})
@@ -680,11 +704,11 @@ createServer(async (request, response) => {
     if(['/api/domains/tls','/api/domains/route'].includes(url.pathname)&&request.method==='GET'){const upstream=await domainUpstream(String(url.searchParams.get('domain')||'').toLowerCase());if(upstream&&url.pathname.endsWith('/route'))response.setHeader('X-HubPages-Upstream',upstream);return sendJson(response,upstream?200:403,{allowed:Boolean(upstream)})}
     const centralHost=request.headers.host===new URL(devPublicOrigin).host||allowedOrigins.has('https://'+request.headers.host)||request.headers.host===`localhost:${port}`||request.headers.host===`127.0.0.1:${port}`
     if(!centralHost){const hostname=String(request.headers.host||'').toLowerCase();if(!customDomains)return sendJson(response,404,{message:'Página não encontrada.'});const proof=url.pathname==='/.well-known/hubpages-connection',binding=await customDomains.binding(hostname,{proof});if(!binding)return sendJson(response,404,{message:'Página não encontrada.'});if(proof&&request.method==='GET')return sendJson(response,200,{connection:isProductionStudio?'hubpages-prod':'hubpages-dev',hostname,claim:binding.id});request.customDomain=binding;if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(!url.pathname.startsWith('/api/public/')&&!(request.method==='GET'&&(url.pathname==='/'||/^\/assets\/[a-zA-Z0-9_./-]+$/.test(url.pathname)||url.pathname==='/favicon.ico')))return sendJson(response,404,{message:'Página não encontrada.'})}
-    if (['/studio', '/studio/administracao', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
+    if (['/studio', '/studio/administracao', '/studio/assinatura', '/conta', '/entrar', '/admin', '/perfil', '/condicoes-homologacao'].includes(url.pathname) || url.pathname.startsWith('/studio/preview/') || url.pathname.startsWith('/studio/modelos/') || url.pathname.startsWith('/p/') || url.pathname.startsWith('/api/public/')) {
       response.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy', "default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
     }
-    if(request.customDomain||isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/studio/administracao','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
+    if(request.customDomain||isStudioPublication&&!url.pathname.startsWith('/api/')&&!['/studio','/studio/administracao','/studio/assinatura','/conta','/admin','/entrar','/perfil','/condicoes-homologacao','/'].includes(url.pathname)&&!url.pathname.startsWith('/studio/preview/')&&!url.pathname.startsWith('/studio/modelos/')){
       if(isDevPublication)response.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')
       response.setHeader('Content-Security-Policy',"default-src 'self'; media-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https:")
     }
@@ -698,7 +722,7 @@ createServer(async (request, response) => {
     if(url.pathname==='/api/platform/imports')return await handleApi(request,response,url)
     // Sandbox provider latency must not stall page editing or webhook delivery.
     if(asaasSandbox&&url.pathname==='/api/saas/asaas/webhook')return await handleApi(request,response,url)
-    if(asaasSandbox&&url.pathname.startsWith('/api/saas/admin/asaas/')){
+    if(asaasSandbox&&(url.pathname.startsWith('/api/saas/admin/asaas/')||url.pathname.startsWith('/api/saas/gold/'))){
       if(request.method==='GET')return await handleApi(request,response,url)
       const task=asaasQueue.then(()=>handleApi(request,response,url))
       asaasQueue=task.catch(()=>undefined)

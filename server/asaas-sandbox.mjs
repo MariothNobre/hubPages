@@ -1,6 +1,7 @@
 import {createCipheriv,createDecipheriv,createHash,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto'
 import {readFile} from 'node:fs/promises'
 import pg from 'pg'
+import {createGoldAnnual} from './gold-annual.mjs'
 import {authorityError} from './saas-authority.mjs'
 
 export const sandboxBase='https://api-sandbox.asaas.com/v3'
@@ -16,7 +17,7 @@ export function secretVault(secret){
 }
 export function sandboxClient(key,transport=fetch){
  return async(path,method='GET',body)=>{
-  if(!/^\/(myAccount\/status|webhooks(?:\/[\w-]+)?|customers(?:\/[\w-]+)?|subscriptions(?:\/[\w-]+\/payments)?|payments\/[\w-]+|sandbox\/payment\/[\w-]+\/confirm)(?:\?[\w%=&-]+)?$/.test(path))throw authorityError(422,'Operação Sandbox não permitida.')
+  if(!/^\/(myAccount\/status|webhooks(?:\/[\w-]+)?|customers(?:\/[\w-]+)?|subscriptions(?:\/[\w-]+(?:\/payments)?)?|payments\/[\w-]+|sandbox\/payment\/[\w-]+\/confirm)(?:\?[\w%=&-]+)?$/.test(path))throw authorityError(422,'Operação Sandbox não permitida.')
   let response
   try{response=await transport(sandboxBase+path,{method,redirect:'error',signal:AbortSignal.timeout(15000),headers:{access_token:key,'User-Agent':'HubPages-Sandbox/1.0',Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})})}
   catch{throw authorityError(502,'O Sandbox não respondeu. Confira o estado antes de repetir a operação.')}
@@ -35,7 +36,8 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
  const config=async()=> (await pool.query('SELECT * FROM hubpages_asaas_config WHERE id=1')).rows[0]
  const api=async()=>{const row=await config();if(!row)throw authorityError(409,'Configure a chave Sandbox primeiro.');return sandboxClient(vault.open(row.key_cipher),transport)}
  const transaction=async(work)=>{const c=await pool.connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(702075,63)');const result=await work(c);await c.query('COMMIT');return result}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
- const audit=(c,actor,action)=>c.query('INSERT INTO hubpages_saas_audit(id,actor,action,target,outcome) VALUES($1,$2,$3,$4,$5)',[randomUUID(),actor,action,'asaas-sandbox','allowed'])
+ const audit=(c,actor,action,target='asaas-sandbox')=>c.query('INSERT INTO hubpages_saas_audit(id,actor,action,target,outcome) VALUES($1,$2,$3,$4,$5)',[randomUUID(),actor,action,target,'allowed'])
+ const gold=await createGoldAnnual({pool,api,transaction,audit})
  const webhookUrl=origin+'/api/saas/asaas/webhook'
  const status=async()=>{
   const row=await config()
@@ -88,12 +90,13 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
     if(!event.event_type.startsWith('PAYMENT_')){await pool.query("UPDATE hubpages_asaas_events SET processed_at=now(),result='ignored' WHERE id=$1",[event.id]);continue}
     const call=await api(),payment=await call('/payments/'+event.resource_id)
     if(payment.id!==event.resource_id||typeof payment.status!=='string')throw authorityError(502,'Referência divergente no Sandbox.')
+    const goldMapped=await gold.reconcile(payment)
     await transaction(async c=>{
-     // Only the synthetic laboratory is mapped; no customer entitlement is granted by a callback.
+     // The synthetic laboratory is mapped; no customer entitlement is granted by a callback.
      const lab=(await c.query('SELECT * FROM hubpages_asaas_lab WHERE id=1')).rows[0]
      const mapped=lab&&payment.subscription===lab.subscription_id&&payment.customer===lab.customer_id&&Number(payment.value)===5
      if(mapped)await c.query('UPDATE hubpages_asaas_lab SET payment_id=$1,payment_status=$2,updated_at=now() WHERE id=1',[payment.id,payment.status])
-     await c.query("UPDATE hubpages_asaas_events SET processed_at=now(),attempts=attempts+1,result=$2,provider_status=$3,last_error=NULL WHERE id=$1",[event.id,mapped?'reconciled':'ignored',payment.status.slice(0,80)])
+     await c.query("UPDATE hubpages_asaas_events SET processed_at=now(),attempts=attempts+1,result=$2,provider_status=$3,last_error=NULL WHERE id=$1",[event.id,mapped||goldMapped?'reconciled':'ignored',payment.status.slice(0,80)])
     })
    }catch{await pool.query("UPDATE hubpages_asaas_events SET attempts=attempts+1,result='retry',last_error='Falha temporária na conciliação Sandbox',retry_at=now()+least(3600,power(2,least(attempts,10))*15)*interval '1 second' WHERE id=$1",[event.id])}}
   }finally{processing=false}
@@ -158,6 +161,6 @@ export async function createAsaasSandbox({connectionString,secret,origin,transpo
   await transaction(c=>audit(c,actor,'asaas.lab.confirmed'))
   await drain()
  }
- return {status,save,verify,provision,authenticate,receive,drain,lab,confirm,close:()=>pool.end()}
+ return {gold,status,save,verify,provision,authenticate,receive,drain,lab,confirm,close:()=>pool.end()}
 
 }
